@@ -10082,7 +10082,7 @@ LoadStar("fact_records", {
 A record with no month, or no stated uncertainty, has an empty cell, which becomes `null`. Power Query shows each step on the right (Applied steps); the function's steps run inside the call, so `fact_records` shows one.
 
 **Lab:**
-1. The other six tables. Each is a blank query named after its file, calling `LoadStar` with the file's columns. The manifest gives each column's type, and each has one M type:
+1. The other seven tables. Each is a blank query named after its file, calling `LoadStar` with the file's columns. The manifest gives each column's type, and each has one M type:
 
    | Manifest type | M type | Power BI calls it |
    |---|---|---|

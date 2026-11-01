@@ -266,6 +266,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q60 | e2 | prose | T0 | "The catalogue (`pg_class`…)": d1 defines the term as "catalog"; f1's "other catalogues" means something else and stays | fixed | `qa-fixes.ts` |
 | Q61 | e3, e4 | missing step | T0 | e4's lead says "everything runs in the Python environment" and e3's names only Python and the browser; e4 has 3 PostGIS blocks and e3 has 2, which a learner runs in a SQL client. Worded as s6's. No 004 sentence: the leads are only on the pages | fixed | `qa-fixes.ts` |
 | Q62 | e4 | prose | T2 | `e4-derived`'s comment ends "(§4.2)", a section of the design plan that a learner has no way to read as one. Drop it from 004's fence and `site/learn/sql/e4-derived.py`; the comment isn't output, so the result stays | queued | `learn:port --check e4`; `learn:check` |
+| Q63 | p1 | number | T0 | "The other six tables": the worked example builds `fact_records` only, so seven of the eight remain, and the step goes on to name seven | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
