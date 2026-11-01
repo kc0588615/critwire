@@ -249,6 +249,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q43 | s2 | prose | T0 | "A z-score below −1.96 means a mean distance this small would happen by chance less than 5 % of the time": that's the two-sided figure s5 gives; one side alone is 2.5 % | fixed | `qa-fixes.ts` |
 | Q44 | s2 | missing step | T0 | The worked example counts 1,972 records and lab 1 counts 1,784, with no word why. A hexagon that touches land reaches past the outline: 188 records lie in a cell but outside the island, at most 4.2 km from it (lab db) | fixed | `qa-fixes.ts` |
 | Q45 | s2 | prose | T0 | 913 noise and 913 distinct locations, in one page and one paragraph of its Result: unrelated counts that read as one. Said so at the first | fixed | `qa-fixes.ts` |
+| Q46 | s2 | wrong fact | T0 | "`ST_ClusterWithin` [is a] window function": it's an aggregate (`prokind` a, lab db). The window form is `ST_ClusterWithinWin`, PostGIS 3.4 | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

@@ -62,6 +62,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q43", url: "/learn/spatial-statistics/point-patterns/", has: "A z-score beyond ±1.96", not: "A z-score below −1.96" },
   { q: "Q44", url: "/learn/spatial-statistics/point-patterns/", has: "188 records lie in a cell but outside the island" },
   { q: "Q45", url: "/learn/spatial-statistics/point-patterns/", has: "the same number as the distinct locations above, by chance" },
+  { q: "Q46", url: "/learn/spatial-statistics/point-patterns/", has: "<code>ST_ClusterWithinWin</code>", not: "<code>ST_ClusterWithin</code>" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
