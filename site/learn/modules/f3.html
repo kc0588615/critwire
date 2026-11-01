@@ -33,7 +33,7 @@
 {{block:f3-on}}
 <p>Move <code>o.year &gt;= 2020</code> to <code>WHERE</code> and the countries with no recent record vanish: their <code>o.year</code> is <code>NULL</code>, the test is unknown, and <code>WHERE</code> drops them. The left join has quietly become an inner join.</p>
 {{block:f3-where}}</li>
-<li><p>The row multiplier. The Jaguar has 2,000 records and 20 countries in <code>species_countries</code>; joining both to the species pairs every record with every country:</p>
+<li><p>The row multiplier, or fan-out. The Jaguar has 2,000 records and 20 countries in <code>species_countries</code>; joining both to the species pairs every record with every country:</p>
 {{block:f3-fan-out}}</li>
 <li><p>Light spatial in plain SQL. Every record has a <code>longitude</code> and <code>latitude</code> in degrees (WGS 84), so <code>min</code> and <code>max</code> give a species' <strong>bounding box</strong>, the smallest rectangle around its records:</p>
 {{block:f3-bbox}}

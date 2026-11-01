@@ -1601,7 +1601,7 @@ CO | Colombia | 503
 … 4 more rows
 ```
 
-3. The row multiplier. The Jaguar has 2,000 records and 20 countries in `species_countries`; joining both to the species pairs every record with every country:
+3. The row multiplier, or fan-out. The Jaguar has 2,000 records and 20 countries in `species_countries`; joining both to the species pairs every record with every country:
 
 ```sql
 -- q: f3-fan-out

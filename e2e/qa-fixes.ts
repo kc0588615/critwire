@@ -94,6 +94,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q76", url: "/learn/database-architecture/keys/", has: "Prerequisites: <a href=\"/learn/foundations/window/\">Window functions</a> (f4)", not: "Prerequisites: <a href=\"/learn/foundations/join/\">" },
   { q: "Q76", url: "/learn/gis-in-sql/crs/", has: "Prerequisites: <a href=\"/learn/foundations/window/\">Window functions</a> (f4)", not: "Prerequisites: <a href=\"/learn/foundations/join/\">" },
   { q: "Q77", url: "/learn/capstone/game-feed/", has: "<a href=\"/learn/etl/schedule/\">Scheduling</a> (e5), <a href=\"/learn/power-bi/maps-report/\">", not: "<a href=\"/learn/etl/quality-provenance/\">Quality and provenance</a> (e4), <a href=\"/learn/power-bi/maps-report/\">" },
+  { q: "Q78", url: "/learn/foundations/join/", has: "The row multiplier, or fan-out.", not: "The row multiplier. The Jaguar" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
