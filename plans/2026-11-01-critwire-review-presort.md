@@ -582,7 +582,7 @@ Result: done
 - 2026-11-01 10:49 UTC: S15. `claimBackup` (`link`, then compare) replaces the backup write; overrides read once. A14–A16 written first, A16 red 1 of 3 on the old CLI. typecheck ok, test 748/748, A16 green 6/6, GUARD empty.
 - 2026-11-01 10:52 UTC: S16. 39:ZM high → medium, reason reworded (294 chars), 005 + proposal regenerated. High country 80 (66 confirming, 14 output-changing). `--check` exit 0, second run byte-identical, typecheck ok, test 748/748, GUARD empty.
 - 2026-11-01 11:03 UTC: Final Verification 1–10 on `bb40e27`: install ok, typecheck ok, test 748/748, `--check` exit 0 (214, 0 pending, counts = S16), build ok, dist = Baseline (311 files, diff empty), GUARD empty, data diff only proposal + `presort/{evidence,recommendations}.json`, status clean, e2e 98/98, no `.pre-accept`. Artifact `<state>/e2e-final/`. Summary written, status done.
-- 2026-11-01 11:40 UTC: Release. Verification re-run on `4756f1b` (test 748/748, e2e 98/98, dist = Baseline); PR #15 merged `ca66440`, deployed; live hashes = Baseline, release smoke 7/7.
+- 2026-11-01 11:15 UTC: Release. Verification re-run on `4756f1b` (test 748/748, e2e 98/98, dist = Baseline); PR #15 merged `ca66440`, deployed; live hashes = Baseline, release smoke 7/7.
 
 ## Summary
 
