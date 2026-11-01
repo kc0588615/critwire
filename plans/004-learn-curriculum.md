@@ -2884,7 +2884,7 @@ Seq Scan on occurrences (actual rows=29261 loops=1)
   Rows Removed by Filter: 11134
 ```
 
-2. Seven records in ten are from 2000 or later. Through the index, PostgreSQL would read much of the index and still nearly every page of the table, so reading the table straight through is cheaper. Ask for this year's records, 74 of them, and the same index is used:
+2. Seven records in ten are from 2000 or later. Through the index, PostgreSQL would read much of the index and still nearly every page of the table, so reading the table straight through is cheaper. Ask for the records of 2026, 74 of them, and the same index is used:
 
 ```sql
 -- q: d3-few-rows

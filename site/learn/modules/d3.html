@@ -28,7 +28,7 @@
 <ol class="steps">
 <li><p>An index the planner doesn't use. With an index on <code>year</code>, ask for every record since 2000:</p>
 {{block:d3-many-rows}}</li>
-<li><p>Seven records in ten are from 2000 or later. Through the index, PostgreSQL would read much of the index and still nearly every page of the table, so reading the table straight through is cheaper. Ask for this year's records, 74 of them, and the same index is used:</p>
+<li><p>Seven records in ten are from 2000 or later. Through the index, PostgreSQL would read much of the index and still nearly every page of the table, so reading the table straight through is cheaper. Ask for the records of 2026, 74 of them, and the same index is used:</p>
 {{block:d3-few-rows}}</li>
 <li><p>A column inside an expression. The records of the 1850s, written as "the decade is 185":</p>
 {{block:d3-function}}</li>
