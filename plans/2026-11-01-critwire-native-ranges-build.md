@@ -452,7 +452,7 @@ Written on `73cd51a`. Read **Target design** above first: shapes, messages and r
   - A new GBIF combination refuses here: map it per 007, or "no row, counted" (Risks 1).
   - Verified: `pnpm derive` twice, second changes nothing. About 432 rows on 57 species (MDD about 400, GBIF about 32), 26 `range-not-found`, conflicts counted. `git status` adds only these 3 data files: `species.json`, `countries.json`, `mismatches.json`, `issued-ids.json`, contributions don't move. Byte check empty.
 
-- [ ] S5. **Shared writer in `tables.ts`.** Riskiest for byte-identical, so alone.
+- [x] S5. **Shared writer in `tables.ts`.** Riskiest for byte-identical, so alone.
   - Files: `scripts/build/tables.ts`, `scripts/build/countries.ts`. `writeTables`, `writeCountries` signatures stay (`scripts/build/learn/dist-fixture.ts:23-24`).
   - Verified: byte check empty: every species, countries and Learn file equals Baseline's. No E2E; bytes equal.
 
@@ -670,5 +670,6 @@ Isolated parts only. Written into each test file's header before its code.
 - 2026-11-01 21:50 UTC: S2: `ingest mdd` real fetch: md5 pin holds, 6,904 rows, exactly the 50 mammals, 50 non-null, 400 tokens (36 `?`), 92 places, none unmapped, no non-place token (= spike); `MDD_PLACES` 243 = spike's file; grep 0; temp folder gone. Typecheck pass, test 783/783, plain build pass, byte check empty. E2E not run: no `dist/` byte moved.
 - 2026-11-01 21:56 UTC: S3: `deriveListings` pure, not wired. F3–F6 written first, seen failing (no module), 23 pass. E11's JS half was written after `rangeConflicts`, against the plan's order; so mutated the code twice (area rows counted; introduced ignored): spec failed both, passes restored. Trial on real snapshots, curated `[]`: 432 rows on 57 species (MDD 400 on 50, GBIF 32 on 17 datasets), 155,391 B, collapsed 2, excluded 1 (GRIIS Australia's blank), 26 not-found, 2 conflicts (66 ZA, 74 DE); MDD 275 of 364 `present` with records (= spike). Typecheck pass, test pass, plain build pass, byte check empty. `$S/e2e-baseline` deleted, per Steps.
 - 2026-11-01 22:10 UTC: S4: third half wired. Tests first, seen failing (H4, F5). `pnpm derive` twice, second changes nothing: 432 rows on 57 species (MDD 400 on 50, GBIF 32 on 17 datasets, curated 0), rows JSON 155,392 B (= spike), collapsed 2, excluded 1, 2 conflicts (66 ZA, 74 DE), 26 not-found. Only 3 new data files, no other derived file moved. No-role key absent from the spike's list (`9e86d932`) is 007's known dataset, not a new one. Typecheck pass, test 807/807, plain build pass, byte check empty. E2E not run: no `dist/` byte moved.
+- 2026-11-01 22:10 UTC: S5: `writeParquetCsv` in `tables.ts`; `writeTables`, `writeCountries` call it, signatures unchanged. Countries' CSV now goes through `csvSelect` (same names, all lowercase). Typecheck pass, test 807/807, plain build pass, byte check empty (311 files = Baseline, species and countries included). E2E not run: no `dist/` byte moved.
 
 ## Summary
