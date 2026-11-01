@@ -73,6 +73,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q54", url: "/learn/database-architecture/keys/", has: "tbls also lists <code>s4_cells</code>" },
   { q: "Q56", url: "/learn/etl/extract/", has: "the lab sample's five filters", not: "six filters", from: { file: "site/learn/labs/checked/e1-request.txt", values: ["LICENSE in", "HAS_COORDINATE equals", "HAS_GEOSPATIAL_ISSUE equals", "OCCURRENCE_STATUS equals", "BASIS_OF_RECORD in"] } },
   { q: "Q57", url: "/learn/etl/extract/", has: "equal, as JSON, the ones GBIF stored", not: "Apart from <code>creator</code>" },
+  { q: "Q58", url: "/learn/etl/transform-load/", has: "the decimal comma in the next record", not: "two records later" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

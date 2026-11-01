@@ -8781,7 +8781,7 @@ gbifID | column | value | type
 load refused before INSERT_TYPED: 2 values in 2 of 3 records
 ```
 
-The cast alone reports `"30 m"` and stops: the decimal comma two records later stays hidden until the first is fixed and the load run again, and nothing in the message says which record held `30 m`. The check lists both, keyed by `gbifID`, in one pass. `pg_input_is_valid` returns NULL for a NULL value, so an empty field is never reported as bad; a column that must have a value says so with `NOT NULL`.
+The cast alone reports `"30 m"` and stops: the decimal comma in the next record stays hidden until the first is fixed and the load run again, and nothing in the message says which record held `30 m`. The check lists both, keyed by `gbifID`, in one pass. `pg_input_is_valid` returns NULL for a NULL value, so an empty field is never reported as bad; a column that must have a value says so with `NOT NULL`.
 
 4. GeoPandas to and from PostGIS, for work that is easier in Python. `read_postgis` turns a query into a GeoDataFrame, `to_postgis` writes one back as a table (it needs SQLAlchemy and GeoAlchemy2, both in §3.3's environment). SQLAlchemy gets its connections from `connect()`, so it uses the same database, role and search path as every other block, and the write names its schema rather than trusting the search path to pick one. The write stays in the connection's transaction, which the block rolls back.
 
