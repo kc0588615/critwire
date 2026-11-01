@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { assertDerivedFiles, deriveAll, derivedFiles, readDeriveInputs, type DeriveResult } from "./pipeline.ts";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
+const STALE = ["not derive's output"] as never;
 
 test("H4 the committed derived files pass; each one that differs is named", async () => {
   const result = deriveAll(await readDeriveInputs());
@@ -15,13 +16,13 @@ test("H4 the committed derived files pass; each one that differs is named", asyn
   const files = derivedFiles(result).map(({ file }) => relative(root, fileURLToPath(file)));
   assert.equal(files.length, 8);
   for (let i = 0; i < files.length; i++) {
-    // Empty one file's value: that one differs, the rest match.
+    // Give one file a value no committed file holds, so it differs even when its original is empty.
     const changed: DeriveResult = { ...result, learn: { ...result.learn }, listings: { ...result.listings } };
     const keys = ["records", "entries", "contributions", "countries", "issuedIds"] as const;
-    if (i < keys.length) (changed as unknown as Record<string, unknown>)[keys[i]] = [];
-    else if (i === keys.length) changed.learn.contributions = {} as DeriveResult["learn"]["contributions"];
-    else if (i === keys.length + 1) changed.listings.file = {} as DeriveResult["listings"]["file"];
-    else changed.listings.conflicts = [];
+    if (i < keys.length) (changed as unknown as Record<string, unknown>)[keys[i]] = STALE;
+    else if (i === keys.length) changed.learn.contributions = STALE;
+    else if (i === keys.length + 1) changed.listings.file = STALE;
+    else changed.listings.conflicts = STALE;
     await assert.rejects(assertDerivedFiles(changed), (e: Error) => e.message === `${files[i]} is stale: run pnpm derive`);
   }
 });
