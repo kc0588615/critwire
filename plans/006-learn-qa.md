@@ -118,20 +118,20 @@ axe-core 4.14.0, default rules, `axe.run()` on each view after the page's blocks
 
 ## Labs
 
-47 files. `.ipynb` run once by the Method's script: only `requirements.txt` plus `ipykernel` and `nbclient`, as `critwire_lab`, under the lab lock. `requirements.txt` sha256: `d5bbe28024cc61d16a57e584dd94fd539c8cc08113899798b4450fd003820ab0`. `.sql` and `.py` results: baseline `learn-check` log (`$S/baseline-learncheck.log`, `$S` = the mission's state folder); the final Verification replaces them. ERROR lines are the ones a lab announces on purpose. The `.ipynb` hashes bind this evidence: if one differs from the final `dist/`, the run is repeated.
+47 files. `.ipynb` run by the Method's script, again after U11's lab batch (Q55, Q62, Q81) moved `e3.ipynb` and `e4.ipynb`, so these rows are that run's: only `requirements.txt` plus `ipykernel` and `nbclient`, as `critwire_lab`, under the lab lock. `requirements.txt` sha256: `d5bbe28024cc61d16a57e584dd94fd539c8cc08113899798b4450fd003820ab0`. `.sql` and `.py` results: baseline `learn-check` log (`$S/baseline-learncheck.log`, `$S` = the mission's state folder); the final Verification replaces them. ERROR lines are the ones a lab announces on purpose. The `.ipynb` hashes bind this evidence: if one differs from the final `dist/`, the run is repeated.
 
 | File | Kind | How run | Result | sha256 |
 |---|---|---|---|---|
 | `e1.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 4.8 s, nothing left | `03c594f2e75fdff959200d83c242c2f0b8ddd580c3ccaed6181c335c6fa1a2c1` |
-| `e2.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 5.4 s, nothing left | `519b901978a7d31ae985be4a9e9a976f7b66a14f82c4f1b5150143ac00f9b504` |
-| `e3.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 2.0 s, nothing left | `5ca3beec784d482b89af8766c157d0b0d372057093b5d8fbdae31485e24ea96d` |
-| `e4.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 1.2 s, nothing left | `3b0a6c70e92425c9cdc696d53ef64d6011ec41346dea7edcf4a4ce905598e9aa` |
-| `e5.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 4.5 s, nothing left | `8178de426f1fe9b5e27d18115b938d9f5214157965347c65520b8d56e8525864` |
+| `e2.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 2.9 s, nothing left | `519b901978a7d31ae985be4a9e9a976f7b66a14f82c4f1b5150143ac00f9b504` |
+| `e3.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 2.0 s, nothing left | `46ab7744925a1a5bb5b5ea385d7a71e48a4c7b8780cf941aaec2bfdbdf4579f5` |
+| `e4.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 1.3 s, nothing left | `3167e57615b53596960fdae8e19c6eae53095b6953dd58d11cc596b391728216` |
+| `e5.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 4.6 s, nothing left | `8178de426f1fe9b5e27d18115b938d9f5214157965347c65520b8d56e8525864` |
 | `s2.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 4.4 s, nothing left | `dbde10457f1e8546db5f9e6edfee2d9d54b703aef99c70b1692a7adb03829033` |
 | `s3.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 4.9 s, nothing left | `61e76bb8014b3fb906ff500f431eb2792e54cf4c9e5d55c5bc301606747ec857` |
-| `s4.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 5.6 s, nothing left | `87f6f51cf78055d1d953e722622de3101ad62e48358d331ec273d53c590ba8b2` |
-| `s5.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 5.1 s, nothing left | `8f47201bec39e83b6909190e848ecd50ae9ef3d1525c76062f9b4f7d30e3c2b6` |
-| `s6.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 2.5 s, nothing left | `a5a4aabdecbd93e64e7b055263e923331d005ab6bec31812c019220619976911` |
+| `s4.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 5.7 s, nothing left | `87f6f51cf78055d1d953e722622de3101ad62e48358d331ec273d53c590ba8b2` |
+| `s5.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 5.0 s, nothing left | `8f47201bec39e83b6909190e848ecd50ae9ef3d1525c76062f9b4f7d30e3c2b6` |
+| `s6.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 2.6 s, nothing left | `a5a4aabdecbd93e64e7b055263e923331d005ab6bec31812c019220619976911` |
 | `setup.ipynb` | notebook | learner's venv, `nbclient`, fresh load | exit 0, 3.5 s, nothing left | `66f1a6219d0402c4bbb5accb56168533cb0ae7c120e250fec42ac32fc383aece` |
 | `pg-checks.sql` | psql | `learn:check` downloads stage, fresh load | 0 ERROR line(s), as announced; nothing left | |
 | `setup.py` | script | `learn:check` downloads stage, fresh load | python exit 0 (2.4 s); nothing left | |

@@ -479,7 +479,7 @@ Rules for every step. A session reads these, its item, the Architecture sections
   - A missing prereq is a T0 fix in `site/learn/curriculum.json` plus 004's `**Prereqs:**`, caught by `learn-map.spec.ts:89`. Contradictions go through the tiers.
   - Checks: `pnpm typecheck`; `pnpm learn:port --check all`; with any fix, scoped `e2e/learn-walk e2e/learn-map`, plus `e2e/learn-browser` for T1.
 
-- [ ] U11. **Lab batch** (§7, §3, finding 8). **The only lab-tier step.** Its loop is `pnpm build --draft && pnpm learn:check && pnpm build`, plain: §7 rules `--update` out, because a whole plain run refuses a changed result and still rewrites `checked.json`.
+- [x] U11. **Lab batch** (§7, §3, finding 8). **The only lab-tier step.** Its loop is `pnpm build --draft && pnpm learn:check && pnpm build`, plain: §7 rules `--update` out, because a whole plain run refuses a changed result and still rewrites `checked.json`.
   - Read 006's `queued` rows, including `scripts/learn/assemble.ts:190` if R1 left it wrong.
   - **Nothing queued:** write "lab batch empty" in 006 and do only the hash check below.
   - **Otherwise:**
@@ -608,5 +608,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 14:58 UTC: U8: R5 read (e1–e5), every prose number judged, claims checked in the lab db, data files and GBIF's docs, DuckDB dialects run, systemd units verified, ledger extended. 6 T0 fixes, Q56–Q61, each assertion seen to fail on the unfixed build. Q62 queued for U11 (`e4-derived` comment, T2). Nothing listed. typecheck pass, `learn:port --check all` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U9.
 - 2026-11-01 15:19 UTC: U9: R6 read (p1–p4, c1), every prose number judged, against the star files, the feed and its schema, DuckDB and pandas lines run, two Microsoft claims read at the source, ledger extended. 13 T0 fixes, Q63–Q75, each assertion seen to fail on the unfixed build. Power BI itself not run (H6 stays the owner's); H6's step 5 corrected. Nothing queued or listed. typecheck pass, `learn:port --check all` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U10.
 - 2026-11-01 15:33 UTC: U10: R7 read: ledger, sources, all 18 prose links with a verdict in 006, plus one scan of terms outside their home's closure. Two missing prereqs fixed (Q76 d1, g1 need f4; Q77 c1 needs e5), Q78, Q79, Q80 prose, each seen to fail on the unfixed build. Q81 queued for U11. Nothing listed. typecheck pass, `learn:port --check all` pass, `pnpm test` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U11.
+- 2026-11-01 16:27 UTC: U11: lab batch Q55, Q62, Q81 (comments only), each `QA_FIXES` row seen to fail first. Loop plain: `learn:check` ok, 189 block results unchanged, keys and 27 download shas moved; `checked.json` committed. e3, e4 `.ipynb` hashes moved, so notebooks rerun: 11/11 exit 0, Labs rows updated, hash check empty. typecheck pass, `learn:port --check all` pass, test 754/754, test:db 140/140, plain build pass, e2e 149/149 (11 min). Next: U12.
 
 ## Summary
