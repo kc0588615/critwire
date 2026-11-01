@@ -474,7 +474,7 @@ Shorthands: `<state>` = `/srv/critter-ai/agent-state/missions/critwire-review-pr
 - [x] S11. **Recs batch 5: borderline, remaining 47.** Check: pending 0; P8 green; `pnpm review:presort --check` exit 0.
 - [x] S12. **Consistency pass + final presort.** Re-read all 214 against the rubric: the same dataset or publisher signal gets the same call and confidence across batches; every high `keep` cites an independent source (second dataset, COL distribution, Wikidata P2341/P183); no reason claims range in our voice (review `grep -in 'native\|range' data/review/presort/recommendations.json`); 005 warns for species 69 and any other species that would lose every published country. Regenerate. Record under Decisions: counts by recommendation × confidence, the high set split confirming / output-changing, and the two reply sentences (for the Summary). Check: `--check` exit 0.
 - [x] S13. **Docs.** `AGENTS.md`: Data (the 4 presort files + writers, "never read by derive or build", the `.pre-accept` backup; `plans/005-review-presort.md`), Commands (`review:evidence`, `review:presort [--check]`, `review:accept` usage, "owner's word only"), Overrides (one line: an output-changing override makes plain `pnpm build`, so `deploy`, refuse until the `learn:check --update` follow-on, Q6). Check: AGENTS.md commands match each CLI's usage text and 005's "Accept in one go"; `pnpm review:presort --check` exit 0.
-- [ ] S14. **Final Verification.** Run `## Verification` 1–10 in order, artifacts in `<state>/e2e-final/`; one Log line with results.
+- [x] S14. **Final Verification.** Run `## Verification` 1–10 in order, artifacts in `<state>/e2e-final/`; one Log line with results.
 
 ## Verification
 
@@ -553,5 +553,6 @@ Isolated units: P1–P11 (Q4, tests in S2/S4) and A1–A13 (Q5, tests in S5/S6),
 - 2026-11-01 10:19 UTC: S11. 47 borderline recs (keep 42: 26 high, 9 medium, 7 low; remove 5: 4 high, 1 medium), 005 + proposal regenerated. `review:presort` exit 0, pending 0, 186 proposals, second run byte-identical, `--check` exit 0. typecheck ok, test 744/744 (P8 green), GUARD empty.
 - 2026-11-01 10:25 UTC: S12. Consistency pass over 214; 9 recs edited (7 confidence moves, 2 wordings), none flipped. High 81 country (66 confirming, 15 output-changing). 005 + proposal regenerated. `--check` exit 0, second run byte-identical, 214 headings, 186 proposals. typecheck ok, test 744/744, GUARD empty.
 - 2026-11-01 10:28 UTC: S13. AGENTS.md: Commands (3 `review:*`, usage = CLI's, 43:DE/57:TG `--confidence low` trap), Data (4 presort files, `.pre-accept`), Overrides (output-changing follow-on, Q6). typecheck ok, test 744/744, `--check` exit 0 (214, 0 pending), GUARD empty.
+- 2026-11-01 10:39 UTC: S14. Verification 1–10 on `51edc32`: install ok, typecheck ok, test 744/744, `--check` exit 0 (214, 0 pending, counts = S12), build ok, dist = Baseline (311 files, diff empty), GUARD empty, data diff only proposal + `presort/{evidence,recommendations}.json`, status clean, e2e 98/98, no `.pre-accept`. Artifact `<state>/e2e-final/`.
 
 ## Summary
