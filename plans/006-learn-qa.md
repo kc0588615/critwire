@@ -241,6 +241,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q35 | g7 | prose | T0 | "The 0.75° square holding the most of the sample's records": true only on 0.05° steps. Stepped by 0.01°, a square holds 204 (`cr`) and 607 (`tas`) against 202 and 601 (lab db) | fixed | `qa-fixes.ts` |
 | Q36 | g7 | prose | T0 | As Q12: `tas` is called a country, in four places. And "the country reaches every edge of its box": Tasmania's box runs 3.5 km past the main island in the north, for records there (`scripts/ingest/habitat.ts:45`). What holds is that land lies in the outermost tiles | fixed | `qa-fixes.ts` |
 | Q37 | g7 | prose | T0 | Result: "the worst are islands under 135 km²". The list holds Vatican City and Macau | fixed | `qa-fixes.ts` |
+| Q38 | s1 | number | T0 | "19 of the 28 museum specimens have no year": 20 do (10, 5, 3, 1, 1 across the rows, lab db) | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
