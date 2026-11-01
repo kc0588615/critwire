@@ -22,17 +22,6 @@
     "reason": "Apalone spinifera has no curated row, so critwire holds no native listing for it."
   },
   {
-    "speciesId": 3,
-    "scientificName": "Rhinoderma darwinii",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Rhinoderma darwinii has no curated row, so critwire holds no native listing for it."
-  },
-  {
     "speciesId": 4,
     "scientificName": "Platysternon megacephalum",
     "field": "range-listings",
@@ -42,83 +31,6 @@
       "sourceKey": "curated"
     },
     "reason": "Platysternon megacephalum has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 5,
-    "scientificName": "Rhacophorus nigropalmatus",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Rhacophorus nigropalmatus has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 6,
-    "scientificName": "Agalychnis callidryas",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Agalychnis callidryas has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 7,
-    "scientificName": "Trichobatrachus robustus",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Trichobatrachus robustus has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 8,
-    "scientificName": "Ascaphus truei",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Ascaphus truei has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 9,
-    "scientificName": "Dendrobates tinctorius",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Dendrobates tinctorius has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 10,
-    "scientificName": "Pipa pipa",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Pipa pipa has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 11,
-    "scientificName": "Conraua goliath",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Conraua goliath has no curated row, so critwire holds no native listing for it."
   },
   {
     "speciesId": 12,
@@ -132,28 +44,6 @@
     "reason": "Heosemys spinosa has no curated row, so critwire holds no native listing for it."
   },
   {
-    "speciesId": 13,
-    "scientificName": "Dyscophus antongilii",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Dyscophus antongilii has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 14,
-    "scientificName": "Breviceps macrops",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Breviceps macrops has no curated row, so critwire holds no native listing for it."
-  },
-  {
     "speciesId": 15,
     "scientificName": "Malacochersus tornieri",
     "field": "range-listings",
@@ -163,17 +53,6 @@
       "sourceKey": "curated"
     },
     "reason": "Malacochersus tornieri has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 16,
-    "scientificName": "Nasikabatrachus sahyadrensis",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Nasikabatrachus sahyadrensis has no curated row, so critwire holds no native listing for it."
   },
   {
     "speciesId": 17,
@@ -242,17 +121,6 @@
     "reason": "Chelonoidis abingdonii has no curated row, so critwire holds no native listing for it."
   },
   {
-    "speciesId": 62,
-    "scientificName": "Andrias davidianus",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Andrias davidianus has no curated row, so critwire holds no native listing for it."
-  },
-  {
     "speciesId": 66,
     "scientificName": "Diceros bicornis",
     "field": "range-listings",
@@ -297,38 +165,5 @@
       ]
     },
     "reason": "Sources disagree on Ambystoma mexicanum in DE; every row ships, none is fixed."
-  },
-  {
-    "speciesId": 74,
-    "scientificName": "Ambystoma mexicanum",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Ambystoma mexicanum has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 75,
-    "scientificName": "Cryptobranchus alleganiensis",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Cryptobranchus alleganiensis has no curated row, so critwire holds no native listing for it."
-  },
-  {
-    "speciesId": 76,
-    "scientificName": "Phyllobates terribilis",
-    "field": "range-listings",
-    "kind": "range-not-found",
-    "severity": "info",
-    "values": {
-      "sourceKey": "curated"
-    },
-    "reason": "Phyllobates terribilis has no curated row, so critwire holds no native listing for it."
   }
 ]

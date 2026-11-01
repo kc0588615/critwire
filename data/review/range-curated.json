@@ -1,1 +1,370 @@
-[]
+[
+  {
+    "speciesId": 3,
+    "country": "AR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250708200836/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhinodermatidae/Rhinoderma/Rhinoderma-darwinii",
+    "sourceTerm": "Lanín and Nahuel Huapi national parks"
+  },
+  {
+    "speciesId": 3,
+    "country": "CL",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250708200836/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhinodermatidae/Rhinoderma/Rhinoderma-darwinii",
+    "sourceTerm": "Andes to coast, Concepción to Aysén provinces"
+  },
+  {
+    "speciesId": 5,
+    "country": "BN",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Part of its Borneo range"
+  },
+  {
+    "speciesId": 5,
+    "country": "ID",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Sumatra and Kalimantan"
+  },
+  {
+    "speciesId": 5,
+    "country": "MM",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Tanintharyi, beside Thailand's peninsula"
+  },
+  {
+    "speciesId": 5,
+    "country": "MY",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Malay Peninsula, Sabah and Sarawak"
+  },
+  {
+    "speciesId": 5,
+    "country": "TH",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Peninsula: Ranong, Pattani, Narathiwat, Yala"
+  },
+  {
+    "speciesId": 6,
+    "country": "CO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Chocó north to Antioquia, Sucre and Bolívar"
+  },
+  {
+    "speciesId": 6,
+    "country": "CR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Caribbean lowlands; Pacific lowlands in the south"
+  },
+  {
+    "speciesId": 6,
+    "country": "HN",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Caribbean lowlands in the northeast"
+  },
+  {
+    "speciesId": 6,
+    "country": "NI",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Caribbean lowlands in the east"
+  },
+  {
+    "speciesId": 6,
+    "country": "PA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Caribbean side to the centre; Pacific side in the east"
+  },
+  {
+    "speciesId": 7,
+    "country": "AO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Cabinda and Serra do Uíge in the north"
+  },
+  {
+    "speciesId": 7,
+    "country": "CD",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Mayombe Hills"
+  },
+  {
+    "speciesId": 7,
+    "country": "CG",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Western part"
+  },
+  {
+    "speciesId": 7,
+    "country": "CM",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "West and southwest"
+  },
+  {
+    "speciesId": 7,
+    "country": "GA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Inside its Nigeria-to-Congo band"
+  },
+  {
+    "speciesId": 7,
+    "country": "GQ",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Inside its Nigeria-to-Congo band"
+  },
+  {
+    "speciesId": 7,
+    "country": "NG",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Osomba Hills in the southeast"
+  },
+  {
+    "speciesId": 8,
+    "country": "CA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251012233103/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Ascaphidae/Ascaphus/Ascaphus-truei",
+    "sourceTerm": "Southwest British Columbia"
+  },
+  {
+    "speciesId": 8,
+    "country": "US",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251012233103/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Ascaphidae/Ascaphus/Ascaphus-truei",
+    "sourceTerm": "Washington and Oregon's west sides, California's northwest"
+  },
+  {
+    "speciesId": 9,
+    "country": "BR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261021104826/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Dendrobates/Dendrobates-tinctorius",
+    "sourceTerm": "Next to the Guianas"
+  },
+  {
+    "speciesId": 9,
+    "country": "GF",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261021104826/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Dendrobates/Dendrobates-tinctorius",
+    "sourceTerm": "Forest at low elevation"
+  },
+  {
+    "speciesId": 9,
+    "country": "GY",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261021104826/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Dendrobates/Dendrobates-tinctorius",
+    "sourceTerm": "Forest at low elevation"
+  },
+  {
+    "speciesId": 9,
+    "country": "SR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261021104826/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Dendrobates/Dendrobates-tinctorius",
+    "sourceTerm": "Forest at low elevation"
+  },
+  {
+    "speciesId": 10,
+    "country": "BO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Amazon basin"
+  },
+  {
+    "speciesId": 10,
+    "country": "BR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Amazon basin"
+  },
+  {
+    "speciesId": 10,
+    "country": "CO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named, with no narrower place"
+  },
+  {
+    "speciesId": 10,
+    "country": "EC",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named, with no narrower place"
+  },
+  {
+    "speciesId": 10,
+    "country": "GF",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named as one of the Guianas"
+  },
+  {
+    "speciesId": 10,
+    "country": "GY",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named as one of the Guianas"
+  },
+  {
+    "speciesId": 10,
+    "country": "PE",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named, with no narrower place"
+  },
+  {
+    "speciesId": 10,
+    "country": "SR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named as one of the Guianas"
+  },
+  {
+    "speciesId": 10,
+    "country": "TT",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Trinidad"
+  },
+  {
+    "speciesId": 10,
+    "country": "VE",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named, with no narrower place"
+  },
+  {
+    "speciesId": 11,
+    "country": "CM",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815152806/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Conrauidae/Conraua/Conraua-goliath",
+    "sourceTerm": "Southwest, around Nkongsamba"
+  },
+  {
+    "speciesId": 11,
+    "country": "GA",
+    "area": null,
+    "presence": "uncertain",
+    "url": "https://web.archive.org/web/20260815152806/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Conrauidae/Conraua/Conraua-goliath",
+    "sourceTerm": "A possible southern extension"
+  },
+  {
+    "speciesId": 11,
+    "country": "GQ",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815152806/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Conrauidae/Conraua/Conraua-goliath",
+    "sourceTerm": "Mainland, as far as Monte Alen"
+  },
+  {
+    "speciesId": 13,
+    "country": "MG",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250805080801/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Microhylidae/Dyscophinae/Dyscophus/Dyscophus-antongilii",
+    "sourceTerm": "Northeast coast, including Antongil Bay"
+  },
+  {
+    "speciesId": 14,
+    "country": "NA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261005081946/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Brevicipitidae/Breviceps/Breviceps-macrops",
+    "sourceTerm": "Far southwest, up to Lüderitz"
+  },
+  {
+    "speciesId": 14,
+    "country": "ZA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261005081946/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Brevicipitidae/Breviceps/Breviceps-macrops",
+    "sourceTerm": "Far west, around Kleinsee"
+  },
+  {
+    "speciesId": 16,
+    "country": "IN",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261001162231/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Nasikabatrachidae/Nasikabatrachus/Nasikabatrachus-sahyadrensis",
+    "sourceTerm": "Kerala and Tamil Nadu, in the Western Ghats"
+  },
+  {
+    "speciesId": 62,
+    "country": "CN",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260202194629/https://amphibiansoftheworld.amnh.org/Amphibia/Caudata/Cryptobranchidae/Andrias/Andrias-davidianus",
+    "sourceTerm": "Upland streams, Qinghai and Gansu south to Yunnan"
+  },
+  {
+    "speciesId": 74,
+    "country": "MX",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261006013131/https://amphibiansoftheworld.amnh.org/Amphibia/Caudata/Ambystomatidae/Ambystoma/Ambystoma-mexicanum",
+    "sourceTerm": "Valley of Mexico lakes; today only Xochimilco's southern remnant"
+  },
+  {
+    "speciesId": 75,
+    "country": "US",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250811055612/https://amphibiansoftheworld.amnh.org/Amphibia/Caudata/Cryptobranchidae/Cryptobranchus/Cryptobranchus-alleganiensis",
+    "sourceTerm": "New York to Alabama and Illinois; separate Ozark populations"
+  },
+  {
+    "speciesId": 76,
+    "country": "CO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250917181054/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Phyllobates/Phyllobates-terribilis",
+    "sourceTerm": "Cauca, reaching Valle del Cauca, at 100–200 m"
+  }
+]
