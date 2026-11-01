@@ -7,6 +7,7 @@
 // P6: a cite that doesn't resolve (an occurrence or dataset of another entry, an unknown col/wikidata/species id, a bad
 //     form), no cite at all, or a country entry at medium or high without a gbif:occurrence or gbif:dataset cite → throws.
 // P7: an empty or blank reason, or one over 300 characters → throws.
+// P8: the committed proposal breaks a rule derive runs on country-overrides.json (parseOverrides, deriveCountries) → throws.
 // P9: a script outside scripts/review/ and scripts/review-*.ts names a presort file or imports scripts/review/.
 // P10: a high remove whose live count differs from the entry's records, whose datasetKey facet is truncated, or
 //      whose entry has no gbif section → throws.
@@ -18,10 +19,12 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { deriveCore, readCoreInputs } from "../derive/pipeline.ts";
+import { readJson } from "../json.ts";
 import type { GbifSnapshot } from "../raw.ts";
 import type { Mismatch } from "../species.ts";
 import {
-  assertEvidence, assertQueue, assertRecommendations, changesOutput, entryKey, indexEntries, proposalOf, statusQuo,
+  assertEvidence, assertQueue, assertRecommendations, changesOutput, entryKey, indexEntries, proposalFile, proposalOf, statusQuo,
   type Evidence, type GbifEvidence, type Recommendation,
 } from "./presort.ts";
 
@@ -238,6 +241,13 @@ test("proposalOf: the override format, country recommendations only, sorted by s
   ]);
   assert.deepEqual(Object.keys(proposal[0]!), ["speciesId", "country", "action", "reason"]);
   throwsWith(() => proposalOf([{ ...recs()[0]!, key: "2:ids.gbif:identity" }]), /2:ids\.gbif:identity: keep\/remove on a non-country key/);
+});
+
+test("P8: the committed proposal passes the rules derive runs on country-overrides.json", async () => {
+  const proposal = await readJson<unknown>(proposalFile);
+  assert.ok(Array.isArray(proposal));
+  const inputs = await readCoreInputs();
+  assert.doesNotThrow(() => deriveCore({ ...inputs, overrides: proposal }));
 });
 
 test("P9: no script outside scripts/review/ and scripts/review-*.ts reads a presort file or imports scripts/review/", async () => {

@@ -2,7 +2,7 @@
 // checks review:presort and review:accept run on the evidence and the agents' recommendations. Pure: no fs, no network.
 // Derive and build never read any of this (P9 in presort.test.ts).
 import { isDeepStrictEqual } from "node:util";
-import { assertNoIucnData, gbifTaxonKey, type GbifSnapshot } from "../raw.ts";
+import { assertNoIucnData, gbifTaxonKey, type GbifSnapshot, type Snapshots, type SparqlBinding } from "../raw.ts";
 import type { CountryOverride, Mismatch } from "../species.ts";
 
 export const evidenceFile = new URL("../../data/review/presort/evidence.json", import.meta.url);
@@ -86,6 +86,40 @@ export function entryKey(entry: Mismatch): string {
   if (!isCountryEntry(entry)) return `${entry.speciesId}:${entry.field}:${entry.kind}`;
   if (typeof entry.country !== "string") throw new Error(`species ${entry.speciesId}: ${entry.kind} entry without a country`);
   return `${entry.speciesId}:${entry.country}`;
+}
+
+const values = (entry: Mismatch, source: string) => entry.values[source] as Record<string, unknown> | string | string[] | number[] | undefined;
+
+// The COL ids a non-country ids.col entry is about: derive's, its accepted name, Wikidata's, or the name match's usage.
+export function colIdsOf(entry: Mismatch, snapshots: Pick<Snapshots, "col">): string[] {
+  if (entry.field !== "ids.col") return [];
+  if (entry.kind === "not-found") {
+    const id = snapshots.col.matches[entry.scientificName]?.response.usage?.id;
+    if (!id) throw new Error(`col: ${entryKey(entry)}: no usage in the snapshot's match`);
+    return [id];
+  }
+  if (entry.kind !== "identity") return [];
+  const col = values(entry, "col") as string | { id: string; accepted?: { id: string } };
+  const wikidata = (values(entry, "wikidata") ?? []) as string[];
+  return typeof col === "string" ? [col, ...wikidata] : [col.id, ...(col.accepted ? [col.accepted.id] : []), ...wikidata];
+}
+
+// The GBIF keys a non-country ids.gbif entry is about: both sides of an identity conflict, or a variant match's usage.
+export function gbifKeysOf(entry: Mismatch, snapshots: Pick<Snapshots, "gbif">): number[] {
+  if (entry.field !== "ids.gbif") return [];
+  if (entry.kind === "identity") return [(values(entry, "gbif") as { usageKey: number }).usageKey, ...(values(entry, "wikidata") as number[])];
+  if (entry.kind !== "not-found") return [];
+  const key = snapshots.gbif.species[entry.scientificName]?.match.response.usage?.key;
+  if (!key) throw new Error(`gbif: ${entryKey(entry)}: no usage in the snapshot's match`);
+  return [Number(key)];
+}
+
+export const qid = (iri: string) => iri.slice(iri.lastIndexOf("/") + 1);
+
+// The Wikidata items an entry is about: the species' in the snapshot, plus any other taxon holding its base id.
+export function wikidataItemsOf(entry: Mismatch, byName: ReadonlyMap<string, readonly SparqlBinding[]>): string[] {
+  const items = (byName.get(entry.scientificName) ?? []).flatMap((b) => (b.item ? [qid(b.item.value)] : []));
+  return [...new Set([...items, ...Object.keys((entry.values["wikidataItemsWithBaseId"] ?? {}) as object)])];
 }
 
 // Entries by key; throws on a repeated key.

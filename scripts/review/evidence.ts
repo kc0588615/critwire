@@ -10,7 +10,7 @@ import { postSparql, WIKIDATA_ENDPOINT } from "../ingest/wikidata.ts";
 import { gbifTaxonKey, type Snapshots } from "../raw.ts";
 import type { Mismatch, Species } from "../species.ts";
 import {
-  entryKey, isCountryEntry,
+  colIdsOf, entryKey, gbifKeysOf, isCountryEntry, qid, wikidataItemsOf,
   type ColEvidence, type DatasetEvidence, type Evidence, type EvidenceItem, type FacetEvidence, type GbifEvidence,
   type GbifRecord, type GbifSpeciesEvidence, type WikidataStatement,
 } from "./presort.ts";
@@ -31,7 +31,6 @@ const SPARQL_VARS = ["statement", "item", "prop", "value", "rank", "country", "r
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const text = (v: unknown): string | null => (typeof v === "string" && v !== "" && !IUCN.test(v) ? v : null);
-const qid = (iri: string) => iri.slice(iri.lastIndexOf("/") + 1);
 
 // GBIF sometimes answers a valid URL with an empty 404 (first run: an occurrence search; the same URL then 200s), and
 // getJson never retries a 404. A few more tries; a 404 that stays still throws.
@@ -145,32 +144,6 @@ async function fetchColUsage(release: number, id: string): Promise<ColEvidence> 
   }
 }
 
-const values = (entry: Mismatch, source: string) => entry.values[source] as Record<string, unknown> | string | string[] | number[] | undefined;
-
-// The COL ids a non-country ids.col entry is about: derive's, its accepted name, Wikidata's, or the name match's usage.
-function colIdsOf(entry: Mismatch, snapshots: Pick<Snapshots, "col">): string[] {
-  if (entry.field !== "ids.col") return [];
-  if (entry.kind === "not-found") {
-    const id = snapshots.col.matches[entry.scientificName]?.response.usage?.id;
-    if (!id) throw new Error(`col: ${entryKey(entry)}: no usage in the snapshot's match`);
-    return [id];
-  }
-  if (entry.kind !== "identity") return [];
-  const col = values(entry, "col") as string | { id: string; accepted?: { id: string } };
-  const wikidata = (values(entry, "wikidata") ?? []) as string[];
-  return typeof col === "string" ? [col, ...wikidata] : [col.id, ...(col.accepted ? [col.accepted.id] : []), ...wikidata];
-}
-
-// The GBIF keys a non-country ids.gbif entry is about: both sides of an identity conflict, or a variant match's usage.
-function gbifKeysOf(entry: Mismatch, snapshots: Pick<Snapshots, "gbif">): number[] {
-  if (entry.field !== "ids.gbif") return [];
-  if (entry.kind === "identity") return [(values(entry, "gbif") as { usageKey: number }).usageKey, ...(values(entry, "wikidata") as number[])];
-  if (entry.kind !== "not-found") return [];
-  const key = snapshots.gbif.species[entry.scientificName]?.match.response.usage?.key;
-  if (!key) throw new Error(`gbif: ${entryKey(entry)}: no usage in the snapshot's match`);
-  return [Number(key)];
-}
-
 // Label-free (Q1): no label service, rdfs:label or schema:name; items and references stay Q-ids. ?refUrl is read for the
 // range filter below and never stored.
 export function statementsQuery(items: readonly string[]): string {
@@ -230,11 +203,7 @@ function toStatements(bindings: readonly Binding[]): { statements: WikidataState
 
 async function fetchWikidataStatements(entries: readonly Mismatch[], snapshots: Pick<Snapshots, "wikidata">): Promise<Evidence["wikidata"]> {
   const byName = bindingsByName(snapshots.wikidata);
-  const items = new Set<string>();
-  for (const e of entries) {
-    for (const b of byName.get(e.scientificName) ?? []) if (b.item) items.add(qid(b.item.value));
-    for (const q of Object.keys((e.values["wikidataItemsWithBaseId"] ?? {}) as object)) items.add(q);
-  }
+  const items = new Set(entries.flatMap((e) => wikidataItemsOf(e, byName)));
   const query = statementsQuery([...items].sort());
   const r = (await postSparql(query)) as { head?: { vars?: unknown }; results?: { bindings?: unknown } };
   if (JSON.stringify(r.head?.vars) !== JSON.stringify(SPARQL_VARS)) throw new Error(`wikidata: unexpected head.vars ${JSON.stringify(r.head?.vars)}`);
