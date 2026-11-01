@@ -252,6 +252,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q46 | s2 | wrong fact | T0 | "`ST_ClusterWithin` [is a] window function": it's an aggregate (`prokind` a, lab db). The window form is `ST_ClusterWithinWin`, PostGIS 3.4 | fixed | `qa-fixes.ts` |
 | Q47 | s3 | prose | T0 | "A cell with no neighbour wouldn't appear here at all", then says its `count(*)` gives 0. The `LATERAL` count returns a row for it, so it would appear, with 0; that's what the check rests on | fixed | `qa-fixes.ts` |
 | Q48 | s4 | number | T0 | "Differ … by 10⁻¹² at most": `z_norm` at 5 km differs by 1.05 × 10⁻¹² (`s4-moran-sql`, `s4-agree`) | fixed | `qa-fixes.ts` |
+| Q49 | s4 | missing step | T0 | "This block runs when a PostGIS run starts" is the checker's view, and a learner told to roll back (setup, d3) would lose s4's tables. Says to keep its work | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

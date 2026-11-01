@@ -7264,7 +7264,7 @@ band_neighbours | cells | records | shortest_km | longest_km
 
 **Worked example:** the cells, and a check of their geometry.
 
-Points can't be the units for Moran's I: a record has no value to compare with its neighbours', and many records share one spot. So the records are counted into equal-area hexagons over Tasmania's main island (EPSG:3577, Australian Albers), at two cell sizes, and each cell's value is `y = ln(1 + n)`. Its centroid is kept as two plain numbers, `cx` and `cy`, so SQL and PySAL measure distances from the same coordinates. The neighbour rule is a view: two cells of one grid are neighbours when their centroids are within twice the edge length. This block runs when a PostGIS run starts, and its tables stay until the lab data is loaded again. It drops them first, so running it again rebuilds them, and every download that reads them starts with it (§7.3).
+Points can't be the units for Moran's I: a record has no value to compare with its neighbours', and many records share one spot. So the records are counted into equal-area hexagons over Tasmania's main island (EPSG:3577, Australian Albers), at two cell sizes, and each cell's value is `y = ln(1 + n)`. Its centroid is kept as two plain numbers, `cx` and `cy`, so SQL and PySAL measure distances from the same coordinates. The neighbour rule is a view: two cells of one grid are neighbours when their centroids are within twice the edge length. Unlike most blocks, this one keeps its work: run it without a `ROLLBACK`, and its tables stay until the lab data is loaded again. It drops them first, so running it again rebuilds them, and every download that reads them starts with it (§7.3).
 
 ```sql
 -- q: s4-cells
