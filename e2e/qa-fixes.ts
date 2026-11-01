@@ -37,6 +37,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q23", url: "/learn/database-architecture/indexes/", has: "Ask for the records of 2026, 74 of them,", not: "this year's records", from: { file: "site/learn/labs/checked/d3-few-rows.txt", values: ["year >= 2026"] } },
   { q: "Q24", url: "/learn/database-architecture/indexes/", has: "<code>VACUUM</code>, PostgreSQL's housekeeping" },
   { q: "Q25", url: "/learn/database-architecture/transactions/", has: "<code>IS DISTINCT FROM</code> is <code>&lt;&gt;</code> for values that may be <code>NULL</code>" },
+  { q: "Q26", url: "/learn/gis-in-sql/crs/", has: "about 80 at its northern coast", not: "about 81 at its northern coast" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
