@@ -1,7 +1,8 @@
 // The derive pipeline (plan §5, D7), shared by pnpm derive, pnpm build and pnpm gbif:register: read the inputs, derive
 // every output in memory (pure: no network, clock or species.json read), and prove the committed derived files equal it.
 // deriveAll = deriveCore (species, review entries, countries contributions, countries, issued ids) + the lab sample's half
-// (derive/sample.ts). pnpm ingest gbif-sample runs deriveCore alone, so a stale sample never blocks its re-ingest.
+// (derive/sample.ts) + the range listings' half (derive/listings.ts). pnpm ingest gbif-sample and gbif-checklists run
+// deriveCore alone, so a stale sample or listing snapshot never blocks its re-ingest.
 import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatJson, readJson, readOptionalText } from "../json.ts";
@@ -19,6 +20,7 @@ import { deriveCountries, parseOverrides } from "./countries.ts";
 import { assertGbifFresh, checklistKeys, deriveGbif } from "./gbif.ts";
 import { assertNaturalEarthFresh, countriesFile, matchCountries, type CountriesFile, type CountriesResult } from "./naturalearth.ts";
 import { buildRecord } from "./record.ts";
+import { deriveListings, rangeConflictsFile, rangeListingsFile, readListingInputs, type ListingInputs, type ListingsResult } from "./listings.ts";
 import { deriveSample, readLearnInputs, type LearnInputs, type LearnResult } from "./sample.ts";
 import { assertWikidataFresh, bindingsByName, deriveWikidata } from "./wikidata.ts";
 
@@ -50,14 +52,15 @@ export interface CoreResult {
   checklistKeys: Record<string, number[]>;
 }
 
-export interface DeriveInputs extends CoreInputs { learn: LearnInputs }
-export interface DeriveResult extends CoreResult { learn: LearnResult }
+export interface DeriveInputs extends CoreInputs { learn: LearnInputs; listings: ListingInputs }
+export interface DeriveResult extends CoreResult { learn: LearnResult; listings: ListingsResult }
 
 const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+const byEntry = (a: Mismatch, b: Mismatch) => a.speciesId - b.speciesId || byText(a.field, b.field) || byText(a.kind, b.kind) || byText(a.country ?? "", b.country ?? "");
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
 export async function readDeriveInputs(): Promise<DeriveInputs> {
-  return { ...await readCoreInputs(), learn: await readLearnInputs() };
+  return { ...await readCoreInputs(), learn: await readLearnInputs(), listings: await readListingInputs() };
 }
 
 export async function readCoreInputs(): Promise<CoreInputs> {
@@ -73,10 +76,12 @@ export async function readCoreInputs(): Promise<CoreInputs> {
   };
 }
 
-// Everything derive writes or checks: the core, then the lab sample from it. Pure; throws on a stale sample.
+// Everything derive writes or checks: the core, then the lab sample and the range listings from it. Pure; throws on a
+// stale sample or listing snapshot.
 export function deriveAll(inputs: DeriveInputs): DeriveResult {
   const core = deriveCore(inputs);
-  return { ...core, learn: deriveSample(core, inputs.learn) };
+  const listings = deriveListings({ base: inputs.base, core, listings: inputs.listings });
+  return { ...core, learn: deriveSample(core, inputs.learn), listings: { ...listings, conflicts: [...listings.conflicts].sort(byEntry) } };
 }
 
 // Validates every core input and derives the records (sorted by id, values checked by validateRecords), the review entries, the GBIF contributions, the
@@ -117,7 +122,7 @@ export function deriveCore({ base: unsorted, wikidata, col, gbif, naturalearth, 
   validateRecords(records, issued ?? []);
   // validateRecords proved every issued pair is a record's, so the records' pairs are the union (append-only).
   const issuedIds = records.map(({ id, slug }) => ({ id, slug }));
-  entries.sort((a, b) => a.speciesId - b.speciesId || byText(a.field, b.field) || byText(a.kind, b.kind) || byText(a.country ?? "", b.country ?? ""));
+  entries.sort(byEntry);
   const { rows, report: countriesReport } = matchCountries(naturalearth.layers, {
     speciesCodes: records.flatMap((r) => r.range.countriesWithOpenRecords ?? []),
     gbifCodes: Object.keys(gbif.countries),
@@ -128,7 +133,7 @@ export function deriveCore({ base: unsorted, wikidata, col, gbif, naturalearth, 
 }
 
 // Every file pnpm derive writes, with its content and format (canonical: keys sorted, json.ts formatJson).
-export function derivedFiles({ records, entries, contributions, countries, issuedIds, learn }: DeriveResult): { file: URL; value: unknown; canonical: boolean }[] {
+export function derivedFiles({ records, entries, contributions, countries, issuedIds, learn, listings }: DeriveResult): { file: URL; value: unknown; canonical: boolean }[] {
   return [
     { file: speciesFile, value: records, canonical: false },
     { file: mismatchesFile, value: entries, canonical: false },
@@ -136,6 +141,8 @@ export function derivedFiles({ records, entries, contributions, countries, issue
     { file: countriesFile, value: countries, canonical: false },
     { file: issuedIdsFile, value: issuedIds, canonical: false },
     { file: sampleContributionsFile, value: learn.contributions, canonical: true },
+    { file: rangeListingsFile, value: listings.file, canonical: false },
+    { file: rangeConflictsFile, value: listings.conflicts, canonical: false },
   ];
 }
 

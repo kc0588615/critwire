@@ -1,6 +1,7 @@
 // Derives data/species.json, data/review/mismatches.json, data/gbif-derived-dataset/contributions.json,
-// data/countries.json and data/gbif-learn-sample/contributions.json from data/base.json, data/raw/ (gbif-sample
-// included), data/review/country-overrides.json and both targets' registration.json (plan §5, D7; derive/pipeline.ts). Validates every input and computes everything before writing any file.
+// data/countries.json, data/gbif-learn-sample/contributions.json, data/range-listings.json and
+// data/review/range-conflicts.json from data/base.json, data/raw/ (gbif-sample included), data/review/country-overrides.json,
+// data/review/range-curated.json and both targets' registration.json (plan §5, D7; derive/pipeline.ts). Validates every input and computes everything before writing any file.
 // Usage: pnpm derive
 import { mkdir } from "node:fs/promises";
 import { formatJson, writeJson } from "./json.ts";
@@ -16,7 +17,7 @@ for (const { file, value, canonical } of derivedFiles(result)) {
   await mkdir(new URL(".", file), { recursive: true });
   await writeJson(file, value, { canonical });
 }
-const { records, entries, contributions, doi, countries: { rows: countryRows }, countriesReport: cr, learn } = result;
+const { records, entries, contributions, doi, countries: { rows: countryRows }, countriesReport: cr, learn, listings } = result;
 
 // Summary for the PR body.
 const n = records.length;
@@ -56,3 +57,14 @@ if (learn.doi !== null) {
   console.log(`learn-sample DOI ${inputs.learn.registration === null ? "missing" : "stale"}: commit, push, push tag ${tag}, ` +
     "then pnpm gbif:register --target learn-sample");
 }
+const { file: { rows: listingRows }, conflicts, report: lr } = listings;
+console.log(`range-listings: rows ${listingRows.length}, species ${new Set(listingRows.map((r) => r.speciesId)).size}, collapsed ${lr.collapsed}`);
+for (const { source, sourceKey, rows, species } of lr.sources) console.log(`  ${sourceKey} (${source}): rows ${rows}, species ${species}`);
+for (const [reason, count] of Object.entries(lr.excluded)) console.log(`  excluded ${count}: ${reason}`);
+const noRole = Object.entries(lr.dropped.noRole);
+console.log(`  dropped at ingest: no sourceTaxonKey ${lr.dropped.noSourceTaxonKey}, red list ${lr.dropped.redList}, no role ${noRole.reduce((a, [, c]) => a + c, 0)} on ${noRole.length} datasets`);
+for (const [key, count] of noRole) console.log(`    ${key} ${count}`);
+const notFound = conflicts.filter((e) => e.kind === "range-not-found");
+console.log(`  range-conflict ${conflicts.length - notFound.length}, range-not-found ${notFound.length}`);
+const { recordCountries, onListing, mddPresent, mddPresentWithRecords } = lr.agreement;
+console.log(`  agreement: ${onListing} of ${recordCountries} record countries on a listing; ${mddPresentWithRecords} of ${mddPresent} MDD present rows with records`);
