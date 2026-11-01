@@ -8,7 +8,7 @@ For the owner: what a learner's walk through `/learn/` found. Plan and design: `
 
 Result: 81 issues, 79 fixed (SHAs under Issues), 2 listed for you (Q3, Q4, both dead dataset links at their publishers; recommendation: no change). The fixes correct prose (wrong facts: Q46, Q51, Q52, Q57, Q59, Q64, Q67, Q73), add missing steps and definitions, and move three prerequisites (Q76: d1 and g1 need f4; Q77: c1 needs e5). Only two block files changed, comments only (Q62, Q81); no recorded result moved and `/v1` is byte-identical to the baseline.
 
-Commit walked: `20e20bb` (U1a; the final Verification refreshes Pages from `e2e-final/results.json`). Evidence: `/srv/critter-ai/agent-state/missions/critwire-learn-qa/e2e-final/` (Playwright report, `results.json`, 48 screenshots), written by that Verification.
+Commit walked: `92f572e` (the final Verification; Pages are from its `e2e-final/results.json`). Evidence: `/srv/critter-ai/agent-state/missions/critwire-learn-qa/e2e-final/` (Playwright report, `results.json`, 48 screenshots).
 
 Reproduce:
 ```sh
@@ -77,7 +77,7 @@ Dialogs, open over their page:
 | Dialog | Views | Axe | Overflow | `incomplete` |
 |---|---|---|---|---|
 | Schema dialog on f1 | 4 | 0 | 0 | 2 |
-| Lab schema dialog on d3 | 4 | 0 | 0 | 4 |
+| Lab schema dialog on d3 | 4 | 0 | 0 | 2 |
 
 Q2 touched 38 pages (see Axe), so it isn't listed per page.
 
@@ -118,11 +118,11 @@ axe-core 4.14.0, default rules, `axe.run()` on each view after the page's blocks
 | `scrollable-region-focusable` (serious, WCAG 2.1.1) | 1,248 nodes, 188 views, 38 pages (architecture probe): `pre.code` 666, `pre.recorded` 438, `.table-wrap` 118, `figure.diagram` 24, bare `pre` 2 | 0 |
 | every other rule | 0 | 0 |
 
-`incomplete` (axe can't decide, recorded, not asserted): 5,598 nodes over the 196 views. Sample read on map, setup, d1 and data at 1280 light and 375 dark: all `color-contrast`, with "background color could not be determined because it's partially obscured" or "content is too short". Likely cause, inferred, not proven: cells and lines clipped by a scrolling region hide their background from axe (`/learn/data/` shows none at 1280 light and 1,624 at 375 dark, on its table cells). `/learn/data/` is most of the total (3,248 nodes). The same colours pass where axe can decide: 0 contrast violations in either theme.
+`incomplete` (axe can't decide, recorded, not asserted): 5,596 nodes over the 196 views. Sample read on map, setup, d1 and data at 1280 light and 375 dark: all `color-contrast`, with "background color could not be determined because it's partially obscured" or "content is too short". Likely cause, inferred, not proven: cells and lines clipped by a scrolling region hide their background from axe (`/learn/data/` shows none at 1280 light and 1,624 at 375 dark, on its table cells). `/learn/data/` is most of the total (3,248 nodes). The same colours pass where axe can decide: 0 contrast violations in either theme.
 
 ## Labs
 
-47 files. `.ipynb` run by the Method's script, again after U11's lab batch (Q55, Q62, Q81) moved `e3.ipynb` and `e4.ipynb`, so these rows are that run's: only `requirements.txt` plus `ipykernel` and `nbclient`, as `critwire_lab`, under the lab lock. `requirements.txt` sha256: `d5bbe28024cc61d16a57e584dd94fd539c8cc08113899798b4450fd003820ab0`. `.sql` and `.py` results: baseline `learn-check` log (`$S/baseline-learncheck.log`, `$S` = the mission's state folder); the final Verification replaces them. ERROR lines are the ones a lab announces on purpose. The `.ipynb` hashes bind this evidence: if one differs from the final `dist/`, the run is repeated.
+47 files. `.ipynb` run by the Method's script, again after U11's lab batch (Q55, Q62, Q81) moved `e3.ipynb` and `e4.ipynb`, so these rows are that run's: only `requirements.txt` plus `ipykernel` and `nbclient`, as `critwire_lab`, under the lab lock. `requirements.txt` sha256: `d5bbe28024cc61d16a57e584dd94fd539c8cc08113899798b4450fd003820ab0`. `.sql` and `.py` results: the final Verification's two `learn:check` runs, `$S/final-learncheck-1.log` and `$S/final-learncheck-2.log` (`$S` = the mission's state folder), both ok with the same ERROR counts; times are the first run's. ERROR lines are the ones a lab announces on purpose. The `.ipynb` hashes bind this evidence: if one differs from the final `dist/`, the run is repeated.
 
 | File | Kind | How run | Result | sha256 |
 |---|---|---|---|---|
@@ -153,11 +153,11 @@ axe-core 4.14.0, default rules, `axe.run()` on each view after the page's blocks
 | `g7.sql` | psql | `learn:check` downloads stage, fresh load | 0 ERROR line(s), as announced; nothing left | |
 | `s1.sql` | psql | `learn:check` downloads stage, fresh load | 0 ERROR line(s), as announced; nothing left | |
 | `s2.sql` | psql | `learn:check` downloads stage, fresh load | 0 ERROR line(s), as announced; nothing left | |
-| `s2.py` | script | `learn:check` downloads stage, fresh load | python exit 0 (3.2 s); nothing left | |
+| `s2.py` | script | `learn:check` downloads stage, fresh load | python exit 0 (3.1 s); nothing left | |
 | `s3.sql` | psql | `learn:check` downloads stage, fresh load | 0 ERROR line(s), as announced; nothing left | |
-| `s3.py` | script | `learn:check` downloads stage, fresh load | python exit 0 (3.8 s); nothing left | |
+| `s3.py` | script | `learn:check` downloads stage, fresh load | python exit 0 (3.7 s); nothing left | |
 | `s4.sql` | psql | `learn:check` downloads stage, fresh load | 0 ERROR line(s), as announced; nothing left | |
-| `s4.py` | script | `learn:check` downloads stage, fresh load | python exit 0 (4.5 s); nothing left | |
+| `s4.py` | script | `learn:check` downloads stage, fresh load | python exit 0 (4.4 s); nothing left | |
 | `s5.sql` | psql | `learn:check` downloads stage, fresh load | 0 ERROR line(s), as announced; nothing left | |
 | `s5.py` | script | `learn:check` downloads stage, fresh load | python exit 0 (3.9 s); nothing left | |
 | `s6.sql` | psql | `learn:check` downloads stage, fresh load | 0 ERROR line(s), as announced; nothing left | |

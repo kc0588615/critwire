@@ -2,7 +2,7 @@
 mission: critwire-learn-qa
 project: critwire
 branch: agent/critwire-learn-qa
-status: active
+status: done
 started: 2026-11-01 11:16 UTC
 ---
 
@@ -619,5 +619,20 @@ SHOULD-CONSIDER: none
 - 2026-11-01 16:27 UTC: U11: lab batch Q55, Q62, Q81 (comments only), each `QA_FIXES` row seen to fail first. Loop plain: `learn:check` ok, 189 block results unchanged, keys and 27 download shas moved; `checked.json` committed. e3, e4 `.ipynb` hashes moved, so notebooks rerun: 11/11 exit 0, Labs rows updated, hash check empty. typecheck pass, `learn:port --check all` pass, test 754/754, test:db 140/140, plain build pass, e2e 149/149 (11 min). Next: U12.
 - 2026-11-01 16:27 UTC: U12: 006 complete: 79 `fixed` SHAs filled and each resolved to its `Q<n>:` subject, 2 listed with recommendations, 0 queued, 81 rows; 47 Pages rows each with a read unit, every issue but Q2 (38 pages, noted) on its page; 47 Labs rows; hash check empty; `/v1` hashes equal baseline. typecheck pass, `learn:port --check all` pass (538 files). Next: Astra code review.
 - 2026-11-01 16:30 UTC: Astra code review: APPROVE, 0 MUST-FIX, 0 SHOULD-CONSIDER. Plan only, no checks run. Next: final Verification.
+- 2026-11-01 17:15 UTC: Final Verification on `92f572e`: plain build pass; e2e 149/149, 0 flaky, 0 skipped; `learn:check` ok twice (25 `.sql`, 11 `.py`, `checked.json` unchanged); tree clean, hash check empty; typecheck pass, test 754/754, `learn:port --check all` pass (538 files); test:db not needed (no commit after U11 in its paths). 006 refreshed from these runs; 79 SHAs resolve, 0 queued. Next: release.
 
 ## Summary
+
+One learner's pass over all of `/learn/`: 47 pages and 2 dialogs at 1280 and 375 px, light and dark (196 views); all 33 modules read for your level. Full report: `plans/006-learn-qa.md`.
+
+- **Found:** 81 issues; 79 fixed, each with a test or E2E assertion seen to fail first. 2 listed, no action recommended (Q3, Q4: dead dataset links at their publishers).
+- **Wrong facts corrected in prose:** Q46, Q51, Q52, Q57, Q59, Q64, Q67, Q73. No block result moved; what the modules teach didn't change.
+- **Accessibility and layout:** axe 1,248 nodes (38 pages) to 0: scrolling code and tables weren't keyboard-reachable (Q2). d1's sideways scroll at 375 px fixed (Q1). 0 overflow in any view.
+- **Prereqs changed:** d1 and g1 now need f4, c1 needs e5 (Q76, Q77), so the tracks branch at f4, not f3.
+- **Labs:** all 47 downloads run: 25 `.sql`, 11 `.py` by `learn:check` (twice), 11 `.ipynb` in a learner's venv. `/learn/setup/` matches; it now has the Jupyter install line.
+- **Links:** internal all good (47 pages, 126 targets, 22 cross-page fragment links). External: 415; 295 GBIF and 7 other publishers' URLs block this server, GBIF's confirmed via its API, those 7 unconfirmed.
+- **Astra's leftovers:** slugs already covered by the validator (recorded, no test); 6 GBIF dataset-paging tests added, no bug.
+- **Reviews:** Fable APPROVE; Astra architecture APPROVE_WITH_CHANGES (1 MUST-FIX, resolved); Astra code review APPROVE.
+- **Not tested:** Power BI's M and DAX (H6, yours); Docker, EDB and Windows setup routes (no such machine here; the page says so).
+
+Verification on `92f572e`: build pass, E2E 149/149, `learn:check` ok twice, typecheck pass, test 754/754, `learn:port --check all` pass. Artifact: `/srv/critter-ai/agent-state/missions/critwire-learn-qa/e2e-final/`. Reproduce: `pnpm install --frozen-lockfile && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
