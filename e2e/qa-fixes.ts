@@ -31,6 +31,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q17", url: "/learn/database-architecture/star/", has: "<code>ROLLBACK;</code> a star you already built", from: { file: "site/learn/labs/checked/d6-unknown.txt", values: ["fact_records joined to dim_country | 40396"] } },
   { q: "Q18", url: "/learn/database-architecture/keys/", has: "PostgreSQL describes itself in its <strong>catalog</strong>" },
   { q: "Q19", url: "/learn/database-architecture/normalize/", has: "Parquet, a compressed format that stores data column by column" },
+  { q: "Q20", url: "/learn/database-architecture/normalize/", has: "The taxonomy and its own id are from the Catalogue of Life", not: "the outside ids from Wikidata and GBIF", from: { file: "e2e/__snapshots__/d2-provenance.txt", values: ["ids.col | Catalogue of Life"] } },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

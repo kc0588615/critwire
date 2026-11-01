@@ -2578,7 +2578,7 @@ ids.ncbi | Wikidata | CC0 1.0 | 2026-10-20
 … 3 more rows
 ```
 
-The taxonomy is from the Catalogue of Life, the outside ids from Wikidata and GBIF, the country list from GBIF's occurrence search. `ids.iucn` is critwire's own: critwire stores only the animal's IUCN id, never the Red List's data, whose terms don't allow republishing it.
+The taxonomy and its own id are from the Catalogue of Life, the other outside ids from Wikidata and GBIF, the country list from GBIF's occurrence search. `ids.iucn` is critwire's own: critwire stores only the animal's IUCN id, never the Red List's data, whose terms don't allow republishing it.
 
 **Lab:** Is a license a fact about a record or about its dataset? GBIF gives both: every dataset declares a license, and every record carries one. If `dataset_key → license` held, the license would belong in `datasets` (3NF), stored 400 times instead of 40,395.
 1. Test the rule on the records: does any dataset have records under two licenses?
