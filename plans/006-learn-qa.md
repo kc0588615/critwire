@@ -193,7 +193,10 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 
 ## Astra leftovers
 
-Filled by U3.
+| Suggestion | Verdict | Evidence |
+|---|---|---|
+| Safe slug filenames | Covered, no new test | `validateRecords` refuses a slug outside `SLUG`, or all digits (`scripts/species.ts:132`). It runs in `deriveCore` (`scripts/derive/pipeline.ts:115`), which `readBuildInputs` reaches before any write (`scripts/build/inputs.ts:63`), and in `pnpm db:load` (`scripts/load.ts:13`). Test: V2 `scripts/species.test.ts:75` (`../x`, `a/b`, empty, `123`, among others). Second guard: `childFile` (`scripts/build/paths.ts:8`) at the writes (`scripts/build.ts:54-55`), tested by CF1 (`scripts/build/paths.test.ts:11`) |
+| GBIF dataset-facet paging past 300 | Test added, no bug found | `fetchDatasets` now exported; `PG(a)`–`PG(f)` in `scripts/ingest/gbif.test.ts`, against a fixture `fetch`: 305 datasets, exactly 300, a short page, overlapping pages, a total that moves, counts short of the total. All pass on the code as it stood. Each of 7 deliberate breaks of `fetchDatasets` and `toDatasetPage` failed the mode it should (first page or short page ends paging, stops after page 2, `seen` not passed, count check gone, sum check gone, wrong URL stored) |
 
 ## Issues
 

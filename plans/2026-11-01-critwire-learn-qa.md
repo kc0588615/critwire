@@ -447,7 +447,7 @@ Rules for every step. A session reads these, its item, the Architecture sections
     7. A failing notebook (probed 11/11, so not expected) gets an Issues row, `queued` for U11 or `listed`.
   - Checks: `pnpm typecheck`; `git status` shows only 006, plus any `Q<n>` fix, which gets the scoped run the fix rules name. The venv is gone (the fence deletes it). `rm -rf /tmp/critwire-qa`.
 
-- [ ] U3. **Astra's two leftovers** (§6; finding 7). T0: `scripts/ingest/gbif.ts` isn't in the checker's closure, so no key moves.
+- [x] U3. **Astra's two leftovers** (§6; finding 7). T0: `scripts/ingest/gbif.ts` isn't in the checker's closure, so no key moves.
   - Files: `scripts/ingest/gbif.ts`, `scripts/ingest/gbif.test.ts`, 006.
   - Do:
     1. Slugs: re-check §6's citations and record "covered, no test" in 006's Astra leftovers.
@@ -598,5 +598,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 13:11 UTC: U1a: walk spec (49 walks + keyboard), axe-core pin, Q1 (d1 overflow), Q2 (tabindex on scrollers), 006 skeleton. Saw both fail first. typecheck pass, test 748/748, scoped e2e 82/82 (196 views, 0 axe, 0 overflow). Next: U1b.
 - 2026-11-01 13:30 UTC: U1b: prereq `href`s (map, tracks, modules), cross-page fragments (22 links, 11 targets, 0 broken), `QA_FIXES` + dist and origin tests. Each seen to fail on a bad row or broken `dist/`. typecheck pass, scoped e2e 57/57 (196 views), live dry run pass. Next: U2.
 - 2026-11-01 13:40 UTC: U2: 11/11 notebooks exit 0 in a learner's venv (nothing left); 47 Labs rows; setup claims checked, 4 platforms resolve, Intel Mac refused as stated. 415 external links: 111 200, 295 GBIF Cloudflare blocks confirmed via API, 7 other blocks unconfirmed, 2 dead at publishers (Q3, Q4, listed). typecheck pass. Next: U3.
+- 2026-11-01 13:50 UTC: U3: slugs already covered, recorded. `fetchDatasets` exported, 6 paging tests PG(a)–(f) with failure modes first; no bug; 7 mutations each caught. typecheck pass, gbif.test 10/10, habitat.dbtest pass, plain build pass. Next: U4.
 
 ## Summary
