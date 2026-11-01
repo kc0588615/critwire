@@ -2,7 +2,7 @@
 mission: critwire-native-ranges-build
 project: critwire
 branch: agent/critwire-native-ranges-build
-status: active
+status: done
 started: 2026-11-01 20:26 UTC
 ---
 
@@ -696,5 +696,40 @@ SHOULD-CONSIDER: none
 - 2026-11-01 23:35 UTC: S11: `AGENTS.md` (what this is, IUCN ties, commands, files and owners, stale-listing recovery, correcting a curated row, DOI refresh, cost of a species change, refusal harness), 007's line 7 says built, H12 added (`Blocks: nothing`, terms and Wayback disclosed). Typecheck pass, test 811/811, plain build pass, no "add to contracts" line, byte check the 7 lines. E2E not run: no `dist/` byte moved since S10.
 - 2026-11-01 23:31 UTC: Final code review (Astra, `--code origin/main`): APPROVE_WITH_CHANGES, 1 MUST-FIX (H4 test fails on a zero-conflict snapshot), accepted, S12 added; no SHOULD-CONSIDER. No code.
 - 2026-11-01 23:35 UTC: S12: H4 gives each file a sentinel no committed file holds (`STALE`), `entries` and `conflicts` included. Reproduced first: throwaway patch with both committed files and derive's output `[]` gave "Missing expected rejection" on the old test; new test passes that way and on real files; wrong-name mutation fails it, so it still pins each path. Throwaway reverted. Typecheck pass, test 811/811, plain build pass, no "add to contracts" line, byte check the 7 lines. E2E not run: no `dist/` byte moved.
+- 2026-11-01 23:53 UTC: Final Verification on `084f754`: typecheck pass; test 811/811 (Baseline 754); plain build pass, no "add to contracts" line; byte check the 7 lines, `dist-final.sha256` 314; E2E 166/166 (Baseline 149), 0 skipped, 0 flaky, `cmp` silent; refusals R1–R20, 24 cases, 48/48 PASS both modes, tree clean; off-limits diff empty; greps `:0`, `"extinct"` 0; H12 `Blocks: nothing`. Artifacts `$S/e2e/`, `$S/e2e-s*` deleted. Summary written, `status: done`. Release next (rebases on `089f100`, PR #17's merge, re-runs Verification).
 
 ## Summary
+
+**Shipped (release pending, next unit):** `/v1/range-listings.{json,csv,parquet}`, 518 rows on all 76 species, 11 columns, contract frozen in `contracts/v1.json`. Docs section in `site/index.html`, ties in `attribution.json` `notes` and `DATA-LICENSE.md`, `AGENTS.md` updated. Sizes: JSON 189,809 B, CSV 85,684 B, Parquet 12,321 B.
+
+**Rows and species per source:**
+
+| Source | Rows | Species |
+|---|---|---|
+| Mammal Diversity Database (`mdd`) | 400 | 50 |
+| critwire curated (`curated`) | 86 | 26 (46 on 15 amphibians, 40 on 11 turtles) |
+| GBIF checklists, 17 datasets | 32 | 12 |
+
+By origin/presence: `native-or-pre-1500` 364 present, 36 uncertain; `native` 83 present, 8 absent, 1 uncertain; `introduced` 21 present, 4 uncertain, 1 absent. Ingest: 35 role rows on 13 species, 2 collapsed, 1 excluded (GRIIS Australia's blank means). 18 datasets hold a role; 1 yields no published row after that exclusion. `range-not-found` 0.
+
+**Conflicts:** 2, both rows shipped: black rhino in ZA (`native-or-pre-1500`, MDD, vs `introduced`, GRIIS South Africa); axolotl in DE (`introduced` + `absent`, DAISIE, vs `introduced` + `present`, GRIIS Germany). **Conflict gate:** 10 introduced mammal rows, 1 on MDD's list for that species (black rhino). Still under the 20 the gate asks for, so too few to judge.
+
+**Answers applied:** O1 yes, O2 yes, O3 (a). O4, O5 belong to `critwire-learn-range-lessons`; nothing in `dist/learn/` moved. Curated rows publish without review (addendum).
+
+**Deviations from 007** (each edited there, reason under Decisions):
+- Snapshot holds role-dataset rows only; no-role rows are counted per dataset key, metadata fetched for role datasets only.
+- Listings are `deriveAll`'s third half, not in `deriveCore`; `matchCountries` untouched. Cost: `gbif:register`, `review:accept` and `ingest habitat` refuse a stale listing snapshot.
+- `range-curated.json` is a bare array, no `reviewedBy`.
+- `range-not-found` also covers a non-mammal with no curated row.
+- One `range-conflict` per (species, country), every claim in `values.claims`.
+- Docs add `ORDER BY 1, 2` to the conflict query, critwire.com URLs in both queries, and one starter query (jaguar). No meaning change, 007 unchanged.
+
+**Curated rows, disclose:** amphibians read through public Wayback copies of Amphibian Species of the World (live site answers 403 here; noncommercial terms), turtles through Reptile Database (copyright notice vs `cc by` on ChecklistBank). One page per species, bare facts in our own words, no IUCN page read. H12 says so. 46 amphibian rows against an estimated 60: the pages list fewer countries.
+
+**Reviews:** architecture Fable APPROVE_WITH_CHANGES (1 MUST-FIX, resolved); Astra APPROVE. Final code review Astra APPROVE_WITH_CHANGES: 1 MUST-FIX, fixed (S12), no SHOULD-CONSIDER.
+
+**Verification:** on `084f754`, see Log. Artifact: `/srv/critter-ai/agent-state/missions/critwire-native-ranges-build/e2e/` (Playwright report, traces, `results.json`, `range-listings-{1280,375}.png`, `docs-375.png`, `refusals.log`). Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`, then `pnpm exec tsx e2e/range-listings-refusals.ts`.
+
+**Release:** see `## Release`.
+
+**Handoff items left:** H12 (read the curated rows, `Blocks: nothing`). H3 and H6 predate this mission, still waiting on the owner.
