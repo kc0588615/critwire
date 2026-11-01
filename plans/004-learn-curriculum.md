@@ -10564,7 +10564,7 @@ South Australian Museum Adelaide provider for OZCAM | South Australian Museum | 
 **Dialects:**
 - **Excel (Windows):** Excel's 3D Maps (Insert → 3D Map) plots rows by latitude and longitude from the Data Model; a chart title can come from a cell (select the title, type `=` and click the cell), where a formula such as `=B1&": "&TEXT(B2,"#,##0")&" open GBIF records"` writes it.
 - **Tableau:** a map from `Latitude` and `Longitude` as dimensions, not measures (which Tableau would average into one point). A title can insert a field or a calculated field, so it changes with the filters as the measure does; `COUNTD([Dataset Key])` counts datasets.
-- **pandas:** `geopandas.GeoDataFrame` with `points_from_xy(longitude, latitude)` and `.explore()` draws an interactive map; the title is an f-string from the filtered frame's `len()`, and `df.loc[df.license == "CC BY 4.0", "dataset_key"].nunique()` counts the datasets to credit.
+- **pandas:** `geopandas.GeoDataFrame` with `points_from_xy(longitude, latitude)` and `.explore()` draws an interactive map (it needs the `folium` package, not in the course's pins); the title is an f-string from the filtered frame's `len()`, and `df.loc[df.license == "CC BY 4.0", "dataset_key"].nunique()` counts the datasets to credit.
 - **SQL:** `p4-check` writes the title with `||` and `to_char`, and `p4-ex-check` the credits with `count(*) FILTER (WHERE …)`.
 
 ### 5.7 Capstone

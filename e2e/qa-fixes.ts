@@ -83,6 +83,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q65", url: "/learn/power-bi/dax/", has: "as does Seven seas, on its 7 records" },
   { q: "Q66", url: "/learn/power-bi/maps-report/", has: "with p2's <code>Records</code> measure", not: "with p3's <code>Records</code> measure" },
   { q: "Q67", url: "/learn/power-bi/maps-report/", has: "and with no gateway, because they're on a public URL", not: "with no gateway, because the base URL is fixed" },
+  { q: "Q68", url: "/learn/power-bi/maps-report/", has: "it needs the <code>folium</code> package, not in the course's pins" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
