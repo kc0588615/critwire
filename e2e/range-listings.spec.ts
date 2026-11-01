@@ -4,10 +4,12 @@
 // Must find: native-or-pre-1500 vs introduced; native + absent vs introduced + present; introduced + present vs introduced + absent.
 // Must not find: a pair where one row has an area; native vs native-or-pre-1500; uncertain vs introduced.
 // JS and SQL differing on any of them.
-import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { expect, test, type Page } from "@playwright/test";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { rangeConflicts, type ConflictRow, type RangeListing } from "../scripts/derive/listings.ts";
-import { csvRows, distPath, openDuckDB, ORIGIN, repoPath, type DuckDB } from "./helpers.ts";
+import { csvRows, distPath, openDuckDB, ORIGIN, records, repoPath, sqlText, type DuckDB } from "./helpers.ts";
 
 const FILES = ["range-listings.json", "range-listings.csv", "range-listings.parquet"];
 const PARQUET = `read_parquet('${ORIGIN}/v1/range-listings.parquet')`;
@@ -124,6 +126,29 @@ test("E8: the committed snapshots hold only the kept keys, and no red-list datas
   expect(mddRaw).not.toMatch(/iucn|"extinct"/i);
 });
 
+// A published query, as the docs page prints it. The docs name the live origin only.
+async function docsQuery(page: Page, name: string): Promise<string> {
+  expect((await page.goto("/"))?.status()).toBe(200);
+  return (await page.locator(`code[data-query="${name}"]`).textContent())!;
+}
+const LIVE_PARQUET = "https://critwire.com/v1/range-listings.parquet";
+const local = (sql: string) => sql.replaceAll("https://critwire.com", ORIGIN);
+
+test("E9: the conflict query on served Parquet finds exactly the range-conflict entries", async ({ page }) => {
+  const entries = await json<{ speciesId: number; country?: string; kind: string }[]>("data/review/range-conflicts.json");
+  const want = entries.filter((e) => e.kind === "range-conflict").map(({ speciesId, country }) => ({ speciesId, country }));
+  expect(await db.rows(local(await docsQuery(page, "range-conflicts")))).toEqual(want);
+});
+
+test("E10: the agreement query on served Parquet keeps every record country, joined to its listings", async ({ page }) => {
+  const pairs = (await records()).flatMap((s) => (s.range.countriesWithOpenRecords ?? []).map((code) => ({ id: s.id, code })));
+  const listed = (p: { id: number; code: string }) => rows.filter((r) => r.speciesId === p.id && r.country === p.code).length;
+  const found = await db.rows(local(await docsQuery(page, "range-agreement")));
+  expect(pairs.length).toBeGreaterThan(0);
+  expect(found.length).toBe(pairs.reduce((n, p) => n + Math.max(listed(p), 1), 0));
+  expect(found.filter((r) => r.source === null).length).toBe(pairs.filter((p) => listed(p) === 0).length);
+});
+
 const row = (speciesId: number, country: string, origin: ConflictRow["origin"], presence: ConflictRow["presence"], sourceKey: string, area: string | null = null): ConflictRow =>
   ({ speciesId, country, area, origin, presence, sourceKey });
 
@@ -140,4 +165,19 @@ const FIXED_FOUND = [{ speciesId: 1, country: "KE" }, { speciesId: 2, country: "
 
 test("conflict rule on fixed rows: rangeConflicts finds exactly 007's three", () => {
   expect(rangeConflicts(FIXED_ROWS).map(({ speciesId, country }) => ({ speciesId, country }))).toEqual(FIXED_FOUND);
+});
+
+test("conflict rule on fixed rows: the docs' query finds the same three as rangeConflicts", async ({ page }) => {
+  const dir = await mkdtemp(join(tmpdir(), "critwire-conflicts-"));
+  try {
+    const file = join(dir, "fixed.parquet");
+    const values = FIXED_ROWS.map((r) =>
+      `(${r.speciesId}, ${sqlText(r.country)}, ${r.area === null ? "NULL::VARCHAR" : sqlText(r.area)}, ${sqlText(r.origin)}, ${sqlText(r.presence)}, ${sqlText(r.sourceKey)})`);
+    await db.rows(`COPY (SELECT * FROM (VALUES ${values.join(", ")}) AS t(speciesId, country, area, origin, presence, sourceKey)) TO ${sqlText(file)} (FORMAT parquet)`);
+    const query = await docsQuery(page, "range-conflicts");
+    expect(query).toContain(LIVE_PARQUET);
+    expect(await db.rows(query.replaceAll(LIVE_PARQUET, file))).toEqual(FIXED_FOUND);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });

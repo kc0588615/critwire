@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { ARTIFACTS, ORIGIN, records, repoPath } from "./helpers.ts";
 
-const SECTIONS = ["about", "files", "fields", "countries", "licenses", "credits", "cite"];
+const SECTIONS = ["about", "files", "fields", "countries", "range-listings", "licenses", "credits", "cite"];
 const REGISTRATION = repoPath("data/gbif-derived-dataset/registration.json");
 // External links are checked against this list, not fetched (gbif.org returns 403 to bots).
 const HOSTS = new Set([
@@ -51,6 +51,41 @@ test("the countries files: listed, every column described, the NA note, credited
   const credit = page.locator("#credits dt", { hasText: "Natural Earth" }).locator("xpath=following-sibling::dd[1]");
   await expect(credit).toContainText(`Used for ${rows.length} countries`);
   await expect(credit).toContainText("Made with Natural Earth");
+});
+
+test("the range-listings files: listed, every column and value described, the conflict query, no row isn't absence", async ({ page }, info) => {
+  const contract = JSON.parse(await readFile(repoPath("contracts/v1.json"), "utf8")) as { rangeListings: Record<string, { values?: string[] }> };
+  for (const file of ["range-listings.json", "range-listings.csv", "range-listings.parquet"]) {
+    await expect(page.locator(`#files a[href="/v1/${file}"]`)).toBeVisible();
+  }
+  const section = page.locator("section#range-listings");
+  expect(await section.locator("dl > dt code").allTextContents()).toEqual(Object.keys(contract.rangeListings));
+  for (const column of Object.values(contract.rangeListings)) {
+    for (const value of column.values ?? []) await expect(section.locator("dd").getByText(value, { exact: true }).first()).toBeVisible();
+  }
+  await expect(section).toContainText("no row means critwire holds no open listing, never that the animal isn't there");
+  await expect(section).toContainText("critwire's reading of the reference in url");
+  await expect(section.locator('pre > code[data-query="range-conflicts"]')).toBeVisible();
+  await expect(section.locator('pre > code[data-query="range-agreement"][data-example="sql"]')).toBeVisible();
+
+  const notNative = page.locator("#fields dt", { hasText: "range.countriesWithOpenRecords" }).locator("xpath=following-sibling::dd[1]");
+  await expect(notNative).toContainText("not the animal's native range");
+  await expect(notNative.locator('a[href="#range-listings"]')).toBeVisible();
+
+  for (const width of [375, 1280]) {
+    await page.setViewportSize({ width, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${width} px`).toBeLessThanOrEqual(width);
+    const path = `${ARTIFACTS}/range-listings-${width}.png`;
+    await section.screenshot({ path });
+    await info.attach(`range-listings-${width}`, { path, contentType: "image/png" });
+  }
+});
+
+test("the licenses state each IUCN tie the range listings carry", async ({ page }) => {
+  const licenses = page.locator("#licenses");
+  for (const tie of ["Mammal Diversity Database", "Invasive Species Specialist Group", "Checklist of the mammals of Central Asia"]) await expect(licenses).toContainText(tie);
+  const terms = await readFile(repoPath("DATA-LICENSE.md"), "utf8");
+  for (const tie of ["Mammal Diversity Database", "Invasive Species Specialist Group", "Checklist of the mammals of Central Asia", "/v1/range-listings"]) expect(terms, tie).toContain(tie);
 });
 
 test("the credits cite the GBIF derived-dataset DOI", async ({ page }) => {
