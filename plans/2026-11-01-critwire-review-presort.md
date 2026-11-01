@@ -528,6 +528,13 @@ SHOULD-CONSIDER:
 
 ## Release
 
+- Merge: PR #15, merge commit `ca66440` (`ca6644019027036401b83d8a7f141e33abef52f0`). Rebase was a no-op (`origin/main` still `daa896d`); full Verification re-run on `4756f1b` first: typecheck ok, test 748/748, `--check` ok, build ok, `dist/` = Baseline, GUARD empty, e2e 98/98.
+- Deploy's last line: `deploy critwire: live at https://critwire.com`. Live copy at `ca66440`.
+- Smoke: live hashes = `dist-baseline.sha256` (311 files, diff empty); `/`, `/v1/species.json`, `/v1/countries.json`, `/v1/attribution.json`, `/learn/` all 200; release Playwright config 7/7 against https://critwire.com.
+- Logs: `/srv/critter-ai/agent-state/missions/critwire-review-presort/deploy.log`, `release-smoke.log`; Playwright artifact `e2e-final/release/`.
+
+Result: done
+
 ## Decisions
 
 - 2026-11-01, S1: **`writeText` stays out of `scripts/json.ts`.** `json.ts` is in `learn-check.ts`'s import closure, whose sha256s enter every lab key (`scripts/learn/freshness.ts`). Any edit there makes plain `pnpm build` refuse 189 labs as stale; re-stamping with `pnpm learn:check` (tried: 9 min 33 s, ok, results unchanged) moves `checked.json`'s date, which 31 module pages print ("Checked 2026-11-01 …"), so `dist/` stops being byte-identical (a Definition of done item). So `json.ts` and `checked.json` are unchanged; accept's CLI writes its backup with a local temp + rename (S6). The other three S1 exports (`occurrenceSearchQuery` `limit`, `postSparql`, `COL_API`) are outside the closure. Rule for later steps: edit no file in the relative-import closure of `scripts/learn-check.ts` (`importClosure`, `freshness.ts`).
@@ -575,8 +582,11 @@ SHOULD-CONSIDER:
 - 2026-11-01 10:49 UTC: S15. `claimBackup` (`link`, then compare) replaces the backup write; overrides read once. A14–A16 written first, A16 red 1 of 3 on the old CLI. typecheck ok, test 748/748, A16 green 6/6, GUARD empty.
 - 2026-11-01 10:52 UTC: S16. 39:ZM high → medium, reason reworded (294 chars), 005 + proposal regenerated. High country 80 (66 confirming, 14 output-changing). `--check` exit 0, second run byte-identical, typecheck ok, test 748/748, GUARD empty.
 - 2026-11-01 11:03 UTC: Final Verification 1–10 on `bb40e27`: install ok, typecheck ok, test 748/748, `--check` exit 0 (214, 0 pending, counts = S16), build ok, dist = Baseline (311 files, diff empty), GUARD empty, data diff only proposal + `presort/{evidence,recommendations}.json`, status clean, e2e 98/98, no `.pre-accept`. Artifact `<state>/e2e-final/`. Summary written, status done.
+- 2026-11-01 11:40 UTC: Release. Verification re-run on `4756f1b` (test 748/748, e2e 98/98, dist = Baseline); PR #15 merged `ca66440`, deployed; live hashes = Baseline, release smoke 7/7.
 
 ## Summary
+
+**Released:** PR #15 merged (`ca66440`), deployed; live files unchanged (hashes = Baseline), release smoke 7/7.
 
 **Done.** All 214 queue entries have a recommendation, evidence and a confidence level, in `plans/005-review-presort.md`. `pnpm review:presort --check` proves coverage (214 keys, once each, 0 pending).
 
