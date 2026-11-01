@@ -279,11 +279,12 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q73 | c1 | wrong fact | T0 | "From Web … on Windows and Mac": Microsoft's table of Excel versions lists no Web source for Mac, and From Web's dialog takes a URL, not M. p1's route used | fixed | `qa-fixes.ts` |
 | Q74 | p2 | jargon | T0 | DAX carries p2 to p4 and c1, and no page said what it is; p1 does say what M is. Defined at its first use | fixed | `qa-fixes.ts` |
 | Q75 | p2 | jargon | T0 | Slicers carry p2's, p3's and p4's Labs, and no page said what one is. Defined at its first use | fixed | `qa-fixes.ts` |
-| Q76 | d1, g1, and all after | missing prereq | T0 | f4 (CTEs, window functions) was in no other module's closure: tracks branched at f3, yet 18 modules carry CTEs and 15 window functions, from `g1-distance` and `d1-ex` on, and s4, s5, s6 say "read it one CTE at a time". d1 and g1 now need f4; ETL from e2 and Power BI inherit it through d1. f4 keeps its skip check. Also 004 §2 and `course.test.ts`'s closure | fixed | `qa-fixes.ts` |
+| Q76 | d1, g1, and all after | missing prereq | T0 | f4 (CTEs, window functions) was in no other module's closure: tracks branched at f3, yet blocks of 18 modules carry CTEs and of 14 window functions, from `g1-distance` and `d1-ex` on, and s4, s5, s6 say "read it one CTE at a time". d1 and g1 now need f4; ETL from e2 and Power BI inherit it through d1. f4 keeps its skip check. Also 004 §2 and `course.test.ts`'s closure | fixed | `qa-fixes.ts` |
 | Q77 | c1 | missing prereq | T0 | Lab stage "Ship and refresh (e5)" and the Concept rest on e5's schedule to rebuild the feed, but c1 named e4. e5 needs e4, so nothing else is lost | fixed | `qa-fixes.ts` |
 | Q78 | f3 | jargon | T0 | d6 says "the fan-out of Joins, f3", and f3's prose only said "row multiplier"; the word was in a block id alone. The one other use, p2's "multiplies rows", reads as itself | fixed | `qa-fixes.ts` |
 | Q79 | d4 | jargon | T0 | Named as the fix for a duplicated batch, with no word on what it does; g7 and s2 say so where they use it, much later | fixed | `qa-fixes.ts` |
 | Q80 | e1, e2, p1, p4, g3, g7, s6 | prose | T0 | e1, e2, p1, p4 wrote "licence", every other page and the column "license"; g3, g7, s6 "summarise", the rest "summarize". Each now one form. "neighbor" stays where it quotes ArcGIS's labels; `e3-snapshot`'s comment is Q81 | fixed | `qa-fixes.ts` |
+| Q81 | e3 | prose | T2 | `e3-snapshot`'s two comments still say "licence", the last of Q80's split. Change 004's fence and `site/learn/sql/e3-snapshot.py`; comments aren't output, so the result stays | queued | `learn:port --check all`; `learn:check`; a `QA_FIXES` row |
 
 ## Ledger
 
@@ -319,8 +320,7 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | `IS DISTINCT FROM` | d4 (Q25) | |
 | role, membership, owner, PUBLIC, schema, `search_path`, default privileges, RLS | d5 | |
 | measures (additive, semi, non), snowflake, degenerate, drill across, slowly changing types, aggregate fact | d6 | |
-| fan-out | d6 says it explains itself in f3, which calls it "the row multiplier" (block `f3-fan-out`). R7: other uses | d6 |
-| `DISTINCT ON` | no; g7 says what it does where it uses it (keeps each record once) | d4 names it as the fix for a duplicated batch (s2 answers, below) |
+| fan-out | f3 (Q78); d6 links back. p2's "multiplies rows" reads as itself | |
 | `FILTER (WHERE …)`, `LATERAL` beyond f3 | blocks only; `FILTER` reads as itself | d3, d4, d5, d6 |
 | ACL, SQLSTATE, struct | no; the reader's trade | d5, d4, d2 |
 | CRS, ellipsoid, datum, geographic, projected, equal-area, conformal, `geography`, axis order | g1 | |
@@ -335,7 +335,7 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | Darwin Core | s1 (Q41) | d6, in passing |
 | basis of record's seven values, telemetry, fix, recording effort, the wording rule | s1 | |
 | complete spatial randomness, clustered, dispersed, quadrat, VMR, Clark-Evans R, study area, kernel density, bandwidth, DBSCAN, core point, noise | s2 | |
-| `DISTINCT ON` | s2 says it where it uses it (one record per pair of coordinates); answers R2's question | d4 |
+| `DISTINCT ON` | d4 (Q79); g7 and s2 say it again where they use it | |
 | z-score | s2 by use, s4 by definition; s5 agrees (Q43) | |
 | standard error, standard deviation, Poisson, kurtosis | s2, s4 gloss in place or lean on the reader's trade | s2, s4 |
 | weights matrix, binary, distance band, k-nearest, ties, contiguity, rook, queen, spatial lag, island (a unit with no neighbour), k-d tree | s3 | island used in s4's geometry check, with its gloss |
@@ -466,6 +466,34 @@ R3 prereqs read fine as ordered; R7 still owes the verdict on the out-of-closure
 R2 prereqs read fine as ordered; d3's and d6's links back all resolve to what they name. `d5-database` isn't run (`untested`, its reason on the page); read only.
 
 **Finding 8's other site:** `scripts/learn/assemble.ts:190`, "Open it in Jupyter or VS Code, with the environment's Python as its kernel", reads true now that setup installs Jupyter (Q5). No change; nothing queued for U11 from R1.
+
+**R7, the cross-module pass.** Read the ledger, what it points to, and the 18 prose links to earlier modules outside the prereq closure. One throwaway scan, not kept: each term's first home against every module outside that home's descendants, in prose and blocks. Two prereqs were missing (Q76, Q77); the rest read fine.
+
+| Link | Where | Verdict |
+|---|---|---|
+| g2→d3 | Lab: `&&` is "a test the spatial index answers" | Aside; says what it does |
+| g3→d3 | Concept: the outlines' spatial index, `EXPLAIN ANALYZE` to compare | Aside; the point (start from the polygons) stands without it |
+| g4→d3 | Concept: `ST_DWithin` starts with a test an index can answer | Aside; the rule is stated in place |
+| g5→g4 | Concept: a cast hides the column, "met this at Costa Rica's borders" | Aside; g5 states and fixes it itself |
+| g6→g5 | Concept: records just off a simplified coast | Aside |
+| g7→g5 | Lab: a 1:50m outline and a 100 m map draw different coasts | Aside; g3's link beside it is in the closure |
+| s1→f4 | Worked example: `sum(count(*)) OVER ()` | **Missing prereq** (Q76); in the closure now |
+| s2→g5 | Lab: `<->` with `LIMIT 1`; Dialects: GiST | Aside; the Lab says what it finds, and a CTE has no index, as the Dialects say |
+| s3→g5 | Dialects, twice: an index serves k-nearest | Aside |
+| e4→s1 | Concept: a capped sample keeps every bias; Worked example: 1599 "s1 already met it" | Aside; each fact is stated in place. "Already" holds in the map's order |
+| e4→s2, e4→s5 | Worked example: too coarse for the 5 km cells of s2 to s5 | Aside |
+| p1→d5 | Lab: the `learn_powerbi` login, in the optional "your own database" step | Aside; the main route reads critwire.com's files, and the link says where the login comes from |
+| p3→s6 | Check: the record-to-area ratio, by continent | Aside; the sentence says what it shows |
+| p4→e4 | Concept: CC BY asks for credit, CC0 for nothing | Aside; stated in place |
+| p4→s1 | Concept: GPS collars show as dense tracks | Aside |
+| c1→d5 | Removed by Q72 | None left |
+| c1→e5 | Concept and the Lab's "Ship and refresh (e5)" | **Missing prereq** (Q77); in the closure now |
+
+Other uses out of closure, from the scan, each read: g3's and g7's "GiST index" (the reader's trade, and g3 says "spatial index" with its link), g7's and f3's "planner" (read as themselves; f3's a Dialects aside), e2's `SRID 4326` and "buffers" (e2 is outside the GIS track, and a GIS specialist's words; e2 gives the EPSG code with its name), s6's and e3's "normalized" (other senses: effort-normalized, API responses), d6's "privilege" (`COPY`'s server-file privilege, plain). No change.
+
+Same word, two senses, each defined where it's used: `snapshot` (d4, what a statement can see; e3, the whole dataset as of one moment). `idempotent` agrees (d4, e3). Left as written.
+
+All R1 to R6 "R7 owes" items are answered above. Spelling: Q80, Q81. `setup.sql:101`'s comment names a path in the public repo, so it resolves; a boot block, no change proposed. The ledger's numbers agree across modules: devil 2,000 = 1,784 + 188 + 28, and 28 = 12 + 10 + 4 + 2; join 39,396 + 999 = 40,395, and 39,396 + 933 = 40,329; 5 km neighbour counts sum to 1,094; forest and share rows agree with the star. No contradiction left that a fix hasn't taken. No mission names or design-plan section marks on public pages (`grep`, `site/learn/modules` and `pages`).
 
 ## Method
 
