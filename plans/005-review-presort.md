@@ -29,24 +29,24 @@ Terms: **kept** or **excluded** is what derive publishes today with no override.
 
 | Recommendation | high | medium | low | total | changes /v1 |
 |---|---:|---:|---:|---:|---:|
-| keep | 51 | 28 | 19 | 98 | 2 |
-| remove | 34 | 49 | 5 | 88 | 52 |
+| keep | 48 | 31 | 19 | 98 | 2 |
+| remove | 33 | 49 | 6 | 88 | 52 |
 | fix | 14 | 4 | 0 | 18 | n/a |
 | no action | 6 | 1 | 3 | 10 | n/a |
-| **all entries** | 105 | 82 | 27 | 214 | 54 |
+| **all entries** | 101 | 85 | 28 | 214 | 54 |
 
 ## Accept in one go
 
 Two sentences you can reply with:
 
-- **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only` (69 entries). Published countries don't change, and the next release isn't held up.
-- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (85 entries: 69 confirming, 16 output-changing). The output-changing ones hold the next release until the follow-on below is done.
+- **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only` (66 entries). Published countries don't change, and the next release isn't held up.
+- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (81 entries: 66 confirming, 15 output-changing). The output-changing ones hold the next release until the follow-on below is done.
 
 Any other selection works too: `pnpm review:accept --ids 25:DE,25:RU`, or `--confidence medium` for medium and higher. The command copies the chosen proposals into `data/review/country-overrides.json` and runs `pnpm derive`. Non-country entries can't be accepted this way; their fixes are separate work.
 
-Confirming, high (69): `15:DE,17:ID,17:US,20:ML,20:MR,20:NL,20:SD,20:SG,20:SN,21:DE,24:BN,24:IN,25:BD,25:DK,25:MW,25:RU,25:SE,26:MX,28:BT,28:LA,28:VN,29:DE,36:VE,41:CD,41:CM,41:GN,41:GQ,50:DE,51:HN,51:SR,52:DE,52:GT,52:SR,56:BE,56:GH,56:GW,56:NU,56:RU,57:AO,57:BF,57:GH,57:NE,57:SD,57:ZW,58:AO,58:DZ,58:EG,58:IR,58:NG,60:US,64:AO,64:NG,64:SS,64:TD,65:CD,65:CF,65:MZ,65:UG,66:DE,66:MW,66:NG,66:RW,68:US,69:NE,69:TD,70:CO,71:DE,72:PE,72:UY`
+Confirming, high (66): `15:DE,17:ID,17:US,20:ML,20:MR,20:NL,20:SG,20:SN,21:DE,24:BN,24:IN,25:BD,25:DK,25:MW,25:RU,25:SE,26:MX,28:BT,28:LA,28:VN,29:DE,36:VE,41:CD,41:CM,41:GN,41:GQ,50:DE,51:HN,51:SR,52:DE,52:GT,52:SR,56:BE,56:GH,56:GW,56:NU,56:RU,57:AO,57:BF,57:GH,57:NE,57:SD,57:ZW,58:DZ,58:EG,58:IR,58:NG,60:US,64:AO,64:NG,64:SS,64:TD,65:CD,65:CF,65:MZ,65:UG,66:DE,66:MW,66:NG,66:RW,68:US,69:NE,70:CO,71:DE,72:PE,72:UY`
 
-Output-changing, high (16): `28:BE,29:US,39:ZM,40:US,43:US,48:US,52:MX,54:SR,56:DE,56:SE,56:SS,64:SD,69:US,6:US,70:US,74:CA`
+Output-changing, high (15): `28:BE,29:US,39:ZM,40:US,43:US,48:US,52:MX,54:SR,56:DE,56:SE,56:SS,64:SD,69:US,6:US,70:US`
 
 Non-country fixes, high (20, not covered by accept): `12:ids.iucn:iucn-id,15:ids.iucn:iucn-id,17:ids.iucn:iucn-id,18:ids.iucn:iucn-id,19:ids.gbif:identity,19:ids.iucn:iucn-id,1:ids.gbif:synonym-info,1:ids.ncbi:not-found,20:ids.iucn:iucn-id,21:ids.iucn:iucn-id,22:ids.iucn:iucn-id,47:range.countriesWithOpenRecords:no-records,4:ids.iucn:iucn-id,55:ids.gbif:synonym-info,59:ids.col:identity,63:ids.gbif:synonym-info,70:ids.gbif:synonym-info,73:ids.col:identity,9:ids.col:identity,9:ids.gbif:identity`
 
@@ -146,8 +146,8 @@ Species that could lose every published country:
   - [Museu de Ciències Naturals de Barcelona: MCNB-Cord](https://www.gbif.org/dataset/71d58564-f762-11e1-a439-00145eb45e9a) · Museu de Ciències Naturals de Barcelona · 1 record
 - **Records shown** (1 of 1):
   - [858408459](https://www.gbif.org/occurrence/858408459) · PRESERVED_SPECIMEN · no date · -10.333333, -53.2 ±3,227,250 m · MCNB · issues: CONTINENT_INVALID
-- **Recommendation:** remove · **medium** · confirming
-- **Why:** Undated MCNB specimen with no locality; its coordinates carry 3,227 km uncertainty, so they name only the country. Nothing documents an animal in Brazil, and COL's list is Asian only. Likely misplaced, though the record doesn't say so itself.
+- **Recommendation:** remove · **low** · confirming
+- **Why:** Undated MCNB specimen with no locality; its coordinates carry 3,227 km uncertainty, so they name only the country. COL's list is Asian only. A kept or misplaced animal can't be told from a free one here. Too thin to call, so it stays excluded.
 - **Cites:** [gbif:occurrence:858408459](https://www.gbif.org/occurrence/858408459), [gbif:dataset:71d58564-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/71d58564-f762-11e1-a439-00145eb45e9a), [col:4JZ39](https://www.checklistbank.org/dataset/316595/taxon/4JZ39)
 
 #### 4:CD · country-captive-suspect (blocking, excluded)
@@ -784,8 +784,8 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [1987033334](https://www.gbif.org/occurrence/1987033334) · PRESERVED_SPECIMEN · 1907-11 · 17.37198, 35.912109 ±526,586 m · EASTERN SUDAN · UMMZ · issues: CONTINENT_INVALID · remarks: S-488
   - [1987167601](https://www.gbif.org/occurrence/1987167601) · PRESERVED_SPECIMEN · no date · 15.529015, 32.547283 ±63,496 m · VIC OF KHARTOUM · Khartoum province · UMMZ · issues: CONTINENT_INVALID · remarks: BORN SPRING 61 CARAPACE 4.5-5.0 INCHES TANK
-- **Recommendation:** keep · **high** · confirming
-- **Why:** UMMZ specimen, 1907, "Eastern Sudan", no captive sign, and COL's distribution names Sudan. The other UMMZ record, near Khartoum, says "born spring 61" and "tank", so it's a kept animal; the 1907 one carries this.
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** UMMZ specimen, 1907, "Eastern Sudan", no captive sign, and COL's distribution names Sudan, but a region is no field locality. The other UMMZ record, near Khartoum, says "born spring 61" and "tank", so it's a kept animal.
 - **Cites:** [gbif:occurrence:1987033334](https://www.gbif.org/occurrence/1987033334), [gbif:occurrence:1987167601](https://www.gbif.org/occurrence/1987167601), [gbif:dataset:8e479b8f-ac16-4bed-a11a-bc7e27c31663](https://www.gbif.org/dataset/8e479b8f-ac16-4bed-a11a-bc7e27c31663), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:SG · country-captive-suspect (blocking, excluded)
@@ -1489,7 +1489,7 @@ Species that could lose every published country:
   - [3315048659](https://www.gbif.org/occurrence/3315048659) · PRESERVED_SPECIMEN · no date · 56.964846, 9.632483 · unnamed locality · NHMD · remarks: Artsbestemmelsen er ikke sikker. Halespids med lange hår. Uden oplysninger, nummeret/indført i forbindelse med udlån til "Museum Europa", Nationalmuseet, april 1993.
   - [3315051752](https://www.gbif.org/occurrence/3315051752) · PRESERVED_SPECIMEN · no date · 56.964846, 9.632483 · unnamed locality · NHMD · remarks: Antageligfra Landbohøjskolen (Boas). Mærket "1940". Har været opstillet.
 - **Recommendation:** remove · **medium** · output-changing
-- **Why:** Three undated NHMD objects, "unnamed locality", coordinates near the middle of Denmark. Remarks: "presumably from the Agricultural College", or identification "not certain", loaned for exhibition. They document no animal in Denmark, but don't say where it lived.
+- **Why:** Three undated NHMD objects, "unnamed locality", coordinates near the middle of Denmark. Remarks (Danish, translated): "presumably from the Agricultural College", identification "not certain", loaned for exhibition. No animal documented in Denmark, but no place of origin either.
 - **Cites:** [gbif:occurrence:3315035822](https://www.gbif.org/occurrence/3315035822), [gbif:occurrence:3315048659](https://www.gbif.org/occurrence/3315048659), [gbif:occurrence:3315051752](https://www.gbif.org/occurrence/3315051752), [gbif:dataset:78b270c5-a5fe-4f1d-b87e-eb0dd7b7ae02](https://www.gbif.org/dataset/78b270c5-a5fe-4f1d-b87e-eb0dd7b7ae02), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:LA · country-borderline (review, kept)
@@ -2246,7 +2246,7 @@ Species that could lose every published country:
 - **Records shown** (1 of 1):
   - [5146966343](https://www.gbif.org/occurrence/5146966343) · PRESERVED_SPECIMEN · no date · 15.4389, -85.10798 ±4,936 m · ca. 45 mi up Rio Platano, La Mosquitia · Gracias a Dios · MVZ · issues: TAXON_MATCH_HIGHERRANK · remarks: FR. SAN DIEGO ZOO
 - **Recommendation:** keep · **medium** · confirming
-- **Why:** MVZ specimen, field locality about 45 mi up the Río Plátano, but its remark says "from San Diego Zoo": a zoo animal with a wild origin. COL lists Middle America. Conflicting signals in one record, so not high.
+- **Why:** MVZ specimen, field locality about 45 mi up the Río Plátano, but its remark says "FR. SAN DIEGO ZOO": a zoo animal with a wild origin. COL lists Middle America. Conflicting signals in one record, so not high.
 - **Cites:** [gbif:occurrence:5146966343](https://www.gbif.org/occurrence/5146966343), [gbif:dataset:0daed095-478a-4af6-abf5-18acb790fbb2](https://www.gbif.org/dataset/0daed095-478a-4af6-abf5-18acb790fbb2), [col:N5F8](https://www.checklistbank.org/dataset/316595/taxon/N5F8)
 
 #### 54:MX · country-borderline (review, kept)
@@ -2412,8 +2412,8 @@ Species that could lose every published country:
   - [Collections and observation data National Museum of Natural History Luxembourg](https://www.gbif.org/dataset/962f59bc-f762-11e1-a439-00145eb45e9a) · National Museum of Natural History Luxembourg · 1 record
 - **Records shown** (1 of 1):
   - [2417942385](https://www.gbif.org/occurrence/2417942385) · PRESERVED_SPECIMEN · 1899-12 · 48.9302, 5.0763 · Unknown · issues: COUNTRY_DERIVED_FROM_COORDINATES
-- **Recommendation:** remove · **medium** · confirming
-- **Why:** Luxembourg museum specimen, 1899, locality "Unknown", so the coordinates in Meuse rest on no stated place. COL says Africa. Likely misplaced, though the record doesn't say so itself.
+- **Recommendation:** remove · **low** · confirming
+- **Why:** Luxembourg museum specimen, 1899, locality "Unknown", so the coordinates in Meuse rest on no stated place. COL says Africa. A kept or misplaced animal can't be told from a free one here. Too thin to call, so it stays excluded.
 - **Cites:** [gbif:occurrence:2417942385](https://www.gbif.org/occurrence/2417942385), [gbif:dataset:962f59bc-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/962f59bc-f762-11e1-a439-00145eb45e9a), [col:4C92G](https://www.checklistbank.org/dataset/316595/taxon/4C92G)
 
 #### 56:GH · country-borderline (review, kept)
@@ -2808,8 +2808,8 @@ Species that could lose every published country:
   - [SUI Vertebrate Collection](https://www.gbif.org/dataset/04169fce-7d4f-41f7-9dff-245960f5b59e) · University of Iowa Museum of Natural History · 1 record
 - **Records shown** (1 of 1):
   - [1325910706](https://www.gbif.org/occurrence/1325910706) · PRESERVED_SPECIMEN · 1913-04 · -12.5783, 13.40722 ±10,379 m · Benguela · SUI
-- **Recommendation:** keep · **high** · confirming
-- **Why:** SUI specimen, 1913, locality Benguela, 10 km uncertainty, no captive sign; COL lists Africa.
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** SUI specimen, 1913, locality Benguela, a city, 10 km uncertainty, no captive sign. COL lists Africa, but a city name doesn't show where the animal lived.
 - **Cites:** [gbif:occurrence:1325910706](https://www.gbif.org/occurrence/1325910706), [gbif:dataset:04169fce-7d4f-41f7-9dff-245960f5b59e](https://www.gbif.org/dataset/04169fce-7d4f-41f7-9dff-245960f5b59e), [col:9BTZ](https://www.checklistbank.org/dataset/316595/taxon/9BTZ)
 
 #### 58:AU · country-captive-suspect (review, kept)
@@ -3713,8 +3713,8 @@ Species that could lose every published country:
   - [AMNH Mammal Collections](https://www.gbif.org/dataset/96ca66b4-f762-11e1-a439-00145eb45e9a) · American Museum of Natural History · 1 record
 - **Records shown** (1 of 1):
   - [859508226](https://www.gbif.org/occurrence/859508226) · PRESERVED_SPECIMEN · 1938-01 · 5.98, -79.8 · AMNH · establishment: native · issues: COUNTRY_DERIVED_FROM_COORDINATES, TAXON_MATCH_HIGHERRANK
-- **Recommendation:** remove · **low** · confirming
-- **Why:** AMNH specimen, January 1938, no locality, establishmentMeans "native", coordinates 5.98, -79.80 at sea south of Panama. The field and the coordinates conflict with COL's "Africa"; a data error is likely but not proven, so it stays excluded.
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** AMNH specimen, 1938, no locality, establishmentMeans "native", coordinates 5.98, -79.80 at sea south of Panama. A land animal at sea is misplaced or misidentified, and COL says Africa, but the record doesn't say so. Same pattern as 50:MX.
 - **Cites:** [gbif:occurrence:859508226](https://www.gbif.org/occurrence/859508226), [gbif:dataset:96ca66b4-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/96ca66b4-f762-11e1-a439-00145eb45e9a), [col:45LTS](https://www.checklistbank.org/dataset/316595/taxon/45LTS)
 
 #### 69:SN · country-borderline (review, kept)
@@ -3747,8 +3747,8 @@ Species that could lose every published country:
   - [LACM Vertebrate Collection](https://www.gbif.org/dataset/7a25f7aa-03fb-4322-aaeb-66719e1a9527) · Natural History Museum of Los Angeles County · 1 record
 - **Records shown** (1 of 1):
   - [1065343215](https://www.gbif.org/occurrence/1065343215) · PRESERVED_SPECIMEN · no date · 17.18, 21.59 ±90,043 m · Fada · LACM · establishment: native · remarks: skull length 28 cm
-- **Recommendation:** keep · **high** · confirming
-- **Why:** LACM specimen, no year, field locality Fada, establishmentMeans native, no captive sign; COL says Africa. GBIF now returns 1 record, the snapshot 2.
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** LACM specimen, no year, locality Fada, a town, coordinates to 90 km, establishmentMeans native, no captive sign. COL says Africa, but a town and no date don't show where the animal lived. GBIF now returns 1 record, the snapshot 2.
 - **Cites:** [gbif:occurrence:1065343215](https://www.gbif.org/occurrence/1065343215), [gbif:dataset:7a25f7aa-03fb-4322-aaeb-66719e1a9527](https://www.gbif.org/dataset/7a25f7aa-03fb-4322-aaeb-66719e1a9527), [col:45LTS](https://www.checklistbank.org/dataset/316595/taxon/45LTS)
 
 #### 69:US · country-captive-suspect (review, kept)
@@ -4016,8 +4016,8 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [1211766094](https://www.gbif.org/occurrence/1211766094) · PRESERVED_SPECIMEN · no date · 45.38681, -75.70644 · Colony at Ottawa · Ontario · ROM
   - [1211766173](https://www.gbif.org/occurrence/1211766173) · PRESERVED_SPECIMEN · no date · 45.38681, -75.70644 · Colony at Ottawa · Ontario · ROM
-- **Recommendation:** remove · **high** · output-changing
-- **Why:** Two ROM specimens, no year, locality "Colony at Ottawa": a kept colony by the records' own words. They're every counted record here. COL says Middle America.
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two ROM specimens, no year, locality "Colony at Ottawa": the word points to a kept laboratory colony, but neither record says captive or names a keeper. They're every counted record here. COL says Middle America.
 - **Cites:** [gbif:occurrence:1211766094](https://www.gbif.org/occurrence/1211766094), [gbif:occurrence:1211766173](https://www.gbif.org/occurrence/1211766173), [gbif:dataset:c287bcb5-ee4a-456f-86b6-dae0e6fe7958](https://www.gbif.org/dataset/c287bcb5-ee4a-456f-86b6-dae0e6fe7958), [col:CQ4M](https://www.checklistbank.org/dataset/316595/taxon/CQ4M)
 
 #### 74:DE · country-captive-suspect (review, kept)

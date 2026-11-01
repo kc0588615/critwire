@@ -15,7 +15,7 @@
     "speciesId": 4,
     "country": "BR",
     "action": "remove",
-    "reason": "Undated MCNB specimen with no locality; its coordinates carry 3,227 km uncertainty, so they name only the country. Nothing documents an animal in Brazil, and COL's list is Asian only. Likely misplaced, though the record doesn't say so itself."
+    "reason": "Undated MCNB specimen with no locality; its coordinates carry 3,227 km uncertainty, so they name only the country. COL's list is Asian only. A kept or misplaced animal can't be told from a free one here. Too thin to call, so it stays excluded."
   },
   {
     "speciesId": 4,
@@ -171,7 +171,7 @@
     "speciesId": 20,
     "country": "SD",
     "action": "keep",
-    "reason": "UMMZ specimen, 1907, \"Eastern Sudan\", no captive sign, and COL's distribution names Sudan. The other UMMZ record, near Khartoum, says \"born spring 61\" and \"tank\", so it's a kept animal; the 1907 one carries this."
+    "reason": "UMMZ specimen, 1907, \"Eastern Sudan\", no captive sign, and COL's distribution names Sudan, but a region is no field locality. The other UMMZ record, near Khartoum, says \"born spring 61\" and \"tank\", so it's a kept animal."
   },
   {
     "speciesId": 20,
@@ -363,7 +363,7 @@
     "speciesId": 28,
     "country": "DK",
     "action": "remove",
-    "reason": "Three undated NHMD objects, \"unnamed locality\", coordinates near the middle of Denmark. Remarks: \"presumably from the Agricultural College\", or identification \"not certain\", loaned for exhibition. They document no animal in Denmark, but don't say where it lived."
+    "reason": "Three undated NHMD objects, \"unnamed locality\", coordinates near the middle of Denmark. Remarks (Danish, translated): \"presumably from the Agricultural College\", identification \"not certain\", loaned for exhibition. No animal documented in Denmark, but no place of origin either."
   },
   {
     "speciesId": 28,
@@ -573,7 +573,7 @@
     "speciesId": 54,
     "country": "HN",
     "action": "keep",
-    "reason": "MVZ specimen, field locality about 45 mi up the Río Plátano, but its remark says \"from San Diego Zoo\": a zoo animal with a wild origin. COL lists Middle America. Conflicting signals in one record, so not high."
+    "reason": "MVZ specimen, field locality about 45 mi up the Río Plátano, but its remark says \"FR. SAN DIEGO ZOO\": a zoo animal with a wild origin. COL lists Middle America. Conflicting signals in one record, so not high."
   },
   {
     "speciesId": 54,
@@ -621,7 +621,7 @@
     "speciesId": 56,
     "country": "FR",
     "action": "remove",
-    "reason": "Luxembourg museum specimen, 1899, locality \"Unknown\", so the coordinates in Meuse rest on no stated place. COL says Africa. Likely misplaced, though the record doesn't say so itself."
+    "reason": "Luxembourg museum specimen, 1899, locality \"Unknown\", so the coordinates in Meuse rest on no stated place. COL says Africa. A kept or misplaced animal can't be told from a free one here. Too thin to call, so it stays excluded."
   },
   {
     "speciesId": 56,
@@ -747,7 +747,7 @@
     "speciesId": 58,
     "country": "AO",
     "action": "keep",
-    "reason": "SUI specimen, 1913, locality Benguela, 10 km uncertainty, no captive sign; COL lists Africa."
+    "reason": "SUI specimen, 1913, locality Benguela, a city, 10 km uncertainty, no captive sign. COL lists Africa, but a city name doesn't show where the animal lived."
   },
   {
     "speciesId": 58,
@@ -1011,7 +1011,7 @@
     "speciesId": 69,
     "country": "PA",
     "action": "remove",
-    "reason": "AMNH specimen, January 1938, no locality, establishmentMeans \"native\", coordinates 5.98, -79.80 at sea south of Panama. The field and the coordinates conflict with COL's \"Africa\"; a data error is likely but not proven, so it stays excluded."
+    "reason": "AMNH specimen, 1938, no locality, establishmentMeans \"native\", coordinates 5.98, -79.80 at sea south of Panama. A land animal at sea is misplaced or misidentified, and COL says Africa, but the record doesn't say so. Same pattern as 50:MX."
   },
   {
     "speciesId": 69,
@@ -1023,7 +1023,7 @@
     "speciesId": 69,
     "country": "TD",
     "action": "keep",
-    "reason": "LACM specimen, no year, field locality Fada, establishmentMeans native, no captive sign; COL says Africa. GBIF now returns 1 record, the snapshot 2."
+    "reason": "LACM specimen, no year, locality Fada, a town, coordinates to 90 km, establishmentMeans native, no captive sign. COL says Africa, but a town and no date don't show where the animal lived. GBIF now returns 1 record, the snapshot 2."
   },
   {
     "speciesId": 69,
@@ -1089,7 +1089,7 @@
     "speciesId": 74,
     "country": "CA",
     "action": "remove",
-    "reason": "Two ROM specimens, no year, locality \"Colony at Ottawa\": a kept colony by the records' own words. They're every counted record here. COL says Middle America."
+    "reason": "Two ROM specimens, no year, locality \"Colony at Ottawa\": the word points to a kept laboratory colony, but neither record says captive or names a keeper. They're every counted record here. COL says Middle America."
   },
   {
     "speciesId": 74,

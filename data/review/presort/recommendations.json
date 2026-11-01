@@ -33,8 +33,8 @@
   {
     "key": "4:BR",
     "recommendation": "remove",
-    "confidence": "medium",
-    "reason": "Undated MCNB specimen with no locality; its coordinates carry 3,227 km uncertainty, so they name only the country. Nothing documents an animal in Brazil, and COL's list is Asian only. Likely misplaced, though the record doesn't say so itself.",
+    "confidence": "low",
+    "reason": "Undated MCNB specimen with no locality; its coordinates carry 3,227 km uncertainty, so they name only the country. COL's list is Asian only. A kept or misplaced animal can't be told from a free one here. Too thin to call, so it stays excluded.",
     "cite": [
       "gbif:occurrence:858408459",
       "gbif:dataset:71d58564-f762-11e1-a439-00145eb45e9a",
@@ -504,8 +504,8 @@
   {
     "key": "56:FR",
     "recommendation": "remove",
-    "confidence": "medium",
-    "reason": "Luxembourg museum specimen, 1899, locality \"Unknown\", so the coordinates in Meuse rest on no stated place. COL says Africa. Likely misplaced, though the record doesn't say so itself.",
+    "confidence": "low",
+    "reason": "Luxembourg museum specimen, 1899, locality \"Unknown\", so the coordinates in Meuse rest on no stated place. COL says Africa. A kept or misplaced animal can't be told from a free one here. Too thin to call, so it stays excluded.",
     "cite": [
       "gbif:occurrence:2417942385",
       "gbif:dataset:962f59bc-f762-11e1-a439-00145eb45e9a",
@@ -618,8 +618,8 @@
   {
     "key": "69:PA",
     "recommendation": "remove",
-    "confidence": "low",
-    "reason": "AMNH specimen, January 1938, no locality, establishmentMeans \"native\", coordinates 5.98, -79.80 at sea south of Panama. The field and the coordinates conflict with COL's \"Africa\"; a data error is likely but not proven, so it stays excluded.",
+    "confidence": "medium",
+    "reason": "AMNH specimen, 1938, no locality, establishmentMeans \"native\", coordinates 5.98, -79.80 at sea south of Panama. A land animal at sea is misplaced or misidentified, and COL says Africa, but the record doesn't say so. Same pattern as 50:MX.",
     "cite": [
       "gbif:occurrence:859508226",
       "gbif:dataset:96ca66b4-f762-11e1-a439-00145eb45e9a",
@@ -889,7 +889,7 @@
     "key": "28:DK",
     "recommendation": "remove",
     "confidence": "medium",
-    "reason": "Three undated NHMD objects, \"unnamed locality\", coordinates near the middle of Denmark. Remarks: \"presumably from the Agricultural College\", or identification \"not certain\", loaned for exhibition. They document no animal in Denmark, but don't say where it lived.",
+    "reason": "Three undated NHMD objects, \"unnamed locality\", coordinates near the middle of Denmark. Remarks (Danish, translated): \"presumably from the Agricultural College\", identification \"not certain\", loaned for exhibition. No animal documented in Denmark, but no place of origin either.",
     "cite": [
       "gbif:occurrence:3315035822",
       "gbif:occurrence:3315048659",
@@ -1556,8 +1556,8 @@
   {
     "key": "20:SD",
     "recommendation": "keep",
-    "confidence": "high",
-    "reason": "UMMZ specimen, 1907, \"Eastern Sudan\", no captive sign, and COL's distribution names Sudan. The other UMMZ record, near Khartoum, says \"born spring 61\" and \"tank\", so it's a kept animal; the 1907 one carries this.",
+    "confidence": "medium",
+    "reason": "UMMZ specimen, 1907, \"Eastern Sudan\", no captive sign, and COL's distribution names Sudan, but a region is no field locality. The other UMMZ record, near Khartoum, says \"born spring 61\" and \"tank\", so it's a kept animal.",
     "cite": [
       "gbif:occurrence:1987033334",
       "gbif:occurrence:1987167601",
@@ -1884,7 +1884,7 @@
     "key": "54:HN",
     "recommendation": "keep",
     "confidence": "medium",
-    "reason": "MVZ specimen, field locality about 45 mi up the Río Plátano, but its remark says \"from San Diego Zoo\": a zoo animal with a wild origin. COL lists Middle America. Conflicting signals in one record, so not high.",
+    "reason": "MVZ specimen, field locality about 45 mi up the Río Plátano, but its remark says \"FR. SAN DIEGO ZOO\": a zoo animal with a wild origin. COL lists Middle America. Conflicting signals in one record, so not high.",
     "cite": [
       "gbif:occurrence:5146966343",
       "gbif:dataset:0daed095-478a-4af6-abf5-18acb790fbb2",
@@ -2093,8 +2093,8 @@
   {
     "key": "58:AO",
     "recommendation": "keep",
-    "confidence": "high",
-    "reason": "SUI specimen, 1913, locality Benguela, 10 km uncertainty, no captive sign; COL lists Africa.",
+    "confidence": "medium",
+    "reason": "SUI specimen, 1913, locality Benguela, a city, 10 km uncertainty, no captive sign. COL lists Africa, but a city name doesn't show where the animal lived.",
     "cite": [
       "gbif:occurrence:1325910706",
       "gbif:dataset:04169fce-7d4f-41f7-9dff-245960f5b59e",
@@ -2382,8 +2382,8 @@
   {
     "key": "69:TD",
     "recommendation": "keep",
-    "confidence": "high",
-    "reason": "LACM specimen, no year, field locality Fada, establishmentMeans native, no captive sign; COL says Africa. GBIF now returns 1 record, the snapshot 2.",
+    "confidence": "medium",
+    "reason": "LACM specimen, no year, locality Fada, a town, coordinates to 90 km, establishmentMeans native, no captive sign. COL says Africa, but a town and no date don't show where the animal lived. GBIF now returns 1 record, the snapshot 2.",
     "cite": [
       "gbif:occurrence:1065343215",
       "gbif:dataset:7a25f7aa-03fb-4322-aaeb-66719e1a9527",
@@ -2471,8 +2471,8 @@
   {
     "key": "74:CA",
     "recommendation": "remove",
-    "confidence": "high",
-    "reason": "Two ROM specimens, no year, locality \"Colony at Ottawa\": a kept colony by the records' own words. They're every counted record here. COL says Middle America.",
+    "confidence": "medium",
+    "reason": "Two ROM specimens, no year, locality \"Colony at Ottawa\": the word points to a kept laboratory colony, but neither record says captive or names a keeper. They're every counted record here. COL says Middle America.",
     "cite": [
       "gbif:occurrence:1211766094",
       "gbif:occurrence:1211766173",
