@@ -3,10 +3,14 @@
 // isn't filled, throws.
 import type { RangeStatus, Species } from "../species.ts";
 import type { Attribution } from "./attribution.ts";
+import { CURATED_SOURCE, MDD_SOURCE } from "../derive/listings.ts";
 import { esc, fillSlots, licenseLink, link } from "./html.ts";
-import { NATURAL_EARTH } from "./sources.ts";
+import { GBIF_CHECKLISTS, NATURAL_EARTH } from "./sources.ts";
 
 export const docsTemplate = new URL("../../site/index.html", import.meta.url);
+
+// What a credited source's count counts, where it isn't records.
+const UNITS: Readonly<Record<string, string>> = { [NATURAL_EARTH]: "countries", [GBIF_CHECKLISTS]: "rows", [MDD_SOURCE]: "rows", [CURATED_SOURCE]: "rows" };
 
 export function renderDocs(template: string, style: string, attribution: Attribution, species: Species[]): string {
   const count = (status: RangeStatus) => species.filter((s) => s.range.status === status).length;
@@ -21,10 +25,14 @@ export function renderDocs(template: string, style: string, attribution: Attribu
     sources: attribution.sources.map((s) => [
       `<dt>${link(s.url, s.source)}</dt>`,
       `<dd>${esc(s.citation)}<br>License: ${licenseLink(s.license, s.licenseUrl)}`
-        + `${s.retrieved ? `, retrieved ${esc(s.retrieved)}` : ""}. Used for ${esc(s.records)} ${s.source === NATURAL_EARTH ? "countries" : "records"}: `
+        + `${s.retrieved ? `, retrieved ${esc(s.retrieved)}` : ""}. Used for ${esc(s.records)} ${UNITS[s.source] ?? "records"}: `
         + `${s.fields.map((f) => `<code>${esc(f)}</code>`).join(", ")}.</dd>`,
     ].join("\n")).join("\n"),
     gbifDerivedDataset: derivedDataset(attribution.gbifDerivedDataset),
+    gbifChecklistCount: esc(attribution.gbifChecklists.length),
+    gbifChecklists: attribution.gbifChecklists.map((d) =>
+      `<li>${link(d.url, d.title)}: ${licenseLink(d.license, d.licenseUrl)}, ${link(`https://doi.org/${d.doi}`, d.doi)}, ${esc(d.rows)} ${d.rows === 1 ? "row" : "rows"}</li>`,
+    ).join("\n"),
     photoCount: esc(attribution.photos.length),
     photos: attribution.photos.map((p) =>
       `<li>${link(p.page, names.get(p.speciesId)!)}: ${esc(p.credit)}, ${licenseLink(p.license, p.licenseUrl)}, via Wikimedia Commons</li>`,

@@ -3,6 +3,9 @@
 // unit, namespace, declared nullability) changes without the owner's review; a declared non-null field, a list
 // element or a closed value set breaks in the data; an id from another namespace (a GBIF id from another checklist)
 // is published as if it were the same. Additions pass with a notice.
+// Third table, /v1/range-listings (native ranges plan, F8): a column removed or retyped; the CSV reordered; a sha that
+// differs; origin, presence or license off values; country off pattern; a null in a non-null column passes, or a null
+// area or doi fails.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -33,11 +36,22 @@ const COUNTRIES: Record<string, Draft> = {
   code: { type: "VARCHAR", null: false, means: "ISO code", pattern: "^[A-Z]{2}$" },
   region: { type: "VARCHAR", null: false, means: "UN region", values: ["Africa", "Americas"] },
 };
+const RANGE_LISTINGS: Record<string, Draft> = {
+  speciesId: { type: "INTEGER", null: false, means: "our id" },
+  country: { type: "VARCHAR", null: false, means: "ISO code", pattern: "^[A-Z]{2}$" },
+  area: { type: "VARCHAR", null: true, means: "narrower scope" },
+  origin: { type: "VARCHAR", null: false, means: "how it came", values: ["native", "introduced"] },
+  presence: { type: "VARCHAR", null: false, means: "there or not", values: ["present", "absent"] },
+  license: { type: "VARCHAR", null: false, means: "row license", values: ["CC0 1.0", "CC BY 4.0"] },
+  doi: { type: "VARCHAR", null: true, means: "a DOI" },
+};
 const contract = (over: Partial<V1Contract> = {}): V1Contract => ({
   species: frozen(SPECIES) as V1Contract["species"],
   countries: frozen(COUNTRIES) as V1Contract["countries"],
+  rangeListings: frozen(RANGE_LISTINGS) as V1Contract["rangeListings"],
   speciesCsv: ["id", "ids_gbif", "range_countries", "range_status", "photo_url"],
   countriesCsv: ["code", "region"],
+  rangeListingsCsv: ["species_id", "country", "area", "origin", "presence", "license", "doi"],
   ...over,
 });
 
@@ -47,6 +61,10 @@ const record = (id: number, over: Record<string, unknown> = {}) => ({
   id, ids: { gbif: 100 + id }, range: { countries: ["BR", "CR"], status: "ok" }, photo: { url: "https://x/y.jpg" },
   sources: [gbif, occ], ...over,
 });
+const listing = (over: Record<string, unknown> = {}) => ({
+  speciesId: 1, country: "NA", area: "Hawaii", origin: "native", presence: "present", license: "CC BY 4.0", doi: "10.1/x", ...over,
+});
+const LISTING_COLUMNS = { speciesId: "INTEGER", country: "VARCHAR", area: "VARCHAR", origin: "VARCHAR", presence: "VARCHAR", license: "VARCHAR", doi: "VARCHAR" };
 const inputs = (over: Partial<V1Inputs> = {}): V1Inputs => ({
   recordColumns: {
     id: "INTEGER",
@@ -59,6 +77,9 @@ const inputs = (over: Partial<V1Inputs> = {}): V1Inputs => ({
   countryColumns: { code: "VARCHAR", region: "VARCHAR" },
   species: [record(1), record(2)],
   countries: [{ code: "BR", region: "Americas" }, { code: "NA", region: "Africa" }],
+  rangeListingColumns: LISTING_COLUMNS,
+  rangeListingCsv: ["species_id", "country", "area", "origin", "presence", "license", "doi"],
+  rangeListings: [listing()],
   ...over,
 });
 
@@ -189,4 +210,36 @@ test("V12 every problem is reported, not just the first", () => {
   const r = checkV1Contract(contract(), inputs({ species, csvColumns: ["id"] }));
   assert.equal(r.problems.length, 3, r.problems.join("\n"));
   assert.match(r.problems.join("\n"), /records 1, 2/);
+});
+
+test("V13 range listings: a column removed or retyped, or the CSV reordered, fails", () => {
+  const { origin: _, ...noOrigin } = LISTING_COLUMNS;
+  has(checkV1Contract(contract(), inputs({ rangeListingColumns: noOrigin })), /^\/v1\/range-listings origin: /, /removed.*needs \/v2/);
+  fails(checkV1Contract(contract(), inputs({ rangeListingColumns: { ...LISTING_COLUMNS, speciesId: "BIGINT" } })), /^\/v1\/range-listings speciesId: /, /INTEGER → BIGINT.*needs \/v2/);
+  fails(checkV1Contract(contract(), inputs({ rangeListingCsv: ["country", "species_id", "area", "origin", "presence", "license", "doi"] })), /^\/v1\/range-listings\.csv: /, /not a prefix.*needs \/v2/);
+});
+
+test("V14 range listings: a sha that differs fails", () => {
+  const c = contract();
+  c.rangeListings.origin = { ...c.rangeListings.origin, means: "where it came from" };
+  fails(checkV1Contract(c, inputs()), /^\/v1\/range-listings origin: /, /definition changed.*needs \/v2/);
+});
+
+test("V15 range listings: origin, presence and license off values, country off pattern, a null in a non-null column fail, naming the row", () => {
+  for (const [column, value] of [["origin", "wild"], ["presence", "extinct"], ["license", "CC BY-NC 4.0"]]) {
+    fails(checkV1Contract(contract(), inputs({ rangeListings: [listing({ [column]: value })] })), new RegExp(`^/v1/range-listings ${column}: `), /not in values in row 1 NA.*needs \/v2/);
+  }
+  fails(checkV1Contract(contract(), inputs({ rangeListings: [listing({ country: "usa" })] })), /^\/v1\/range-listings country: /, /"usa" doesn't match.*row 1 usa/);
+  for (const column of ["speciesId", "origin", "license"]) {
+    fails(checkV1Contract(contract(), inputs({ rangeListings: [listing({ [column]: null })] })), new RegExp(`^/v1/range-listings ${column}: `), /null or absent.*declared non-null/);
+  }
+});
+
+test("V16 range listings: a null area or doi passes, and a new column is an addition", () => {
+  assert.deepEqual(checkV1Contract(contract(), inputs({ rangeListings: [listing({ area: null, doi: null })] })), { problems: [], additions: [] });
+  const r = checkV1Contract(contract(), inputs({
+    rangeListingColumns: { ...LISTING_COLUMNS, note: "VARCHAR" },
+    rangeListingCsv: [...inputs().rangeListingCsv, "note"],
+  }));
+  assert.deepEqual(r, { problems: [], additions: ["/v1/range-listings note: add to contracts/v1.json to freeze", "/v1/range-listings.csv note: add to contracts/v1.json to freeze"] });
 });

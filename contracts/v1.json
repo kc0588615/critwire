@@ -293,6 +293,91 @@
       "sha": "2ac9ca5491f8"
     }
   },
+  "rangeListings": {
+    "speciesId": {
+      "type": "INTEGER",
+      "null": false,
+      "means": "the animal's id in /v1/species (its id field)",
+      "sha": "a73d3a0a2316"
+    },
+    "country": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the country the source lists the animal in: a code from /v1/countries; a row says what a source lists, not that the animal lives there; no row means critwire holds no open listing, never that the animal isn't there",
+      "pattern": "^[A-Z]{2}$",
+      "sha": "97766e3f4fc0"
+    },
+    "area": {
+      "type": "VARCHAR",
+      "null": true,
+      "means": "the narrower scope the source states inside the country (Hawaii, Azores), set per source or place, never from free text; null: none recorded, which doesn't claim the whole country",
+      "sha": "55345a8d47d7"
+    },
+    "origin": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "how the source says the animal came to be there: native-or-pre-1500 (native, or introduced before 1500 CE; the source doesn't separate the two), native (the source says native, without that blur), introduced (the source says introduced, or lists it on a register of non-native species; doesn't say it lives wild there), uncertain (the source marks its origin uncertain)",
+      "values": [
+        "native",
+        "native-or-pre-1500",
+        "introduced",
+        "uncertain"
+      ],
+      "sha": "a795d9fe9e82"
+    },
+    "presence": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "what the source says about the animal being there: present (the source says present; a native list's present can include a reintroduction into the native distribution), uncertain (the source marks it doubtful, uncertainly present or possibly extinct), absent (the source says absent; doesn't say it once lived there, or why, or since when), unstated (the source gives no status; doesn't say it lives there now)",
+      "values": [
+        "present",
+        "uncertain",
+        "absent",
+        "unstated"
+      ],
+      "sha": "33fd7bdaecf0"
+    },
+    "source": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the source's name, as attribution.json credits it",
+      "sha": "fec809e5dd0b"
+    },
+    "sourceKey": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the source's stable id: a GBIF dataset key, or a short name for any other source (mdd, curated); a GBIF key joins attribution.json's gbifChecklists[].key",
+      "sha": "b0c4c6d8169f"
+    },
+    "license": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the license of this row's values, as its source grants it",
+      "values": [
+        "CC0 1.0",
+        "CC BY 4.0"
+      ],
+      "sha": "af0ed682f935"
+    },
+    "doi": {
+      "type": "VARCHAR",
+      "null": true,
+      "means": "a DOI to cite the source by (bare, without https://doi.org/); null only on a curated row, whose url is its reference",
+      "sha": "f6a1312e9caa"
+    },
+    "url": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the page to check this row against: the source's page for the taxon, or a curated row's own reference",
+      "sha": "38ff98ecc068"
+    },
+    "sourceTerm": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "what the source said: on a source's row verbatim, a place as listed, with its question mark if it has one (Cambodia?), or establishment means and status joined by a slash (INTRODUCED/PRESENT; - when blank); on a curated row, our paraphrase of its reference, in our own words",
+      "sha": "830c1de6fcd0"
+    }
+  },
   "speciesCsv": [
     "id",
     "slug",
@@ -322,5 +407,18 @@
     "continent",
     "region",
     "subregion"
+  ],
+  "rangeListingsCsv": [
+    "species_id",
+    "country",
+    "area",
+    "origin",
+    "presence",
+    "source",
+    "source_key",
+    "license",
+    "doi",
+    "url",
+    "source_term"
   ]
 }

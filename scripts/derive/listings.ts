@@ -20,8 +20,8 @@ export const rangeConflictsFile = new URL("../../data/review/range-conflicts.jso
 
 export const MDD_SOURCE = "Mammal Diversity Database";
 export const CURATED_SOURCE = "critwire curated";
-const MDD_KEY = "mdd";
-const CURATED_KEY = "curated";
+export const MDD_KEY = "mdd";
+export const CURATED_KEY = "curated";
 
 export type Origin = "native-or-pre-1500" | "native" | "introduced" | "uncertain";
 export type Presence = "present" | "uncertain" | "absent" | "unstated";

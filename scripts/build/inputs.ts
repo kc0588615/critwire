@@ -1,5 +1,6 @@
 // The build's inputs (plan §3.2), checked offline before anything is written, in every build (strict and --draft).
 import type { CountriesFile } from "../derive/naturalearth.ts";
+import type { RangeListingsFile } from "../derive/listings.ts";
 import { assertDerivedFiles, deriveAll, readDeriveInputs } from "../derive/pipeline.ts";
 import type { LearnResult } from "../derive/sample.ts";
 import type { Registration } from "../gbif/derived-dataset.ts";
@@ -13,15 +14,17 @@ import { COUNTRY_TYPES } from "./countries.ts";
 import { assertCap, fileSizes, totalBytes } from "./learn/cap.ts";
 import { credits, labCreditContext, LAB_FILES, type CreditContext } from "./learn/credits.ts";
 import { assertLearnProjection } from "./learn/projection.ts";
+import { RANGE_LISTING_COLUMNS } from "./range-listings.ts";
 
 // registration: the GBIF derived dataset whose DOI the records cite (current); null only in a --draft build.
-// countries: data/countries.json. learn: the lab sample (derive/sample.ts), its DOI null only in a --draft build.
+// countries: data/countries.json. rangeListings: data/range-listings.json. learn: the lab sample (derive/sample.ts), its DOI null only in a --draft build.
 // labFiles: data/learn/'s data files, each equal to its provenance file's record (learn/lab-files.ts). labCredits:
 // /learn/data/'s sources, every LAB_FILES entry checked (ST4). labBytes: the committed lab data's total (under the cap).
 export interface BuildInputs {
   species: Species[];
   registration: Registration | null;
   countries: CountriesFile;
+  rangeListings: RangeListingsFile;
   learn: LearnResult;
   labFiles: LabFile[];
   labCredits: CreditContext;
@@ -72,6 +75,7 @@ export async function readBuildInputs({ draft }: { draft: boolean }): Promise<Bu
   // The /v1 contract (L3 plan §7.1): writers and data against contracts/v1.json, before any load or write.
   const contract = checkV1Contract(await readJson<V1Contract>(contractFile), {
     recordColumns: RECORD_COLUMNS, csvColumns: csvColumns(), countryColumns: COUNTRY_TYPES, species, countries: result.countries.rows,
+    rangeListingColumns: RANGE_LISTING_COLUMNS, rangeListingCsv: csvColumns(RANGE_LISTING_COLUMNS), rangeListings: result.listings.file.rows,
   });
   if (contract.problems.length) throw new Error(`contracts/v1.json:\n${contract.problems.join("\n")}`);
   for (const a of contract.additions) console.log(a);
@@ -93,7 +97,7 @@ export async function readBuildInputs({ draft }: { draft: boolean }): Promise<Bu
   });
   for (const file of Object.keys(LAB_FILES)) credits(file, labCredits);
   return {
-    species, registration: result.doi === null ? null : inputs.registration, countries: result.countries, learn: result.learn, labFiles,
+    species, registration: result.doi === null ? null : inputs.registration, countries: result.countries, rangeListings: result.listings.file, learn: result.learn, labFiles,
     labCredits, labBytes: totalBytes(labSizes),
   };
 }
