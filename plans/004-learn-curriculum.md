@@ -10033,7 +10033,7 @@ run 4 · links, TRANSFORM_VERSION = 2 again · exit 0 · INFO refresh: nothing c
 
 ### 5.6 Power BI
 
-Four modules, seven hours, in Power BI Desktop (§3.5), with PostGIS twins (§3.2) from p2 on, on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). Build mission L5 (§9) wrote them in full from their outlines, in §5.3's form. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (Home → DAX query view): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it, its twin (`// twin:`, §0), computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. The twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution: those need Power BI itself. §10 asks the owner for one check on Windows.
+Four modules, seven hours, in Power BI Desktop (§3.5), with PostGIS twins (§3.2) from p2 on, on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). Build mission L5 (§9) wrote them in full from their outlines, in §5.3's form. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (its icon on the left bar): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it, its twin (`// twin:`, §0), computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. The twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution: those need Power BI itself. §10 asks the owner for one check on Windows.
 
 #### p1 · power-query
 
@@ -10152,7 +10152,7 @@ The **factless fact**, `fact_species_country`, has no measure column; its measur
 | `fact_species_country` | `dim_species`, `dim_country` | `species_id`, `country_code` |
 | `fact_country_habitat` | `dim_country`, `dim_habitat_class` | `country_code`, `habitat_code` |
 
-Eight relationships, every one many-to-one, single direction. Then three measures, and a query that slices both species facts by continent through `dim_country`. Run it in DAX query view (Home → DAX query view, paste, Run): `DEFINE MEASURE` declares each measure for the query, and `EVALUATE` returns the table. `SUMMARIZECOLUMNS` groups by the columns it names and computes each measure for each group, leaving out a group whose measures are all blank.
+Eight relationships, every one many-to-one, single direction. Then three measures, and a query that slices both species facts by continent through `dim_country`. Run it in DAX query view (its icon on the left bar, paste, Run): `DEFINE MEASURE` declares each measure for the query, and `EVALUATE` returns the table. `SUMMARIZECOLUMNS` groups by the columns it names and computes each measure for each group, leaving out a group whose measures are all blank.
 
 ```dax
 // q: p2-measures

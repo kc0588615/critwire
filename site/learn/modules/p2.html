@@ -20,7 +20,7 @@
 <tr><td><code>fact_country_habitat</code></td><td><code>dim_country</code>, <code>dim_habitat_class</code></td><td><code>country_code</code>, <code>habitat_code</code></td></tr>
 </tbody>
 </table></div>
-<p>Eight relationships, every one many-to-one, single direction. Then three measures, and a query that slices both species facts by continent through <code>dim_country</code>. Run it in DAX query view (Home → DAX query view, paste, Run): <code>DEFINE MEASURE</code> declares each measure for the query, and <code>EVALUATE</code> returns the table. <code>SUMMARIZECOLUMNS</code> groups by the columns it names and computes each measure for each group, leaving out a group whose measures are all blank.</p>
+<p>Eight relationships, every one many-to-one, single direction. Then three measures, and a query that slices both species facts by continent through <code>dim_country</code>. Run it in DAX query view (its icon on the left bar, paste, Run): <code>DEFINE MEASURE</code> declares each measure for the query, and <code>EVALUATE</code> returns the table. <code>SUMMARIZECOLUMNS</code> groups by the columns it names and computes each measure for each group, leaving out a group whose measures are all blank.</p>
 {{block:p2-measures}}
 <p>The table it should return, from the same star in PostGIS. Each fact is grouped by continent on its own, then the two are joined on the continent: d6's drill across, which is what the model does with the shared <code>dim_country</code>.</p>
 {{block:p2-check}}
