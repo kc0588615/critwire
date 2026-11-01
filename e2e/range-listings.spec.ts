@@ -134,6 +134,21 @@ async function docsQuery(page: Page, name: string): Promise<string> {
 const LIVE_PARQUET = "https://critwire.com/v1/range-listings.parquet";
 const local = (sql: string) => sql.replaceAll("https://critwire.com", ORIGIN);
 
+// The 26 species with no MDD list (plan Steps, S9 and S10): amphibians, then turtles.
+const NON_MAMMALS = [3, 5, 6, 7, 8, 9, 10, 11, 13, 14, 16, 62, 74, 75, 76, 1, 2, 4, 12, 15, 17, 18, 19, 20, 21, 22];
+
+test("E12: each of the 26 non-mammals has a curated native row with no DOI and an https url", () => {
+  for (const id of NON_MAMMALS) {
+    const curated = rows.filter((r) => r.speciesId === id && r.sourceKey === "curated");
+    expect(curated.length, `species ${id}`).toBeGreaterThan(0);
+    for (const r of curated) {
+      expect(r.origin, `${id} ${r.country}`).toBe("native");
+      expect(r.doi, `${id} ${r.country}`).toBeNull();
+      expect(r.url, `${id} ${r.country}`).toMatch(/^https:\/\//);
+    }
+  }
+});
+
 test("E9: the conflict query on served Parquet finds exactly the range-conflict entries", async ({ page }) => {
   const entries = await json<{ speciesId: number; country?: string; kind: string }[]>("data/review/range-conflicts.json");
   const want = entries.filter((e) => e.kind === "range-conflict").map(({ speciesId, country }) => ({ speciesId, country }));
