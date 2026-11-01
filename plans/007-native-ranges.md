@@ -4,7 +4,7 @@ title: Native, introduced and historical range, a tested design
 
 # Native ranges
 
-For the owner: how critwire could publish where sources list each animal as native or introduced, from sources it may publish, next to today's "countries with open records", which aren't range. Plan and full evidence: `plans/2026-11-01-critwire-native-ranges-design.md`. Nothing here is built: `/v1` and `dist/` are unchanged.
+For the owner: how critwire could publish where sources list each animal as native or introduced, from sources it may publish, next to today's "countries with open records", which aren't range. Plan and full evidence: `plans/2026-11-01-critwire-native-ranges-design.md`. Built by mission `critwire-native-ranges-build` (`plans/2026-11-01-critwire-native-ranges-build.md`): `/v1/range-listings.{json,csv,parquet}`; its Decisions list every deviation, each edited here.
 
 ## Summary
 
