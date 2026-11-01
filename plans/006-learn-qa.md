@@ -280,6 +280,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q74 | p2 | jargon | T0 | DAX carries p2 to p4 and c1, and no page said what it is; p1 does say what M is. Defined at its first use | fixed | `qa-fixes.ts` |
 | Q75 | p2 | jargon | T0 | Slicers carry p2's, p3's and p4's Labs, and no page said what one is. Defined at its first use | fixed | `qa-fixes.ts` |
 | Q76 | d1, g1, and all after | missing prereq | T0 | f4 (CTEs, window functions) was in no other module's closure: tracks branched at f3, yet 18 modules carry CTEs and 15 window functions, from `g1-distance` and `d1-ex` on, and s4, s5, s6 say "read it one CTE at a time". d1 and g1 now need f4; ETL from e2 and Power BI inherit it through d1. f4 keeps its skip check. Also 004 §2 and `course.test.ts`'s closure | fixed | `qa-fixes.ts` |
+| Q77 | c1 | missing prereq | T0 | Lab stage "Ship and refresh (e5)" and the Concept rest on e5's schedule to rebuild the feed, but c1 named e4. e5 needs e4, so nothing else is lost | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

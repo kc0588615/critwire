@@ -443,7 +443,7 @@ The table is in prerequisite order: every module's prerequisites come above it, 
 | p2 | Power BI | model | Relationships, cardinality, filter direction, conformed dimensions, factless facts | How do I filter records and habitat areas by the same country? | PBI + PG | 2.0 | p1 | full |
 | p3 | Power BI | dax | Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios | How many sample records per 1,000 km² of forest, by country? | PBI + PG | 2.0 | p2 | full |
 | p4 | Power BI | maps-report | Map visuals, honest labels, publishing and scheduled refresh | How do I build a report that maps records and never calls them a range? | PBI + PG | 1.5 | p3 | full |
-| c1 | Capstone | game-feed | ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records) | What could a player meet here, honestly? | PG + Py + PBI | 8.0 | s5, e4, p4 | full |
+| c1 | Capstone | game-feed | ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records) | What could a player meet here, honestly? | PG + Py + PBI | 8.0 | s5, e5, p4 | full |
 
 | Track | Modules | Hours | Depth |
 |---|---|---|---|
@@ -10573,7 +10573,7 @@ One module, eight hours, in your own PostGIS (§3.2), Python (§3.3) and Power B
 
 #### c1 · game-feed
 
-**Tool:** PG + Py + PBI · **Time:** 8.0 h · **Prereqs:** s5, e4, p4
+**Tool:** PG + Py + PBI · **Time:** 8.0 h · **Prereqs:** s5, e5, p4
 
 **Goal:** one pipeline from GBIF to a game, each stage a module already done, with the honesty rules kept at every stage.
 - **Extract and load** (e1–e4): a GBIF download for the species and region the game needs (your own predicate, or the lab sample), loaded into PostGIS in one transaction, re-runnable, checked, and with its credits.

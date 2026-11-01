@@ -667,7 +667,7 @@
       "hours": 8,
       "prereqs": [
         "s5",
-        "e4",
+        "e5",
         "p4"
       ],
       "state": "built",
