@@ -208,6 +208,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q2 | 38 pages | axe | T0 | Code, recorded results, result tables and diagrams that scroll sideways weren't in the tab order | fixed | `learn-walk.spec.ts` axe and keyboard `tabindex` |
 | Q3 | data | dead link | list | DOI `10.18165/qmltit` (UAMZ amphibians and reptiles, 5 records) resolves to `ipt.museums.ualberta.ca`, where the whole `/ipt/` path answers 404; GBIF still lists the dataset, with endpoints on that dead path | listed. Recommendation: no change. The DOI is the dataset's published identifier and the fault is the publisher's; rewriting it would break the credit. If you want it repaired, tell helpdesk@gbif.org | one-off link check |
 | Q4 | data | dead link | list | DOI `10.36102/dwc.3` (NCSM Herpetology, 109 records) resolves to `ipt.vertnet.org:8080`, connection refused. The same resource answers 200 on `https://ipt.vertnet.org/resource?r=ncsm_herps`, so the DOI record is out of date | listed. Recommendation: no change, same reason as Q3; VertNet can update the DOI's URL | one-off link check |
+| Q5 | setup | missing step | T0 | Says to run cells "in VS Code or Jupyter", but no step installs Jupyter and `requirements.txt` has none (finding 8). Added the install line, run as written in a learner's venv: `jupyter lab --version` 4.6.5, no pin moved, the next `uv pip sync` removes it | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

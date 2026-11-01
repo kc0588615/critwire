@@ -12,7 +12,9 @@ export interface QaFix {
   from?: { file: string; values: string[] };
 }
 
-export const QA_FIXES: QaFix[] = [];
+export const QA_FIXES: QaFix[] = [
+  { q: "Q5", url: "/learn/setup/", has: "uv pip install --constraint requirements.txt jupyterlab" },
+];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
 export async function qaFixErrors(request: APIRequestContext): Promise<string[]> {

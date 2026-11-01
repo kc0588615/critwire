@@ -551,7 +551,7 @@ uv pip sync --no-build requirements.txt
 .venv/bin/python -c "import geopandas, esda; print(geopandas.__version__, esda.__version__)"
 ```
 
-A lab is a `.py` file with `# %%` cells: run it whole (`.venv\Scripts\python s4.py`), or cell by cell in VS Code or Jupyter, which ask to add `ipykernel` to the environment the first time; the site also offers each lab as a notebook (`.ipynb`, the same cells; §7).
+A lab is a `.py` file with `# %%` cells: run it whole (`.venv\Scripts\python s4.py`), or cell by cell in VS Code, which asks to add `ipykernel` to the environment the first time, or Jupyter, which isn't pinned either: `uv pip install --constraint requirements.txt jupyterlab` adds it, `ipykernel` included, without moving a pin, and `.venv\Scripts\jupyter lab` starts it; the site also offers each lab as a notebook (`.ipynb`, the same cells; §7).
 
 **The environment.** `requirements.in` names what the labs import, with the lowest versions they need (`geopandas>=1.0`, `shapely>=2.0`, `libpysal>=4.10`, `esda>=2.6`); `requirements.txt` pins every package to one version, compiled for every platform at once with `uv pip compile --universal --python-version 3.12 -o requirements.txt requirements.in`. The 44 pins have prebuilt wheels for Windows x86-64, Linux x86-64 and aarch64, and macOS 14 or later on Apple silicon: resolved with `--no-build` for each platform (`uv pip compile --no-build --python-version 3.12 --python-platform <platform> requirements.txt`, macOS with `MACOSX_DEPLOYMENT_TARGET=14.0`). Intel Macs aren't covered (no `pyproj` 3.8.0 wheel). `ipykernel` isn't pinned: the editor installs it when a notebook first runs, and the next `uv pip sync` removes it again; nothing here depends on it. This is the file, verbatim:
 
