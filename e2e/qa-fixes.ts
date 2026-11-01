@@ -35,6 +35,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q21", url: "/learn/database-architecture/indexes/", has: "(40,386 of 40,395 rows thrown away to find the pangolin's nine)", not: "the pangolin's 40,395 rows", from: { file: "site/learn/labs/checked/d3-seq.txt", values: ["Rows Removed by Filter: 40386"] } },
   { q: "Q22", url: "/learn/database-architecture/indexes/", has: "<code>license</code> a little (0.39)", from: { file: "site/learn/labs/checked/d3-stats.txt", values: ["license | 0 | 2 | 0.39390513"] } },
   { q: "Q23", url: "/learn/database-architecture/indexes/", has: "Ask for the records of 2026, 74 of them,", not: "this year's records", from: { file: "site/learn/labs/checked/d3-few-rows.txt", values: ["year >= 2026"] } },
+  { q: "Q24", url: "/learn/database-architecture/indexes/", has: "<code>VACUUM</code>, PostgreSQL's housekeeping" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

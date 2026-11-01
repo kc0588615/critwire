@@ -227,6 +227,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q21 | d3 | prose | T0 | Result: "40,386 of the pangolin's 40,395 rows". The pangolin has nine; 40,395 is the table | fixed | `qa-fixes.ts` |
 | Q22 | d3 | number | T0 | "`year` is partly ordered (0.62), the rest close to 0", over a result showing `license` at 0.39. 0.62 is the sixth row, which the page doesn't print; seen in the lab db, 0.624 | fixed | `qa-fixes.ts` |
 | Q23 | d3 | prose | T0 | "This year's records" over `year >= 2026`: wrong from next January | fixed | `qa-fixes.ts` |
+| Q24 | d3 | jargon | T0 | `VACUUM` and autovacuum carry the Index Only Scan rule, one module before d4 says what they do. Says it in a word, with a link | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
