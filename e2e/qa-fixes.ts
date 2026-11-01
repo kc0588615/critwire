@@ -81,6 +81,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q63", url: "/learn/power-bi/power-query/", has: "The other seven tables.", not: "The other six tables." },
   { q: "Q64", url: "/learn/power-bi/model/", has: "(its icon on the left bar, paste, Run)", not: "Home → DAX query view" },
   { q: "Q65", url: "/learn/power-bi/dax/", has: "as does Seven seas, on its 7 records" },
+  { q: "Q66", url: "/learn/power-bi/maps-report/", has: "with p2's <code>Records</code> measure", not: "with p3's <code>Records</code> measure" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

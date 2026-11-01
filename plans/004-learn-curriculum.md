@@ -10434,7 +10434,7 @@ North America | 9688 | 24217714.23 | 0.2398 | 0.1652
 - **Credits:** CC BY 4.0 asks you to credit each dataset whose records you show; CC0 asks for nothing (e4). A measure counts the datasets to credit among the records shown, and a table visual from `dim_dataset` lists them. The report also cites the sample as a whole: the GBIF download's DOI, `10.15468/dl.fbpk9w`, and the derived dataset that credits every dataset in it; both citations are in `star/manifest.json`, under `fact_records.csv`'s sources.
 - **Publishing and refresh:** Home → Publish sends the report to the **Power BI Service**, Microsoft's website for shared reports. Its data and queries travel as a **semantic model**. In the model's settings, set the critwire.com source to Anonymous with privacy level Public, then schedule a refresh. The Service refreshes the CSV sources directly, with no gateway, because the base URL is fixed (p1).
 
-**Data:** the model from p2, with p3's `Records` measure. Each record has a latitude and a longitude: 40,395 of 40,395.
+**Data:** the model from p2, with p2's `Records` measure. Each record has a latitude and a longitude: 40,395 of 40,395.
 
 **Worked example:** the title and credit measures, evaluated for the Tasmanian devil. `SELECTEDVALUE ( dim_species[common_name], "Selected species" )` returns the species' name when the filters leave exactly one, and the fallback text otherwise. `FORMAT ( [Records], "#,0" )` writes the count with a thousands separator. `Datasets to credit` counts the datasets left by the records shown that carry a CC BY 4.0 license. `CALCULATETABLE` evaluates a table under a filter, as `CALCULATE` does a value; `ROW` makes a one-row table to show the measures.
 

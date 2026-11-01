@@ -269,6 +269,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q63 | p1 | number | T0 | "The other six tables": the worked example builds `fact_records` only, so seven of the eight remain, and the step goes on to name seven | fixed | `qa-fixes.ts` |
 | Q64 | p2 | wrong fact | T0 | "Home → DAX query view": Microsoft's page says to select its icon on the left side. p2 opens Model view from the same bar. H6's step 5 corrected too | fixed | `qa-fixes.ts` |
 | Q65 | p3 | prose | T0 | The Check sorts every continent but one: Seven seas has 0.0002 of the records against 0.0001 of the area (star files), past the 5 rows printed | fixed | `qa-fixes.ts` |
+| Q66 | p4 | prose | T0 | "p3's `Records` measure": p2's Lab adds it, and p3's and p4's Labs both say it's there from p2 | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
