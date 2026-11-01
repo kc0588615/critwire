@@ -463,7 +463,7 @@ The wording names no source, so an O1 no leaves nothing false or dangling: `nati
 |---|---|---|
 | `pnpm ingest mdd` | `data/raw/mdd/snapshot.json` | **Exists only after O1 is a recorded yes.** Pinned file (md5 `533e662fd5b8f66a5f56c191e7efac44`); cut columns and names only, keyed by base mammal name (null = no match); under 1 min |
 | `pnpm ingest gbif-checklists` | `data/raw/gbif-checklists/snapshot.json` | Per species `keys` and rows, the `allowlist` it used, drop counts per reason. About 6 min at ≤ 2 req/s: the spike's GBIF part took 630 requests, which at its 0.55 s throttle is 347 s |
-| hand, agents + owner (O3) | `data/review/range-curated.json` | Only if O3 is (a). Each row cites its reference, and no IUCN page. `sourceKey` `curated`, `license` `CC BY 4.0` (critwire's own, `DATA-LICENSE.md`), `doi` null |
+| hand, agents + owner (O3) | `data/review/range-curated.json` | Only if O3 is (a). Each row cites its reference, and no IUCN page. `sourceKey` `curated`, `license` `CC BY 4.0` (critwire's own, `DATA-LICENSE.md`), `doi` null. `{reviewedBy, rows}`: derive publishes rows only once `reviewedBy` holds your reply and date, so the release needn't wait for your review |
 | `pnpm derive` | `data/range-listings.json` (`{sources, rows}`, like `countries.json`), `data/review/range-conflicts.json` | Pure and offline, in `deriveCore` before `matchCountries` (`scripts/derive/pipeline.ts:119`), which also gets the listing codes, so a code with no country row throws. Every code the spike's rows and places use has a row today. `MDD_PLACES` crosswalk: an unknown place throws |
 | `pnpm build` | `dist/v1/range-listings.{json,csv,parquet}` | `scripts/build/range-listings.ts`, like `countries.ts`; after `writeCountries` (`scripts/build.ts:58`) |
 
