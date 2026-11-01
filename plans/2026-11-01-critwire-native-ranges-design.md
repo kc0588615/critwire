@@ -71,7 +71,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -473,7 +473,230 @@ Evidence removed from the state folder (item 4): see Architecture, Evidence. The
 
 ## Steps
 
+Planner, 2026-11-01. Spike first: its numbers fill every later document. The Architecture as revised is final; it changes only through **Spike outcomes** below. §n = Architecture, V<n> = Verification's block, F<n> = Failure modes.
+
+Conventions:
+- `R=/srv/critter-ai/worktrees/critwire-native-ranges-design`, `M=/srv/critter-ai/agent-state/missions/critwire-native-ranges-design`, `S=$M/spike`, `D=plans/007-native-ranges.md`, `B=plans/briefs/critwire-native-ranges-build.md`, `H=/srv/critter-ai/handoff/critwire.md`.
+- One step per session: commit this plan and any `plans/` file with the check-off and one Log line, push. Deviations go under Decisions.
+- Out of bounds in every step: `scripts/`, `data/`, `site/`, `contracts/`, `e2e/`, `db/`, `AGENTS.md`, `/v1`. Spike code and data only in `$S`. No build until S11.
+- **Guard** (end of every step): `pnpm typecheck`; `git diff --name-only origin/main...HEAD | grep -v '^plans/'` prints nothing.
+- **MDD** (§5): in memory only. Its countries never reach disk, stdout, a log or this plan, not even to debug: debug with counts. **Small cells:** any MDD-derived count or share over fewer than 5 rows or 5 species is pooled or written `<5`, because a "1 of 1" on a one-row dataset reads back a pair (§5, "May not"). **IUCN:** rows and fields dropped before writing (§2, §5).
+- Scripts: standard library, `python3 -I`; code in `$S`, responses in `$S/raw`.
+- Owner replies during the mission: picked up as `~/.claude/CLAUDE.md` says, recorded under Decisions, 007's Owner's choices and the brief. An O1 yes doesn't lift §5's MDD rule for this mission.
+
+Checklist:
+
+- [ ] S1. **Spike fetch.** Write `$S/fetch.py` (§2 "GBIF checklists", §5, F1–F6); run §5's first command (≈ 10 min; Bash timeout 1800000).
+  - Keys: `$R/data/species.json` `ids.gbif`, plus `data/raw/gbif/snapshot.json` `species[<scientificName>].match.response.acceptedUsage.key` (a string) when present. No `ids.gbif` = no GBIF fetch (9, 19, 27). Control: 73 species with keys, two keys on exactly 1, 55, 63, 70.
+  - Wikidata: `https://www.wikidata.org/wiki/Special:EntityData/{ids.wikidata}.json` for all 76.
+  - One throttle over all hosts, 0.55 s, retries included; user agent `critwire-design-spike/0.1`; a non-200 after two retries exits non-zero. Writes `$S/raw.partial/`, renamed to `--out` only at the end.
+  - Writes, by key allowlist: `gbif-rows.json` (per species and key: `country`, `establishmentMeans`, `status`, `locality`, `sourceTaxonKey`, `datasetKey`; `locality` is the spike's one extra, for Shape, nulled and counted if it matches `/iucn/i`); `datasets.json` (§2's five fields, publisher `title` from `GET /v1/organization/{key}`, `metaMention`: field names of unkept metadata matching `/iucn/i`, no text; no entry for Red List dataset `19491596-…`); `wikidata.json` (P183, P9714, P2341 only: values, reference counts); `counts.json` (`redListRowsDropped` per species, `threatRows` per dataset, rows lacking `sourceTaxonKey`).
+  - Check: `fetch.log`'s last line `requests=<n> seconds=<t>` with n/t ≤ 2; the control above from `gbif-rows.json`; V7's first two greps clean. Log line: n, t, rows, datasets.
+- [ ] S2. **MDD loader, places, leak check.** Start `$S/measure.py`: `--repo --raw --out`; reads `allowlist.json` and `mdd-places.json` beside itself; writes only under `--out`.
+  - Loader (§2, §5, F7–F9): GET the pinned URL to memory, md5 `533e662fd5b8f66a5f56c191e7efac44`; keep `sciName` (`_` → space, exact match), `id`, `countryDistribution` (split on `|`, trailing `?` = uncertain), `domestic`, `flagged`. Assert the whole file against `$M/arch-probe/mdd/cut-counts.json` (6904 rows, 243 places, 33534 tokens, 1892 `?`, 17 domestic, 228 flagged).
+  - `$S/mdd-places.json`: place → `{code, area}`. Exact `$R/data/countries.json` `rows[].name` first, the others by hand; `area` for sub-country places (Azores, Galápagos); `NA`, `Domesticated` → `{code: null, reason}`.
+  - `--repo <R> --leak-check <path>…`, exit 1 on any hit, printing only `file:line` and counts: (a) any file holds a species' raw cell verbatim (cells of ≥ 2 places); (b) an `.md` line holds a matched mammal's scientific or common name, `MDD` and one of its MDD places; (c) `results.json`'s `mdd` and `agreement` subtrees hold a base name, slug or species id, outside `mdd.misses`. A hit gets read and removed or reworded, not waved through.
+  - Check: prints matches of 50, places mapped and unmapped; V8 over what exists so far. Log line: those counts.
+- [ ] S3. **Allowlist from evidence** (§5).
+  - `measure.py` first pass writes `$S/datasets-first-pass.tsv`: every dataset met, with key, title, publisher, license, rows, species, rows with `country`, establishment and status mix, rows in MDD (small cells rule), `metaMention`.
+  - Write `$S/allowlist.json` by hand: per dataset `{role: register|checklist|null, area, o2, reason}`. Starting exclusions: Brazil catalogue, COLSA, ITIS, COL, anything BY-NC. `register` only if it holds only non-native species (§3). `area` only for a whole-dataset scope (GRIIS Hawaii, Alaska, Galápagos, Madeira, Azores). `o2: true` for GRIIS and any kept dataset using IUCN another way.
+  - A kept dataset with `metaMention`: re-GET its metadata, read it in the session, save nothing; the tie goes in `reason`. Distribution data from IUCN = no role.
+  - Check: a `python3 -I -c` over both files: every key in `raw/datasets.json` has an entry and a non-empty reason; every role's license is exactly CC BY 4.0 or CC0 1.0 legalcode. Log line: datasets per role.
+- [ ] S4. **Spike measure.** Finish `measure.py`: every §5 "Record" metric, all 76, by class and `range.status`, under all three allowlists, through §3's mapping and collapse key; the five gates.
+  - Records outside: counts from `data/raw/gbif/snapshot.json` `occurrences.response.facets` (`field` `COUNTRY`); flagged = `data/review/mismatches.json` entries with `kind` starting `country-`, by `speciesId` and `country`. Null `countriesWithOpenRecords` = empty set.
+  - Conflict rate twice: §5's formula (the gate), and on `area`-null rows only (§3's definition, what the build's `range-conflicts.json` will hold).
+  - Writes `$S/results.json` (top level `mdd`, `agreement`, `gbif`, `wikidata`, `shape`, `licenses`, `redList`, `projection`, `gates`; sorted keys, no clock) and `$S/results.tsv` (`metric<TAB>value`, ≤ 40 headline lines, no `|`, covering all gates and coverage). Metric names avoid `iucn` and `threatStatus` (`redListRowsDropped`, `threatRows`), since gate 4 greps these files.
+  - Every Shape combination gets its §3 outcome or `unmapped`. Projection: rows and bytes, all defaults and all yes.
+  - Check: V5's re-run lines (repeatable); V7, V8. Log line: the five gates.
+- [ ] S5. **Record the spike; decide outcomes.** Add `## Spike results` above `## Steps`: date; each `results.tsv` line as a table row, exactly `| metric | value |`; gates pass or fail; §5's reproduce commands; `$S` paths and `results.json`'s sha256. Apply **Spike outcomes**, one Decisions line each, or one line "design unchanged". An outcome needing a re-run does it here if it fits, else adds a step after this one. Check: V5's table test on this plan; V7, V8.
+- [ ] S6. **007: Sources, Spike results.** Create `$D`, voice like `plans/006-learn-qa.md`, with exactly these headings in order: `## Summary`, `## Sources`, `## Spike results`, `## Allowlist`, `## Data model`, `## Contract`, `## Pipeline`, `## Learn tie-in`, `## Owner's choices`, `## Follow-up`, `## Rejected`.
+  - Sources: one table from §2, one row per source, first cell starting with the names V4 lists. Each row: license quoted, URL, spatial unit, republishing terms, coverage (spike's where measured, else marked "probe"), used or rejected and why. Any other source met goes in V4's list too.
+  - The §2 rows with no quote (FishBase, SeaLifeBase, WoRMS, Avibase, Clements, IOC; Amphibian Species of the World): one GET of each terms page, Internet Archive if refused, saved in `$M/arch-probe/terms/`. Unobtainable: `Not retrievable: <URL tried>, <date>`, not used ("Licenses decide").
+  - Grep each row-deciding quote against its saved file in `arch-probe/`.
+  - Spike results: the S5 table, reproduce commands, what each number means, which outcomes applied. Totals only (§5).
+  - Check: V4; V5's table test on `$D`; V8.
+- [ ] S7. **007: Allowlist, Data model, Contract.**
+  - Allowlist: from `$S/allowlist.json`: dataset, key, role, `area`, license, rows, reason, O2 flag; rejected ones grouped by reason, with counts.
+  - Data model: all of §3, with the mapping table covering every combination in `results.json` `shape`; no `unmapped` left.
+  - Contract: one fence opened as ` ```json contract `, holding `{"rangeListings": {<11 entries keyed by JSON name>}, "rangeListingsCsv": [<11 CSV names in column order>]}`. Entry keys as `scripts/build/contract.ts:44`: `type`, `null`, `means` (plain, from §3's tables), `values` (`origin` 4, `presence` 4, `license` 2), `pattern` (`country`), `sha` by `entrySha` (`contract.ts:47`): V6's error names each right sha; a control run gave `species.id`'s `efec33eb73ce`.
+  - Check: V6; every `origin`, `presence` value in the mapping table is in `values`.
+- [ ] S8. **007: the rest.** Pipeline, Learn tie-in, Owner's choices, Follow-up (Finding 8), Rejected, Summary, from §4, §6, §7, §8, spike numbers replacing every estimate (rows, bytes, fetch minutes, all-defaults rows). Owner's choices take any recommendation changed by Spike outcomes. Pipeline must say: the snapshot's `allowlist` holds dataset → role and `area` only; `reason` stays in the ingest's constant and 007, because `assertNoIucnData` (`scripts/ingest/gbif.ts:138` pattern) walks the snapshot and a reason may name the tie. Summary: recommended sources, coverage, shape, choices. Check: read through for an estimate the spike replaced; V8.
+- [ ] S9. **Handoff items.** Re-read `$H`; take the next free numbers (highest is H6 on 2026-11-01). Five items in Open, `~/AGENTS.md`'s format exactly: title `### H<n> · Native ranges O<k>: <short title>`, `Status: waiting on you`, `From: critwire-native-ranges-design · <today>`, `Blocks: nothing yet (the build brief's default applies)`. **Why:** the question, the recommendation, the spike's numbers (totals only). **Steps:** read `## Owner's choices` in `$D` (on GitHub, branch `agent/critwire-native-ranges-design`, or `main` after the release), then reply. **Your reply:** `O1 = yes / no`; `O2 = yes / no`; `O3 = a / b`; `O4 = yes / no`; `O5 =` modules, when. Add the H numbers to `$D`'s Owner's choices. Check: V9; V8 on `$H`.
+- [ ] S10. **Build brief.** Write `$B` in the L-series format (read `plans/briefs/critwire-learn-l5-powerbi-capstone.md`): header comment (copy-to path, `mission start critwire <file>`, base main, written by this mission, design `plans/007-native-ranges.md`, `Estimate:` from "Later Steps' deliverables and size" and the spike), `## Goal`, `## Why`, `## Scope` (In, Out), `## Definition of done`, `## Decision rules`, `## Notes`.
+  - Must carry: §7's defaults and flip table with the H numbers to read first; MDD's steps conditional on a recorded O1 yes (§4's gate, those exact words); the contract from 007's fence; §4's refusal list, the `threatStatus` guard (Finding 3), key staleness; no-reason snapshot (S8).
+  - Done means live: §4's byte-identical check against that mission's own Baseline list; an E2E spec like `e2e/countries.spec.ts`; `e2e/duckdb.spec.ts:59`, `e2e/attribution.spec.ts:32`, the docs page, `AGENTS.md`, `DATA-LICENSE.md` updated; E2E artifact path and reproduce command; release smoke.
+  - Out: Learn (O4, O5), polygons, Finding 8's fix, IUCN, Wikipedia prose.
+  - Check: V3. Each default removes steps; the estimate stays well within 60 sessions.
+- [ ] S11. **Full Verification, first pass.** Run Verification's block. Fix document failures in this session. A failure needing a spike re-run adds a step before this one, and this stays unchecked. Log line: pass, log path.
+
+### Spike outcomes
+
+A gate failure changes a recommendation and is reported; it never stops the mission. Nothing below touches §3's table of columns.
+
+| Outcome | Changes | Do |
+|---|---|---|
+| Gate 1: MDD matches < 45 of 50 | O1, O3 | Stay exact, no fuzzy match (§2). Name each miss and why. O1 becomes "yes, for the N matched"; misses join O3 (a)'s curated list and stay `range-not-found` until then |
+| Gate 2: a used place unmapped | Mapping | Map by hand. No single code: `{code: null, reason}`, and 007's mapping gets a "no row, counted" line with its count. Re-run: the gate passes once none is left undecided. Null places over 10 % of matched species' tokens: say so in O1 |
+| Gate 3: conflict rate > 10 % | Allowlist, O1, O2 | Read per-dataset rates. A dataset with its own rate > 25 % on ≥ 5 introduced rows: check by hand that its role is right; if it isn't really non-native-only, drop the role, give the reason, re-measure, keep both numbers. Never drop one only to pass. Still > 10 %: the design holds (conflicts ship, shown); O2 becomes "yes, except datasets over 10 %" and O1 states the rate. Σ\|I\| < 20: report "too few to judge", not pass or fail |
+| Gate 4: an IUCN string kept | Allowlist, O2 | Read it in the session; save nothing. In `title` or `citation.text`: no role, dropped in `fetch.py`, re-fetch. If that dataset is one a recommended answer needs, O2 adds the question: an exact-string exception to the guard (`scripts/raw.ts:95`), recommended only if the string names a publisher, not data. The guard stays as designed by default |
+| Gate 5: a kept row not CC0 or CC BY | Nothing, or MDD out | A GBIF row: a bug, fix and re-run. MDD's `metadata.license.id` not `cc-by-4.0` in `arch-probe/mdd/record-21654811.json`: "Licenses decide": MDD rejected, O1 withdrawn, O3 (a) recommended for all 76 |
+| A Shape combination outside §3 | 007's mapping | Clear claim: the nearest line's outcome. Otherwise "no row, counted". A new `origin` or `presence` value only if a real claim has no home, with a Decisions line; 007's contract takes it before any freeze |
+| All-defaults projection < 20 rows | Brief | Header says: don't start until O1 or O2 is yes |
+| GRIIS alone < 10 species | O2's text | Say so. Design holds: it's still the only global introduced source found |
+| No `native` + `absent` row kept, all yes | 007, brief | Historical has no rows in the first build; say so. `absent` stays in the contract |
+| A dataset mixes scopes in `locality` | Allowlist | `area` null for it (null doesn't claim the whole country); reason says so |
+| Projection > 5,000 rows or 2 MB JSON | 007's size, brief | Design holds, one file. Per-species JSON goes under Follow-up |
+| Wikidata on ≥ 13 of 26 non-mammals, with references | O3's text | Still unused (one authority per claim). Named as a lead for curated rows |
+| Zenodo down, or md5 differs | Nothing | Never unpin. Retry next session. Twice, or md5 differs: gates 1–3 and MDD metrics "not measured", a Decisions line, O1 on the probe's counts |
+| GBIF `/distributions` failing | Risks | Retry next session. Twice: documents proceed on the probe's numbers, marked "probe"; handoff item only if GBIF has retired it |
+
 ## Verification
+
+Run from the worktree as one bash session; it writes its own transcript to `$M/verify/`. No lint script exists (Baseline); `pnpm typecheck` is the static check. `baseline.sh` made `dist-baseline.sha256` with the same pipeline as `hashes` below (paths `./…`), so regenerating and `cmp` catches changed, missing and added files. `sha256sum -c` alone misses added files: `cd dist && sha256sum --quiet -c $M/dist-baseline.sha256` passes today, and serves only to name what differs.
+
+```bash
+set -euo pipefail
+R=/srv/critter-ai/worktrees/critwire-native-ranges-design; cd "$R"
+M=/srv/critter-ai/agent-state/missions/critwire-native-ranges-design; S=$M/spike; V=$M/verify; mkdir -p "$V"
+P=plans/2026-11-01-critwire-native-ranges-design.md; D=plans/007-native-ranges.md; B=plans/briefs/critwire-native-ranges-build.md; H=/srv/critter-ai/handoff/critwire.md
+exec > >(tee "$V/verify-$(date -u +%Y%m%dT%H%MZ).log") 2>&1
+fail() { echo "FAIL: $*"; exit 1; }
+hashes() { (cd "$1" && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum); }
+git fetch -q origin main
+
+# V1 code: Baseline's results
+pnpm typecheck
+pnpm test 2>&1 | tee "$V/test.log"
+grep -qx 'ℹ pass 754' "$V/test.log" && grep -qx 'ℹ fail 0' "$V/test.log" || fail "pnpm test count"
+pnpm build
+
+# V2 dist byte-identical, 311 files
+hashes dist | cmp - "$M/dist-baseline.sha256" || fail "dist differs from the baseline"
+[ -z "$(git diff --name-only origin/main...HEAD | grep -v '^plans/' || true)" ] || fail "branch changes files outside plans/"
+
+# V3 deliverables
+for f in "$D" "$B"; do test -s "$f" || fail "missing $f"; done
+for h in Summary Sources 'Spike results' Allowlist 'Data model' Contract Pipeline 'Learn tie-in' "Owner's choices" Follow-up Rejected; do grep -qx "## $h" "$D" || fail "007 heading: $h"; done
+for h in Goal Why Scope 'Definition of done' 'Decision rules'; do grep -qx "## $h" "$B" || fail "brief heading: $h"; done
+for t in 'mission start critwire' 'Estimate:' 'O1 yes' 'O2 yes' 'O3 (a)' 'recorded O1 yes'; do grep -qF "$t" "$B" || fail "brief lacks: $t"; done
+
+# V4 every source: its row, a URL, a quote (or the recorded failure to get one)
+sources=$(sed -n '/^## Sources$/,/^## /p' "$D")
+while IFS= read -r s; do
+  row=$(grep -F "| $s" <<<"$sources" | head -1 || true)
+  [ -n "$row" ] || fail "no row: $s"
+  grep -q 'https\?://' <<<"$row" || fail "no URL: $s"
+  grep -qE '"|Not retrievable:' <<<"$row" || fail "no quote: $s"
+done <<'SOURCES'
+MDD
+GBIF checklist distributions
+COL distributions
+GBIF occurrence
+Wikidata
+AmphibiaWeb
+Reptile Database
+Amphibian Species of the World
+CITES Species+
+iNaturalist
+GARD
+Mammal range maps
+ITIS
+Natural Earth
+RESOLVE
+FishBase
+SeaLifeBase
+WoRMS
+Avibase
+Clements
+IOC
+SOURCES
+
+# V5 coverage numbers in the plan and 007, reproduce commands, measure repeats byte for byte
+for f in "$P" "$D"; do
+  [ -z "$(awk -F'\t' '{print "| "$1" | "$2" |"}' "$S/results.tsv" | grep -vxFf "$f" || true)" ] || fail "results.tsv rows missing from $f"
+  grep -qF 'fetch.py --repo' "$f" && grep -qF 'measure.py --repo' "$f" || fail "reproduce commands missing from $f"
+done
+python3 -I "$S/measure.py" --repo "$R" --raw "$S/raw" --out "$S/verify-out"
+cmp "$S/results.json" "$S/verify-out/results.json" && cmp "$S/results.tsv" "$S/verify-out/results.tsv" || fail "measure.py isn't repeatable"
+rm -rf "$S/verify-out"
+
+# V6 contract: 11 entries, each sha by the repo's rule
+pnpm exec tsx -e 'import {readFileSync as r} from "node:fs"; import {entrySha} from "./scripts/build/contract.ts"; const m=/```json contract\n([^]*?)```/.exec(r("plans/007-native-ranges.md","utf8"))!; const c=JSON.parse(m[1]!); const es=Object.entries(c.rangeListings) as [string,any][]; const bad=es.filter(([,e])=>entrySha(e)!==e.sha).map(([k,e])=>k+" sha "+entrySha(e)); if (bad.length) throw new Error(bad.join(", ")); if (es.length!==11||c.rangeListingsCsv.length!==11) throw new Error("want 11 entries and 11 CSV names"); console.log("contract ok")'
+
+# V7 no IUCN content. Terms pages, papers and dataset metadata in arch-probe name IUCN in prose; that isn't its data. Plan's two lines: Finding 3, and `cats=` here
+[ -z "$(grep -rliE 'iucn|additionalStatus|threatStatus|appendixCites' "$S/raw" "$S/fetch.log" "$S/results.json" "$S/results.tsv" || true)" ] || fail "IUCN string in spike output"
+[ -z "$(grep -rl '19491596-35ae-4a91-9a98-85cf505f1bd3' "$S/raw" "$S/fetch.log" "$S/results.json" "$S/results.tsv" || true)" ] || fail "Red List dataset key in spike output"
+[ -z "$(grep -rlE '"(threatStatus|iucnStatus|appendixCites|additionalStatus)"' "$M/arch-probe" || true)" ] || fail "IUCN field in arch-probe"
+cats='\b(LEAST_CONCERN|NEAR_THREATENED|VULNERABLE|ENDANGERED|CRITICALLY_ENDANGERED)\b'
+[ -z "$(grep -nE "$cats" "$D" "$B" || true)" ] || fail "threat category in 007 or the brief"
+[ "$(grep -cE "$cats" "$P")" = 2 ] || fail "threat category in the plan beyond those two lines"
+
+# V8 no per-species MDD data; output is file:line and counts only
+[ -z "$(find "$M" /tmp -iname 'MDD_v2.5_6904species*' 2>/dev/null || true)" ] || fail "MDD file kept"
+python3 -I "$S/measure.py" --repo "$R" --leak-check "$P" "$D" "$B" "$H" "$S/results.json" "$S/results.tsv" "$S/fetch.log" "$S/mdd-places.json" "$S/allowlist.json" "$S/datasets-first-pass.tsv" "$S/raw" "$M/arch-probe" || fail "MDD leak"
+
+# V9 owner's choices in the handoff file, none blocking
+[ "$(grep -cE '^### H[0-9]+ · Native ranges O[1-5]:' "$H")" = 5 ] || fail "handoff: want 5 items"
+[ "$(grep -A3 -E '^### H[0-9]+ · Native ranges O[1-5]:' "$H" | grep -c '^Blocks: nothing yet')" = 5 ] || fail "handoff: an item blocks"
+echo VERIFY OK
+```
+
+Must show: every line passes, ends `VERIFY OK`; `pnpm test` 754 pass, 0 fail; `git status --short` shows only `plans/`.
+
+**E2E: not re-run.** The brief's Definition of done names typecheck, test and unchanged `dist/`. `pnpm e2e` tests `dist/` through Caddy; V2 proves `dist/` is the same bytes E2E passed on at Baseline (`dist-after-e2e.sha256` = `dist-baseline.sha256`), and V2 proves no `e2e/` or code change. A re-run costs 11 min and 827 MB, for no new evidence. **Artifact:** stays `$M/e2e-baseline/` (Playwright report, traces, `results.json`, screenshots; 149/149; never delete). Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`. If V2 fails, the cause is found and fixed; it isn't waved through with an E2E run. This mission's own evidence is the spike: `$S/results.json`, `results.tsv`, `fetch.log`, re-run by V5.
+
+**If `origin/main` moved** (`git diff --quiet 40a0274 origin/main -- . ':!plans'` fails; not expected, this is the chain's last mission): the baseline list no longer applies. Record it under Decisions, use `hashes /srv/apps/critwire/.live` taken just before the merge as the reference in V2 and X1, and skip V5's `cmp` lines, because `--repo`'s data moved.
+
+**The Summary** (written after this, by the mission process) gives recommended sources, coverage, data shape and owner's choices, with their H numbers.
+
+**Release smoke** (after `deploy critwire`; no public file changes, so these are the whole smoke):
+
+```bash
+M=/srv/critter-ai/agent-state/missions/critwire-native-ranges-design
+fail() { echo "FAIL: $*"; exit 1; }
+hashes() { (cd "$1" && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum); }
+# X1 what deploy published is the baseline, byte for byte
+hashes /srv/apps/critwire/.live | cmp - "$M/dist-baseline.sha256" || fail "live differs from the baseline"
+# X2 unchanged pages answer 200
+for p in / /v1/species.json /v1/species.csv /v1/species.parquet /v1/species/1.json /v1/countries.json /v1/countries.csv /v1/countries.parquet /v1/attribution.json /learn/ /learn/data/manifest.json; do
+  [ "$(curl -s -o /dev/null -w '%{http_code}' "https://critwire.com$p")" = 200 ] || fail "$p"
+done
+# X3 the design published nothing
+[ "$(curl -s -o /dev/null -w '%{http_code}' https://critwire.com/v1/range-listings.json)" = 404 ] || fail "range-listings is live"
+echo SMOKE OK
+```
+
+All statuses above checked by hand on 2026-11-01 before any step: 200s, and the 404.
+
+## Failure modes
+
+The spike's scripts can't be tested end to end, and a slip breaks a non-negotiable rule or a number the owner decides on. Written before the code; each is a hard check in the script (exit non-zero, nothing published), or the named V check.
+
+`fetch.py`:
+- F1. A Red List row reaches `raw/`, or a usage record is saved: drop by `datasetKey` before writing, save only `sourceTaxonKey` → `datasetKey`; scan `raw.partial/` before the rename (V7).
+- F2. `threatStatus`, `appendixCites`, `remarks`, `description`, `rights`, `contacts` or Wikidata's other claims land: every write goes through a key allowlist, never a denylist.
+- F3. Over 2 req/s: one throttle wraps every GET and retry, on every host; the log's n/t is checked.
+- F4. Truncated paging: page by the count returned until `endOfRecords` is true; refuse otherwise.
+- F5. A partial run read as complete: `raw.partial/` renamed only at the end; `measure.py` refuses a `raw/` without the 73 keys.
+- F6. License slips: exact string compare with the two legalcode URLs; anything else is dropped and counted under its own license string, so BY-NC stays visible.
+
+`measure.py`:
+- F7. MDD reaches disk or stdout: no write path takes MDD values; errors name counts or a place, never a row (`--leak-check`, V8).
+- F8. Misparsing: `Cambodia?` counted as its own place, `_` missing from names: the whole-file counts against `cut-counts.json`, and 16 of the probe's mammals must match.
+- F9. `NA`: MDD's non-place, GBIF's Namibia. MDD resolves by place name, GBIF by code; the two lookups never share a table.
+- F10. Small cells read back a pair: pooled or `<5` (Conventions); `--leak-check` (c).
+- F11. Two-key species double count: all metrics use §3's collapse key; print rows collapsed for 1, 55, 63, 70.
+- F12. Null `countriesWithOpenRecords` (status not `ok`: 9, 19, 27, 47) crashes or counts as absence: an empty R, reported by status.
+- F13. Numbers depend on run order or clock: sorted keys, no timestamps in `results.*`; `cmp` on a re-run (V5).
+- F14. A Shape combination silently dropped: each row gets a §3 outcome or `unmapped`; totals by outcome sum to rows fetched.
+
+## Risks
+
+- GBIF rows are live: a later `fetch.py` run moves the counts. 007's numbers are for `raw/` at its date; V5 re-runs `measure.py`, not the fetch.
+- `/v1/species/{key}/distributions` sits on the legacy backbone (§4).
+- Reproducing needs this VPS: spike code isn't in the repo, by the brief's rule. MDD stays reproducible from Zenodo's pinned file.
+- Some quotes come from Internet Archive snapshots (Architecture, Evidence). The build should re-read them when it starts.
+- Dropping a dataset for its own conflict rate (Spike outcomes, gate 3) can look like tuning: both numbers stay on record.
 
 ## Code review (Astra)
 
@@ -488,5 +711,6 @@ Evidence removed from the state folder (item 4): see Architecture, Evidence. The
 - 2026-11-01 18:32 UTC: Fable review: APPROVE_WITH_CHANGES, 1 MUST-FIX (§3 mapping not exhaustive: refuse unlisted combos, spike lists all met, never store dataset `description`); 3 missed, 5 should-consider, all for Revision. Plan-only diff; no build.
 - 2026-11-01 18:33 UTC: Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (key-stale snapshot, status semantics incl. MDD pre-1500, exhaustive mapping, O1 gate on MDD spike retention); 3 should-consider, all for Revision. Plan-only diff; no build.
 - 2026-11-01 18:45 UTC: Revision: architect fixed all 5 MUST-FIX (exhaustive mapping + refusal, key staleness, `absent`/`unstated`/`native-or-pre-1500`, MDD spike aggregates only + O1 gate); took all should-consider; deleted MDD cut from state folder, counts kept. Spot-checked: GBIF enums live, 19 of 29 datasets' unkept metadata mention IUCN and 0 in the five read, no MDD copy left in state folder or /tmp. Plan-only diff; no build.
+- 2026-11-01 18:58 UTC: Steps: planner wrote S1–S11, Spike outcomes, Verification (V1–V9, X1–X3), Failure modes, Risks. Spot-checked: 73 keyed species, two keys on 1, 55, 63, 70, null countries 9, 19, 27, 47, `entrySha` export, test log lines, `dist/` = baseline list, 2 threat-category lines in plan: all match. Typecheck pass; plan-only diff; no build.
 
 ## Summary
