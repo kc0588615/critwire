@@ -59,10 +59,10 @@ pnpm learn:check                                               # every .sql and 
 | s4 | `/learn/spatial-statistics/moran/` | 4 | 0 | 0 | 0 | 0 | R4 | Q48, Q49 |
 | s5 | `/learn/spatial-statistics/local/` | 4 | 0 | 0 | 0 | 0 | R4 | Q50–Q53 |
 | s6 | `/learn/spatial-statistics/zonal/` | 4 | 0 | 0 | 0 | 0 | R4 | Q33, Q40 |
-| e1 | `/learn/etl/extract/` | 4 | 0 | 0 | 0 | 2 | R5 |  |
-| e2 | `/learn/etl/transform-load/` | 4 | 0 | 0 | 0 | 2 | R5 |  |
-| e3 | `/learn/etl/idempotent/` | 4 | 0 | 0 | 1 | 2 | R5 |  |
-| e4 | `/learn/etl/quality-provenance/` | 4 | 0 | 0 | 0 | 0 | R5 |  |
+| e1 | `/learn/etl/extract/` | 4 | 0 | 0 | 0 | 2 | R5 | Q56, Q57 |
+| e2 | `/learn/etl/transform-load/` | 4 | 0 | 0 | 0 | 2 | R5 | Q58–Q60 |
+| e3 | `/learn/etl/idempotent/` | 4 | 0 | 0 | 1 | 2 | R5 | Q61 |
+| e4 | `/learn/etl/quality-provenance/` | 4 | 0 | 0 | 0 | 0 | R5 | Q61, Q62 |
 | e5 | `/learn/etl/schedule/` | 4 | 0 | 0 | 0 | 2 | R5 |  |
 | p1 | `/learn/power-bi/power-query/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
 | p2 | `/learn/power-bi/model/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
@@ -263,8 +263,9 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q57 | e1 | wrong fact | T0 | "Apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored": the stored one also holds `type`, `interpretedExtensions` and `verbatimExtensions` (`data/raw/gbif-sample/download.json`). Its `format`, `checklistKey` and `predicate` do equal `build_request`'s, every key in order (lab db), and those are what `same` compares | fixed | `qa-fixes.ts` |
 | Q58 | e2 | prose | T0 | "The decimal comma two records later": `e2-casts` puts `30 m` on the first record and the comma on the second | fixed | `qa-fixes.ts` |
 | Q59 | e2 | wrong fact | T0 | "`read_postgis(sql, con, geom_col=…)` needs the geometry column's name": it defaults to `geom` (geopandas signature, the pinned version) | fixed | `qa-fixes.ts` |
-| Q60 | e2 | prose | T0 | "The catalogue (`pg_class`…)": d1 defines the term as "catalog" and every other page uses it | fixed | `qa-fixes.ts` |
+| Q60 | e2 | prose | T0 | "The catalogue (`pg_class`…)": d1 defines the term as "catalog"; f1's "other catalogues" means something else and stays | fixed | `qa-fixes.ts` |
 | Q61 | e3, e4 | missing step | T0 | e4's lead says "everything runs in the Python environment" and e3's names only Python and the browser; e4 has 3 PostGIS blocks and e3 has 2, which a learner runs in a SQL client. Worded as s6's. No 004 sentence: the leads are only on the pages | fixed | `qa-fixes.ts` |
+| Q62 | e4 | prose | T2 | `e4-derived`'s comment ends "(§4.2)", a section of the design plan that a learner has no way to read as one. Drop it from 004's fence and `site/learn/sql/e4-derived.py`; the comment isn't output, so the result stays | queued | `learn:port --check e4`; `learn:check` |
 
 ## Ledger
 
@@ -324,6 +325,11 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | Gi\*, hot and cold spot, two-sided, LISA, quadrants, outlier, conditional permutation, FDR, Bonferroni | s5 | |
 | null hypothesis | s5 (Q50) | |
 | zonal statistics, density, record-to-area ratio, target group, effort-normalized ratio, chi-square, degrees of freedom, EASE-Grid 2.0 | s6 | |
+| search API, download API, predicate, 429, 5xx, exponential backoff, `Retry-After`, jitter, sha256, intent file, reconciling, checklist | e1 | |
+| staging, `COPY`, NUL byte, `pg_input_is_valid`, `pg_input_error_info`, synonym (`taxonKey`, `speciesKey`), effective license | e2 | effective license also in e4, with the same words; savepoint glossed again in place |
+| deterministic, idempotent batch, ledger, snapshot, job key, `TRANSFORM_VERSION`, `SCHEMA_VERSION` | e3; e5 agrees | |
+| reject and flag checks, `NaN`, quarantine, provenance, derived dataset | e4 | |
+| exit code, `EnvironmentFile=`, `OnFailure=`, `MAILTO`, advisory lock, incremental load | e5 | advisory lock named in e3's Dialects, with a link |
 
 **Claims** (claim | where | checked):
 
@@ -389,6 +395,18 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | Marine Neritic 59: 54 inside, up to 3.3 km from the edge, 5 outside | s6 | lab db |
 | `esda` 2.10.0: `fdr` falls back when no test passes (Q51), `Is` uses n − 1 (Q52), `p_norm` one-sided, `q` numbering, value at the mean is low; `DistanceBand` leaves two points at one spot apart; `libpysal` 4.15.1 `Graph.build_*` | s3, s4, s5 | read in the venv's source, or run |
 | DuckDB 1.5.6: `count(DISTINCT (a, b))`, `ILIKE`, `arg_max`, `var_*`, `stddev_pop`, `^`, `**`, `/`, `//`, no `erfc` | s1, s2, s4, s5 | run here |
+| Course's download: 394,532 records, 454 datasets, 34,725,756-byte zip, created 2026-10-23, 73 keys; its `format`, `checklistKey`, `predicate` = `build_request`'s (Q57) | e1, e2 | `data/raw/gbif-sample/download.json`, lab db. 16 min 41 s: the ingest plan's log |
+| GBIF: "If no `checklistKey` is supplied the obsolete GBIF Backbone Taxonomy will be used" | e1 | techdocs.gbif.org, read today, word for word |
+| GBIF keeps a cited download | e1 | GBIF's stated rule, not re-read. The course's own still shows `eraseAfter` 2027-04-23 though cited: open with the owner as H3 |
+| Load 6.7 s and 14.2 s; text format changed 9 rows, csv form kept 97; 2,385 synonym records | e2 | Only in 004's spike notes; the spike's files aren't in the repo, not re-checked. The 4 synonym species agree with the ingest plan |
+| `pg_input_is_valid` strict, so NULL gives NULL; sample has a `CHECK` on uncertainty, `>= 0 AND < 'Infinity'` | e2, e4 | lab db |
+| 100 per species: 4,766 records, 38 species at 100 of 71; lowest devil id has no year, so "one missing year" holds | e3 | lab db |
+| No record within 5° of 0, 0 (nearest 5.73°); two tiger records at 102° E on the equator, `ID`; 10 records before 1700, all devil, 1599 | e4 | lab db |
+| Devil and jaguar: 33 datasets, 29 CC BY (3,992), 4 CC0 (8); Jaguar Movement Database 1,948 of 2,000 agrees with R4's row | e4 | lab db, results |
+| `datasets`: 400, 124 CC0 1.0, 276 CC BY 4.0, none without a DOI | e4, e5 | lab db |
+| `POST /v1/derivedDataset`, `relatedDatasets` a map of dataset key to count | e4 | `scripts/gbif/derived-dataset.ts`, `scripts/gbif-register.ts` |
+| Systemd recipe: units parse, `Mon *-*-* 04:17:00` next falls on a Monday | e5 | `systemd-analyze verify` and `calendar` here; the one complaint is the example's unbuilt `.venv`. Not started as a timer |
+| DuckDB `read_csv` with `delim`, `quote = ''`, `all_varchar`, `store_rejects` into `reject_errors`; `NaN` equal to itself and greatest; `isfinite`, `isnan`, `isinf`; both upsert forms; `md5` | e2, e3, e4 | run here, DuckDB 1.5.6 |
 
 **R1's flagged numbers:** setup's 3.4, 3.5, 5432, 5433, 2024, 10,000 and 251, f2's 1.0, 4.0, 1,000 and 3.5 (`7 / 2`), f4's 1,000: all right; versions, ports, thresholds or the outside facts above. f1 and f3 flag none.
 
@@ -397,6 +415,12 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 **R3's flagged numbers:** g1's 111, 0.1, 1.13, 0.01, 8,500, 1.29, 4.76, 2.6, 3.95, 190, 664, 0.5; g2's 3.10, 0.05, 811, 481, 477; g3's 0.3, 0.1, 933, 40,395, 924, 2023, 247, 0.45; g4's 4326, 0.05, 637, 198, 97.3, 100, 51,978, 675, 1.3, 4.0, 40,395, 0.7, 10,000, 5.2, 4.5, 2,670, 2,500, 206; g5's 4326, 1.36, 147.33, 42.88, 8.185, 81.7, 111.1, 999, 436, 346, 7,088, 7,081; g6's 4.8, 40.6, 43.7, 8.2, 11.1, 2,000, 0.3, 384, 3.1; g7's 2020, 10.5281, 1.6, 14.1, 4326, the grid's constants, 635, 836, the windows' bounds, 0.75, 698,896, 42.7, 110.6, 111.1, the four cell areas, 7,386, 202, 693,893, 5,003, 900, 6,329, 6,785.90, 0.01, 0.978, 618, 121, 132, 0.09, 431, 0.71, 13.16, 1,900, 908, 6.4, 909, 1.3, 501, 502, 3.9, 290, 2,616, 135, 1.1, 2.8, 1200, 500, 11.04, 144, 12.5, 13.9: all right, by the claims above, by arithmetic or as outside facts, bar 81 (Q26) and the order of 3.9 and 4.8 (Q34). Small integers and rates (seven ecoregions, ten pairs, eight pairs, thirteen records, a quarter less, half of the gap, 54 %, 60 %): each worked out from its result.
 
 **R4's flagged numbers:** s1's 40,395, 441, 192, 70.7, 1642, 1,198, 2007, 919, 362, 1976; s2's 1.96, 31,000, 37,000; s3's 1,094, 221, 296, 8.66, 155, 449, 1,972, 1.2; s4's 1.73, 3577, 8,660.254, the rounded 0.2733, 15.18, 0.2036, 15.25, 0.0008, 0.0182, 0.2291; s5's 1.96, 999, 1000, 1.29, 787, 0.001, 3.6, 1,108, 1,972, 1.5; s6's 7.41, 6933, 2.0, 501, 216, 2,107, 0.08, 514, 9.50, 20.01, 3.3, 4326: all right, by the claims above, by arithmetic or as outside facts. Small integers and rates (55 cells by chance, three in four, more than half, a seventh, a quarter, 31 %, 56 %, the chi-square's 77.4 by hand, the FDR cut 47 × 0.05 ÷ 1,094): each worked out. 19 (Q38) and 10⁻¹² (Q48) weren't.
+
+**R5's flagged numbers:** e1's 300 and 100,000 (GBIF's search limits, from what's known of its API, not re-read), 1.0, 4.0, 34,725,756, 394,532, 9110 and 10.2 (the RFC), 502, 504 (curl's retried codes), 1984 (WGS 1984); e2's 394,532, 6.7, 14.2, 2,385 (above), 180 (the `CHECK`); e4's 200,000 (an illustration), 1.0, 59.4, 1599, 1642, 3,992, 2031 (made up): all right, by the claims above, by arithmetic or as outside facts. e3 and e5 flag none. Small integers and rates (e1's 73, e2's three records and one-kilometre buffers, 6,273.1 km² as 2,000 × a 32-sided circle, e3's 4,766, runs 1 to 8, e4's 29 and 4, e5's 124 and 400): each worked out from its result. "Six" (Q56) and "two records later" (Q58) weren't.
+
+R5's reading of the dialects: DuckDB's as in the claims; PostgreSQL's by the blocks and `pg_proc`; GeoPandas's by the pinned signature (Q59). curl, urllib3, pygbif, rgbif, SQL Server, `pg_cron`, Task Scheduler and ArcGIS Pro lines read against what's known of those tools, not run. One doubt left as written: e5 says Task Scheduler "can restart a failed task", and the recipe sets `-RestartCount 2`. Microsoft's schema page says a task restarts "if the task fails for any reason"; whether a non-zero exit counts isn't stated, and there's no Windows here to try. The recipe's real alert is its last sentence, `LastTaskResult`, which holds either way. e2's and e5's diagram alt text read: says what each figure shows. `e1-submit` isn't run (`untested`, its reason on the page); read only.
+
+For R7: e4→s1, s2, s5 still owe their verdict. Spelling: e1, e2, p1, p4 write "licence" and the rest "license". `setup.sql:101`'s comment names `plans/004-learn-curriculum.md`, a path in the public repo, so it resolves; a boot block, no change proposed. Q62's check found no other "§" in `site/learn/`. R5 prereqs read fine as ordered.
 
 R4's reading of the dialects: DuckDB, esda and libpysal lines as in the claims; PostgreSQL's by `pg_proc` and the blocks. SQL Server and ArcGIS Pro lines read against what's known of those products, not run; no such tool here, as setup says. R7 still owes the verdict on s1→f4, s2→g5, s3→g5. s4's diagram alt text read: says what the figure shows.
 
