@@ -6850,7 +6850,7 @@ every record | 1784 | 1109 | 985.8 | 3000.5 | 0.329 | -54.3
 distinct locations | 913 | 0 | 2298.4 | 4194.3 | 0.548 | -26.1
 ```
 
-Counting every record, 1,109 of the 1,784 records on the main island sit on exactly the same spot as another record, so their nearest-neighbour distance is 0. The mean distance is 985.8 m where randomness gives 3,000.5 m: R = 0.329, z −54.3. Counting the 913 distinct locations once, R = 0.548 (z −26.1). Both are far below 1, so the records are clustered either way; the duplicates make it look twice as strong. A z-score below −1.96 means a mean distance this small would happen by chance less than 5 % of the time.
+Counting every record, 1,109 of the 1,784 records on the main island sit on exactly the same spot as another record, so their nearest-neighbour distance is 0. The mean distance is 985.8 m where randomness gives 3,000.5 m: R = 0.329, z −54.3. Counting the 913 distinct locations once, R = 0.548 (z −26.1). Both are far below 1, so the records are clustered either way; the duplicates make it look twice as strong. A z-score beyond ±1.96 means a mean distance this far from the expected, in either direction, would happen by chance less than 5 % of the time.
 
 2. DBSCAN with `eps` 2 km and `minpoints` 20 (ArcGIS Pro's Density-based Clustering, DBSCAN method). `ST_ClusterDBSCAN` is a window function: it gives each point its cluster's number, or `NULL` for noise:
 

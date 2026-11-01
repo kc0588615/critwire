@@ -59,6 +59,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q41", url: "/learn/spatial-statistics/bias/", has: "the standard vocabulary for biodiversity records", not: "a Darwin Core term" },
   { q: "Q42", url: "/learn/spatial-statistics/point-patterns/", has: "Both tests say clustered", not: "Every test says clustered" },
   { q: "Q42", url: "/learn/spatial-statistics/point-patterns/", has: "Every method below measures", not: "Every test below measures" },
+  { q: "Q43", url: "/learn/spatial-statistics/point-patterns/", has: "A z-score beyond ±1.96", not: "A z-score below −1.96" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

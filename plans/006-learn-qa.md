@@ -246,6 +246,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q40 | f4, s6, c1 | prose | T0 | "One collar study": the sample's dataset is a database that many teams' tracking fed, in 5 countries, so "study" says more than the data does. `jaguar_datasets` counts datasets; the prose now does too | fixed | `qa-fixes.ts` |
 | Q41 | s1 | jargon | T0 | "A Darwin Core term", with no word on what Darwin Core is. Defined here; d6's passing use reads as itself | fixed | `qa-fixes.ts` |
 | Q42 | s2 | prose | T0 | Result: "Every test says clustered", though the Concept says kernel density "doesn't test anything" and DBSCAN only labels. Two of the four are tests | fixed | `qa-fixes.ts` |
+| Q43 | s2 | prose | T0 | "A z-score below −1.96 means a mean distance this small would happen by chance less than 5 % of the time": that's the two-sided figure s5 gives; one side alone is 2.5 % | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
