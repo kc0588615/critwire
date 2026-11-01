@@ -222,6 +222,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q16 | d3, setup, every lab page | missing step | T0 | d3 says `ROLLBACK;` after each lab, but lab 2 needs lab 1's index and most blocks need `d3-analyze`, whose `ANALYZE` the `ROLLBACK` undoes (seen in the lab db: `dataset_key`'s common values back to the default's 100 after it). Only browser blocks showed `-- after:`; a PostGIS or Python block named nothing to run first, on any page. They now show the same Runs after line: linked on the page, named when it's another page's (`py-connect`, d6's star) | fixed | `learn-labs.spec.ts` Runs after; `qa-fixes.ts` |
 | Q17 | d6 | missing step | T0 | Lab 3 follows the worked example, which leaves the star built, and says "build the star after" the new record. Done in one transaction, `CREATE TABLE` refuses; with the star kept, the record never reaches it and step 3 isn't the 40,396 shown. Now says to roll back first | fixed | `qa-fixes.ts` |
 | Q18 | d1 | jargon | T0 | Lab 8 reads `pg_constraint` and `pg_index` and lab 9 says "as the catalog describes it" with no word on what the catalog is, `::regclass`, or why `indkey[0]` meets `conkey[1]`; d3, d4 and d5 read it too. Defined once | fixed | `qa-fixes.ts` |
+| Q19 | d2 | jargon | T0 | `read_parquet` and `species.parquet` carry the worked example, and no page says what Parquet is. Defined at the first module that uses it | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
