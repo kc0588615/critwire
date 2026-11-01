@@ -242,10 +242,13 @@ SHOULD-CONSIDER:
 
 ## Decisions
 
+- Correction to Fable's MISSED 1 (and to commit `3abf588`'s subject): `assemble.ts:190` is the `.ipynb` "about" cell only, and `freshness.ts:108` drops `.ipynb` from the download shas, so no download sha moves. It's still T2: `assemble.ts` is in the checker's closure (`learn-check.ts` → `check.ts:39`), so any edit moves every block key. Conclusion unchanged, queue it for the lab batch (U11); `setup.html:89` stays T0.
+
 ## Log
 
 - 2026-11-01 12:00 UTC: Baseline. typecheck pass, test 748/748, test:db 140/140, build pass, learn:check ok, e2e 98/98; dist = live. Next: Architecture.
 - 2026-11-01 12:22 UTC: Architecture written by `architect`: d1 overflow at 375 px + axe `scrollable-region-focusable` found (probe, not yet fixed); walk spec, axe-core, one-off .ipynb run, reading units R1–R7. No checks run (plan only). Next: Fable review.
 - 2026-11-01 12:32 UTC: Fable review by `architecture-reviewer`: APPROVE, 0 MUST-FIX, 1 MISSED (`assemble.ts:190` is T2, not T0), 5 SHOULD-CONSIDER. Plan only, no checks run. Next: Astra review.
+- 2026-11-01 12:36 UTC: Corrected Fable's reason for `assemble.ts:190` being T2 (closure key, not download sha; see Decisions). Read code only, no checks run. Next: Astra review.
 
 ## Summary
