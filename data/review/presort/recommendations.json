@@ -1948,5 +1948,548 @@
       "gbif:dataset:999d8fed-d06d-48d8-87ee-cc36e6c8456c",
       "col:4C92G"
     ]
+  },
+  {
+    "key": "56:ML",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "MHNG specimen, no year, locality just \"Afrique occidentale\", coordinates to 1,000 km: it names a region, not a place in Mali. COL says Africa, but a kept animal or a wrong country can't be ruled out. Too thin to call, so it stays.",
+    "cite": [
+      "gbif:occurrence:865739432",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:4C92G"
+    ]
+  },
+  {
+    "key": "56:SS",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "NHMUK specimen whose locality says \"Kibwesa, Cape Kungwe, Western Province, T[anganyika] T[erritory]\", which is Tanzania, while its coordinates give South Sudan: misplaced by its own record. The only record. Tanzania stays published on other records.",
+    "cite": [
+      "gbif:occurrence:1919818810",
+      "gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a",
+      "col:4C92G"
+    ]
+  },
+  {
+    "key": "56:TD",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "MHNG specimen, no year or locality, whole-degree coordinates (9, 18) to 1,000 km: it names only the country. COL says Africa, but that can't show a free animal in Chad. Too thin to call, so it stays.",
+    "cite": [
+      "gbif:occurrence:865739414",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:4C92G"
+    ]
+  },
+  {
+    "key": "57:AO",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Lunda Sul, 2026, 4 m uncertainty, and an FMNH specimen, Huila, 1954: two datasets, no captive sign. COL and Wikidata say Africa.",
+    "cite": [
+      "gbif:occurrence:6185338141",
+      "gbif:occurrence:665845295",
+      "gbif:dataset:41fc5c40-5e81-496f-9733-6b5681b3b7a5",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:74ZNF",
+      "wikidata:Q46212"
+    ]
+  },
+  {
+    "key": "57:BF",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "MHNG specimen, 1969, field locality Linoghin, 55 km east of Ouagadougou, no captive sign. COL and Wikidata say Africa.",
+    "cite": [
+      "gbif:occurrence:865739117",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:74ZNF",
+      "wikidata:Q46212"
+    ]
+  },
+  {
+    "key": "57:GH",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Northern region, 2025, no captive mark. COL and Wikidata say Africa.",
+    "cite": [
+      "gbif:occurrence:5889392172",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:74ZNF",
+      "wikidata:Q46212"
+    ]
+  },
+  {
+    "key": "57:ML",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "MHNG specimen, no year, locality just \"Afrique occidentale\", coordinates to 1,000 km: it names a region, not a place in Mali. COL and Wikidata say only Africa. Too thin to call, so it stays.",
+    "cite": [
+      "gbif:occurrence:865739155",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:74ZNF",
+      "wikidata:Q46212"
+    ]
+  },
+  {
+    "key": "57:NE",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Pedestrian mammal census in W National Park, 2015, locality \"Say, Parc W\": a field survey, no captive sign. COL and Wikidata say Africa.",
+    "cite": [
+      "gbif:occurrence:1898924691",
+      "gbif:dataset:4496b1b1-1ea9-4eef-bcca-90adc41038df",
+      "col:74ZNF",
+      "wikidata:Q46212"
+    ]
+  },
+  {
+    "key": "57:SD",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two FMNH specimens, 1967, field localities in Kassala (Aroma, Telaweit, Bir Tyai), no captive sign. COL and Wikidata say Africa.",
+    "cite": [
+      "gbif:occurrence:665822186",
+      "gbif:occurrence:665916023",
+      "gbif:dataset:41fc5c40-5e81-496f-9733-6b5681b3b7a5",
+      "col:74ZNF",
+      "wikidata:Q46212"
+    ]
+  },
+  {
+    "key": "57:SL",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "MHNG specimen, no year, \"Am Kenema\", coordinates to 10 km, no captive sign. COL and Wikidata say Africa, but a town and no date don't show where the animal lived.",
+    "cite": [
+      "gbif:occurrence:865739154",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:74ZNF",
+      "wikidata:Q46212"
+    ]
+  },
+  {
+    "key": "57:TG",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "The snapshot counted 1 record, but GBIF now returns none under this filter, so there's nothing to judge or cite. Leave it unaccepted: the next GBIF ingest settles it, and a keep with no records would then make derive refuse.",
+    "cite": [
+      "entry"
+    ]
+  },
+  {
+    "key": "57:ZW",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "USNM specimen, 1968, Essexvale Ranch, Matabeleland: a field locality, no captive sign. COL and Wikidata say Africa.",
+    "cite": [
+      "gbif:occurrence:1321840644",
+      "gbif:dataset:821cc27a-e3bb-4bc5-ac34-89ada245069d",
+      "col:74ZNF",
+      "wikidata:Q46212"
+    ]
+  },
+  {
+    "key": "58:AO",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "SUI specimen, 1913, locality Benguela, 10 km uncertainty, no captive sign; COL lists Africa.",
+    "cite": [
+      "gbif:occurrence:1325910706",
+      "gbif:dataset:04169fce-7d4f-41f7-9dff-245960f5b59e",
+      "col:9BTZ"
+    ]
+  },
+  {
+    "key": "58:CD",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "Two NHMUK specimens at one point, Nyiragongo Territory, Kivu, one dated 1988, no captive sign. COL lists Africa, but a territory name is no field locality, and one dataset gives no second source.",
+    "cite": [
+      "gbif:occurrence:1919789663",
+      "gbif:occurrence:1919841922",
+      "gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a",
+      "col:9BTZ"
+    ]
+  },
+  {
+    "key": "58:DZ",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two iNaturalist research-grade records, Tamanghasset, 2005 and 2021, the later remark citing a guide and a recent sighting by local people; no captive mark. COL lists Africa.",
+    "cite": [
+      "gbif:occurrence:6129822174",
+      "gbif:occurrence:3079478713",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:9BTZ"
+    ]
+  },
+  {
+    "key": "58:EG",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "FMNH specimen, 1967, field locality 125 km west of Cairo, 15 km north of the Cairo-Alexandria road, no captive sign; COL lists Africa.",
+    "cite": [
+      "gbif:occurrence:665822305",
+      "gbif:dataset:41fc5c40-5e81-496f-9733-6b5681b3b7a5",
+      "col:9BTZ"
+    ]
+  },
+  {
+    "key": "58:NG",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "NHMUK specimen, no year, field locality Yantumaki, Katsina, no captive sign; COL lists Africa.",
+    "cite": [
+      "gbif:occurrence:1919841764",
+      "gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a",
+      "col:9BTZ"
+    ]
+  },
+  {
+    "key": "58:TD",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "Two MHNG specimens, no year or locality, whole-degree coordinates (9, 18) to 1,000 km: they name only the country. COL lists Africa, which can't show a free animal in Chad. Too thin to call, so it stays.",
+    "cite": [
+      "gbif:occurrence:865709678",
+      "gbif:occurrence:865709679",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:9BTZ"
+    ]
+  },
+  {
+    "key": "64:AO",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Cuando Cubango, 2023, and a USNM specimen, 1955, 48 mi NNW of Macusso: two datasets, no captive sign. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:4458479928",
+      "gbif:occurrence:1318186549",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "gbif:dataset:821cc27a-e3bb-4bc5-ac34-89ada245069d",
+      "col:3W9KV"
+    ]
+  },
+  {
+    "key": "64:CF",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "MNHN specimen, no year, locality Bangui. The NTNU record says only \"Africa continent\" (10,000 km), so it adds nothing. COL says Africa, but one undated town record doesn't settle it or which elephant it was.",
+    "cite": [
+      "gbif:occurrence:4988710309",
+      "gbif:occurrence:2978870303",
+      "gbif:dataset:3959ee49-7678-4a88-9049-5dfc55ccebf3",
+      "gbif:dataset:44ff990f-945e-4b37-9060-fc7de856b1ea",
+      "col:3W9KV"
+    ]
+  },
+  {
+    "key": "64:NG",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Bauchi, 2022, remark on scats and footprints: signs in the field, no captive mark. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:6499904885",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:3W9KV"
+    ]
+  },
+  {
+    "key": "64:SD",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "NHMUK specimen, no year, locality \"N. Rhodesia, near Chingola (1227-B-3)\", which is Zambia, while its coordinates give West Kurdufan, Sudan: misplaced by its own record. The only record. Zambia stays published on other records.",
+    "cite": [
+      "gbif:occurrence:1919822597",
+      "gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a",
+      "col:3W9KV"
+    ]
+  },
+  {
+    "key": "64:SS",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two NHMUK specimens, one 1902, field locality Gondokoro near Jabal Biliniang, no captive sign. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:1919822222",
+      "gbif:occurrence:1919822421",
+      "gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a",
+      "col:3W9KV"
+    ]
+  },
+  {
+    "key": "64:TD",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Mayo-Kebbi Ouest, 2024, no captive mark; COL says Africa. The MHNG specimen beside it has only whole-degree coordinates (9, 18), so the observation carries this.",
+    "cite": [
+      "gbif:occurrence:4952336122",
+      "gbif:occurrence:865728387",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:3W9KV"
+    ]
+  },
+  {
+    "key": "65:CD",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "FMNH specimen, 1924, Ishasha River, Kabare: a field locality, no captive sign. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:665793423",
+      "gbif:dataset:41fc5c40-5e81-496f-9733-6b5681b3b7a5",
+      "col:73256"
+    ]
+  },
+  {
+    "key": "65:CF",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "NMBE specimen, no year, field locality Mboutou, Mbomou, no captive sign. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:6401808409",
+      "gbif:dataset:e2062334-2f77-4f18-bba7-7108c0b3d54d",
+      "col:73256"
+    ]
+  },
+  {
+    "key": "65:MZ",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Sofala, 2018, coordinates to 65 km, no captive mark. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:1986568791",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:73256"
+    ]
+  },
+  {
+    "key": "65:UG",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "MSU specimen, 1958, Kafu River, establishmentMeans native, no captive sign. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:919417105",
+      "gbif:dataset:22a66350-7947-4a49-84a3-39c7c1b0881f",
+      "col:73256"
+    ]
+  },
+  {
+    "key": "66:AO",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "KU specimen, 1965, locality \"NO LOCALITY\", no state: it names only the country. COL says Africa, but a kept animal can't be told from a free one here. Too thin to call, so it stays.",
+    "cite": [
+      "gbif:occurrence:686484464",
+      "gbif:dataset:1d04e739-98a9-4e16-9970-8f8f3bf9e9e3",
+      "col:35JVB"
+    ]
+  },
+  {
+    "key": "66:CF",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "MNHN specimen, no year, locality Bangui. The NTNU record says only \"Africa continent\" (10,000 km), so it adds nothing. COL says Africa, but one undated town record doesn't settle a free animal.",
+    "cite": [
+      "gbif:occurrence:4988710475",
+      "gbif:occurrence:1563898268",
+      "gbif:dataset:3959ee49-7678-4a88-9049-5dfc55ccebf3",
+      "gbif:dataset:44ff990f-945e-4b37-9060-fc7de856b1ea",
+      "col:35JVB"
+    ]
+  },
+  {
+    "key": "66:MW",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Machinga, 2023, and NABU|naturgucker, Majete Wildlife Reserve, 2025: two datasets, no captive mark. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:5135595151",
+      "gbif:occurrence:4936859937",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084",
+      "col:35JVB"
+    ]
+  },
+  {
+    "key": "66:NG",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "ROM specimen, no year, field locality Vola, Upper Benue River, no captive sign. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:1211817341",
+      "gbif:dataset:bb109a7a-6c5a-4cad-a1b9-b750016e9d82",
+      "col:35JVB"
+    ]
+  },
+  {
+    "key": "66:RW",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Eastern Province, 2023, coordinates to 31 km, no captive mark. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:4133750906",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:35JVB"
+    ]
+  },
+  {
+    "key": "69:ET",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "MHNG specimen, no year or locality, coordinates to 1,000 km: it names only the country. COL says Africa, which can't show a free animal in Ethiopia. Too thin to call, so it stays.",
+    "cite": [
+      "gbif:occurrence:865726282",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:45LTS"
+    ]
+  },
+  {
+    "key": "69:KE",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "CAS specimen, 1930, field locality Loita, no captive sign. COL says only Africa, one old specimen is all there is, and nothing on it says how it was told from other gazelles. So it doesn't settle it.",
+    "cite": [
+      "gbif:occurrence:583494157",
+      "gbif:dataset:6ce7290f-47f6-4046-8356-371f5b6749df",
+      "col:45LTS"
+    ]
+  },
+  {
+    "key": "69:NE",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "CIBIO field record, 2012, Termit, Loulou Kiraman, 100 m uncertainty, found dead; no captive sign. COL says Africa.",
+    "cite": [
+      "gbif:occurrence:2421797504",
+      "gbif:dataset:4d028294-7e88-4bed-8519-176af6a4b78f",
+      "col:45LTS"
+    ]
+  },
+  {
+    "key": "69:SN",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record, Saint-Louis, 2008; its remark says the animals were reintroduced to the reserve. Introduced counts as keep, though a reserve may be fenced. The only record, and COL says only Africa.",
+    "cite": [
+      "gbif:occurrence:1571180504",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:45LTS"
+    ]
+  },
+  {
+    "key": "69:TD",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "LACM specimen, no year, field locality Fada, establishmentMeans native, no captive sign; COL says Africa. GBIF now returns 1 record, the snapshot 2.",
+    "cite": [
+      "gbif:occurrence:1065343215",
+      "gbif:dataset:7a25f7aa-03fb-4322-aaeb-66719e1a9527",
+      "col:45LTS"
+    ]
+  },
+  {
+    "key": "70:CO",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "FMNH specimen, 1949, Rio Nain on the upper Rio Sinu, and a Corantioquia fauna inventory record, Antioquia: two datasets, no captive sign.",
+    "cite": [
+      "gbif:occurrence:665921482",
+      "gbif:occurrence:730257020",
+      "gbif:dataset:371b386a-d67b-4646-897e-a27cc1101067",
+      "gbif:dataset:41fc5c40-5e81-496f-9733-6b5681b3b7a5"
+    ]
+  },
+  {
+    "key": "70:US",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Two records, each naming a captive site: Borror Lab recording \"Interior pens, Columbus Zoo\" and CAS skull \"San Francisco Zoo\". They're every counted record here.",
+    "cite": [
+      "gbif:occurrence:1019038645",
+      "gbif:occurrence:2598688822",
+      "gbif:dataset:6ce7290f-47f6-4046-8356-371f5b6749df",
+      "gbif:dataset:f11db245-3f9f-4fc6-a0cc-12b4124d081b"
+    ]
+  },
+  {
+    "key": "71:PA",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "LACM specimen, 1939, Caledonia Bay, establishmentMeans native, no captive sign. COL lists only South America, so no second source agrees for Panama.",
+    "cite": [
+      "gbif:occurrence:1065367965",
+      "gbif:dataset:7a25f7aa-03fb-4322-aaeb-66719e1a9527",
+      "col:5832V"
+    ]
+  },
+  {
+    "key": "72:PE",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two Conservation International RAP survey records, 1992 and 1996, Pampas del Heath and Aguas Clara Camp: field surveys, no captive sign. COL lists South America.",
+    "cite": [
+      "gbif:occurrence:197051481",
+      "gbif:occurrence:197052529",
+      "gbif:dataset:4d749d70-e2e1-11dd-8102-b8a03c50a862",
+      "col:5YNGG"
+    ]
+  },
+  {
+    "key": "72:UY",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Machine-observation record, Paso Centurión, Cerro Largo, 2013, 10 m uncertainty, from a local mammal survey, no captive sign. COL lists South America.",
+    "cite": [
+      "gbif:occurrence:2597500588",
+      "gbif:dataset:32487dda-3868-4723-aa77-98245206f466",
+      "col:5YNGG"
+    ]
+  },
+  {
+    "key": "73:PY",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "Macaulay Library recording, 1999, Rio Negro, 8 km from its mouth, establishmentMeans native, remark on 5 animals in a bay: a wild record, but one dataset, and the species has no COL id, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:1147170991",
+      "gbif:dataset:7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1"
+    ]
+  },
+  {
+    "key": "73:SR",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record, Sipaliwini, 2018, coordinates to 31 km, no captive mark. A community-verified observation, but the only record here, and the species has no COL id, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:3032153027",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7"
+    ]
+  },
+  {
+    "key": "74:CA",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Two ROM specimens, no year, locality \"Colony at Ottawa\": a kept colony by the records' own words. They're every counted record here. COL says Middle America.",
+    "cite": [
+      "gbif:occurrence:1211766094",
+      "gbif:occurrence:1211766173",
+      "gbif:dataset:c287bcb5-ee4a-456f-86b6-dae0e6fe7958",
+      "col:CQ4M"
+    ]
+  },
+  {
+    "key": "76:BR",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "Two iBOL records \"Mined from GenBank\": sequences, no locality, no date, coordinates near the middle of Brazil. They document no animal there, and COL gives no distribution. Inferred from the record type, not stated by it.",
+    "cite": [
+      "gbif:occurrence:2250111098",
+      "gbif:occurrence:4913668607",
+      "gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c",
+      "col:6VF89"
+    ]
   }
 ]

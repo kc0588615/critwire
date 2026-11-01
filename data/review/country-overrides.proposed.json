@@ -643,6 +643,12 @@
   },
   {
     "speciesId": 56,
+    "country": "ML",
+    "action": "keep",
+    "reason": "MHNG specimen, no year, locality just \"Afrique occidentale\", coordinates to 1,000 km: it names a region, not a place in Mali. COL says Africa, but a kept animal or a wrong country can't be ruled out. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 56,
     "country": "NU",
     "action": "remove",
     "reason": "Australian Microbiome 18S record, 2016: a DNA read from an aquatic sample, in the Pacific south of Niue. No chimpanzee was there; the dataset is sequence reads from water, so this is a misidentified or contaminant read. The only record."
@@ -661,15 +667,87 @@
   },
   {
     "speciesId": 56,
+    "country": "SS",
+    "action": "remove",
+    "reason": "NHMUK specimen whose locality says \"Kibwesa, Cape Kungwe, Western Province, T[anganyika] T[erritory]\", which is Tanzania, while its coordinates give South Sudan: misplaced by its own record. The only record. Tanzania stays published on other records."
+  },
+  {
+    "speciesId": 56,
+    "country": "TD",
+    "action": "keep",
+    "reason": "MHNG specimen, no year or locality, whole-degree coordinates (9, 18) to 1,000 km: it names only the country. COL says Africa, but that can't show a free animal in Chad. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 56,
     "country": "US",
     "action": "remove",
     "reason": "Of 85 records, 79 are marked captive and 71 are in New Mexico; all 20 we read name a zoo (Albuquerque, \"Captive at San Francisco Zoo\"). The 5 other unmarked ones, from other museums, are unread, so this can't be high. COL says Africa."
   },
   {
     "speciesId": 57,
+    "country": "AO",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Lunda Sul, 2026, 4 m uncertainty, and an FMNH specimen, Huila, 1954: two datasets, no captive sign. COL and Wikidata say Africa."
+  },
+  {
+    "speciesId": 57,
+    "country": "BF",
+    "action": "keep",
+    "reason": "MHNG specimen, 1969, field locality Linoghin, 55 km east of Ouagadougou, no captive sign. COL and Wikidata say Africa."
+  },
+  {
+    "speciesId": 57,
+    "country": "GH",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Northern region, 2025, no captive mark. COL and Wikidata say Africa."
+  },
+  {
+    "speciesId": 57,
+    "country": "ML",
+    "action": "keep",
+    "reason": "MHNG specimen, no year, locality just \"Afrique occidentale\", coordinates to 1,000 km: it names a region, not a place in Mali. COL and Wikidata say only Africa. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 57,
+    "country": "NE",
+    "action": "keep",
+    "reason": "Pedestrian mammal census in W National Park, 2015, locality \"Say, Parc W\": a field survey, no captive sign. COL and Wikidata say Africa."
+  },
+  {
+    "speciesId": 57,
+    "country": "SD",
+    "action": "keep",
+    "reason": "Two FMNH specimens, 1967, field localities in Kassala (Aroma, Telaweit, Bir Tyai), no captive sign. COL and Wikidata say Africa."
+  },
+  {
+    "speciesId": 57,
+    "country": "SL",
+    "action": "keep",
+    "reason": "MHNG specimen, no year, \"Am Kenema\", coordinates to 10 km, no captive sign. COL and Wikidata say Africa, but a town and no date don't show where the animal lived."
+  },
+  {
+    "speciesId": 57,
+    "country": "TG",
+    "action": "keep",
+    "reason": "The snapshot counted 1 record, but GBIF now returns none under this filter, so there's nothing to judge or cite. Leave it unaccepted: the next GBIF ingest settles it, and a keep with no records would then make derive refuse."
+  },
+  {
+    "speciesId": 57,
     "country": "US",
     "action": "remove",
     "reason": "Five records: three name a zoo (Point Defiance, San Antonio, Hogle). An INSDC genome sits 0.5 km from Bronx Zoo (Wikidata Q739792), and an iBOL GenBank sequence has no locality. Wikidata has this species in Africa. Those two are inferred, not stated."
+  },
+  {
+    "speciesId": 57,
+    "country": "ZW",
+    "action": "keep",
+    "reason": "USNM specimen, 1968, Essexvale Ranch, Matabeleland: a field locality, no captive sign. COL and Wikidata say Africa."
+  },
+  {
+    "speciesId": 58,
+    "country": "AO",
+    "action": "keep",
+    "reason": "SUI specimen, 1913, locality Benguela, 10 km uncertainty, no captive sign; COL lists Africa."
   },
   {
     "speciesId": 58,
@@ -679,9 +757,27 @@
   },
   {
     "speciesId": 58,
+    "country": "CD",
+    "action": "keep",
+    "reason": "Two NHMUK specimens at one point, Nyiragongo Territory, Kivu, one dated 1988, no captive sign. COL lists Africa, but a territory name is no field locality, and one dataset gives no second source."
+  },
+  {
+    "speciesId": 58,
     "country": "DE",
     "action": "remove",
     "reason": "Two records: a Bavarian State Collection sample from Tierpark Hellabrunn, 2011, and NABU|naturgucker \"Tempelhof Nord\", a Berlin district, 2024, with no wild or captive mark. COL says Africa; Southern Asia. The second is inferred, not stated."
+  },
+  {
+    "speciesId": 58,
+    "country": "DZ",
+    "action": "keep",
+    "reason": "Two iNaturalist research-grade records, Tamanghasset, 2005 and 2021, the later remark citing a guide and a recent sighting by local people; no captive mark. COL lists Africa."
+  },
+  {
+    "speciesId": 58,
+    "country": "EG",
+    "action": "keep",
+    "reason": "FMNH specimen, 1967, field locality 125 km west of Cairo, 15 km north of the Cairo-Alexandria road, no captive sign; COL lists Africa."
   },
   {
     "speciesId": 58,
@@ -697,9 +793,21 @@
   },
   {
     "speciesId": 58,
+    "country": "NG",
+    "action": "keep",
+    "reason": "NHMUK specimen, no year, field locality Yantumaki, Katsina, no captive sign; COL lists Africa."
+  },
+  {
+    "speciesId": 58,
     "country": "NL",
     "action": "remove",
     "reason": "Three Natuurmuseum Brabant specimens: \"Hilvarenbeek\" twice (5 km uncertainty, 7.8 km from Safaripark Beekse Bergen, Wikidata Q2183630) and \"'s-Hertogenbosch\", 1992. Town localities with no wild sign, as in 25:NL; points to kept animals, but the records don't say so."
+  },
+  {
+    "speciesId": 58,
+    "country": "TD",
+    "action": "keep",
+    "reason": "Two MHNG specimens, no year or locality, whole-degree coordinates (9, 18) to 1,000 km: they name only the country. COL lists Africa, which can't show a free animal in Chad. Too thin to call, so it stays."
   },
   {
     "speciesId": 58,
@@ -721,6 +829,18 @@
   },
   {
     "speciesId": 64,
+    "country": "AO",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Cuando Cubango, 2023, and a USNM specimen, 1955, 48 mi NNW of Macusso: two datasets, no captive sign. COL says Africa."
+  },
+  {
+    "speciesId": 64,
+    "country": "CF",
+    "action": "keep",
+    "reason": "MNHN specimen, no year, locality Bangui. The NTNU record says only \"Africa continent\" (10,000 km), so it adds nothing. COL says Africa, but one undated town record doesn't settle it or which elephant it was."
+  },
+  {
+    "speciesId": 64,
     "country": "DE",
     "action": "keep",
     "reason": "Four NABU|naturgucker map-sheet or town records, 2008–2016, no captive or wild mark: two 2.1 km from Zoo Halle (Wikidata Q220245), two (Langebrück, Illertissen) with no zoo within 3 km. COL says Africa. Too thin to call, so it stays."
@@ -733,9 +853,33 @@
   },
   {
     "speciesId": 64,
+    "country": "NG",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Bauchi, 2022, remark on scats and footprints: signs in the field, no captive mark. COL says Africa."
+  },
+  {
+    "speciesId": 64,
     "country": "PL",
     "action": "remove",
     "reason": "Four sequence records (two iBOL, two INSDC), 2007, at one point in Warsaw, no locality. Remarks give vouchers \"PL-IGAB-ZBM\" and subspecies \"knochenhaueri\", so likely a Polish lab's material, not an animal seen in Poland. COL says Africa. Inferred, not stated."
+  },
+  {
+    "speciesId": 64,
+    "country": "SD",
+    "action": "remove",
+    "reason": "NHMUK specimen, no year, locality \"N. Rhodesia, near Chingola (1227-B-3)\", which is Zambia, while its coordinates give West Kurdufan, Sudan: misplaced by its own record. The only record. Zambia stays published on other records."
+  },
+  {
+    "speciesId": 64,
+    "country": "SS",
+    "action": "keep",
+    "reason": "Two NHMUK specimens, one 1902, field locality Gondokoro near Jabal Biliniang, no captive sign. COL says Africa."
+  },
+  {
+    "speciesId": 64,
+    "country": "TD",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Mayo-Kebbi Ouest, 2024, no captive mark; COL says Africa. The MHNG specimen beside it has only whole-degree coordinates (9, 18), so the observation carries this."
   },
   {
     "speciesId": 64,
@@ -751,15 +895,51 @@
   },
   {
     "speciesId": 65,
+    "country": "CD",
+    "action": "keep",
+    "reason": "FMNH specimen, 1924, Ishasha River, Kabare: a field locality, no captive sign. COL says Africa."
+  },
+  {
+    "speciesId": 65,
+    "country": "CF",
+    "action": "keep",
+    "reason": "NMBE specimen, no year, field locality Mboutou, Mbomou, no captive sign. COL says Africa."
+  },
+  {
+    "speciesId": 65,
     "country": "KR",
     "action": "remove",
     "reason": "iBOL record \"Mined from GenBank\": a sequence, no locality, no date, coordinates near the middle of South Korea. It documents no animal there, and COL says Africa. Inferred from the record type, not stated by it."
   },
   {
     "speciesId": 65,
+    "country": "MZ",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Sofala, 2018, coordinates to 65 km, no captive mark. COL says Africa."
+  },
+  {
+    "speciesId": 65,
+    "country": "UG",
+    "action": "keep",
+    "reason": "MSU specimen, 1958, Kafu River, establishmentMeans native, no captive sign. COL says Africa."
+  },
+  {
+    "speciesId": 65,
     "country": "US",
     "action": "remove",
     "reason": "Of 95 records, 94 are marked captive; 89 are MSB specimens in New Mexico, and all 20 we read say Albuquerque BioPark Zoo. One unmarked record, unread, keeps this from high. COL says Africa."
+  },
+  {
+    "speciesId": 66,
+    "country": "AO",
+    "action": "keep",
+    "reason": "KU specimen, 1965, locality \"NO LOCALITY\", no state: it names only the country. COL says Africa, but a kept animal can't be told from a free one here. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 66,
+    "country": "CF",
+    "action": "keep",
+    "reason": "MNHN specimen, no year, locality Bangui. The NTNU record says only \"Africa continent\" (10,000 km), so it adds nothing. COL says Africa, but one undated town record doesn't settle a free animal."
   },
   {
     "speciesId": 66,
@@ -772,6 +952,24 @@
     "country": "FR",
     "action": "remove",
     "reason": "Two undated MNHN (Paris) specimens with no locality, at one point 0.1 km from Paris Zoological Park (Wikidata Q1969385). COL says Africa. Points to zoo animals, but the records themselves don't name one."
+  },
+  {
+    "speciesId": 66,
+    "country": "MW",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Machinga, 2023, and NABU|naturgucker, Majete Wildlife Reserve, 2025: two datasets, no captive mark. COL says Africa."
+  },
+  {
+    "speciesId": 66,
+    "country": "NG",
+    "action": "keep",
+    "reason": "ROM specimen, no year, field locality Vola, Upper Benue River, no captive sign. COL says Africa."
+  },
+  {
+    "speciesId": 66,
+    "country": "RW",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Eastern Province, 2023, coordinates to 31 km, no captive mark. COL says Africa."
   },
   {
     "speciesId": 66,
@@ -793,15 +991,57 @@
   },
   {
     "speciesId": 69,
+    "country": "ET",
+    "action": "keep",
+    "reason": "MHNG specimen, no year or locality, coordinates to 1,000 km: it names only the country. COL says Africa, which can't show a free animal in Ethiopia. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 69,
+    "country": "KE",
+    "action": "keep",
+    "reason": "CAS specimen, 1930, field locality Loita, no captive sign. COL says only Africa, one old specimen is all there is, and nothing on it says how it was told from other gazelles. So it doesn't settle it."
+  },
+  {
+    "speciesId": 69,
+    "country": "NE",
+    "action": "keep",
+    "reason": "CIBIO field record, 2012, Termit, Loulou Kiraman, 100 m uncertainty, found dead; no captive sign. COL says Africa."
+  },
+  {
+    "speciesId": 69,
     "country": "PA",
     "action": "remove",
     "reason": "AMNH specimen, January 1938, no locality, establishmentMeans \"native\", coordinates 5.98, -79.80 at sea south of Panama. The field and the coordinates conflict with COL's \"Africa\"; a data error is likely but not proven, so it stays excluded."
   },
   {
     "speciesId": 69,
+    "country": "SN",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Saint-Louis, 2008; its remark says the animals were reintroduced to the reserve. Introduced counts as keep, though a reserve may be fenced. The only record, and COL says only Africa."
+  },
+  {
+    "speciesId": 69,
+    "country": "TD",
+    "action": "keep",
+    "reason": "LACM specimen, no year, field locality Fada, establishmentMeans native, no captive sign; COL says Africa. GBIF now returns 1 record, the snapshot 2."
+  },
+  {
+    "speciesId": 69,
     "country": "US",
     "action": "remove",
     "reason": "Seven specimens, and each names a zoo: Oakland (2), Honolulu (2), Hogle, San Antonio, Houston. The records themselves name the zoos, and they're every counted record here."
+  },
+  {
+    "speciesId": 70,
+    "country": "CO",
+    "action": "keep",
+    "reason": "FMNH specimen, 1949, Rio Nain on the upper Rio Sinu, and a Corantioquia fauna inventory record, Antioquia: two datasets, no captive sign."
+  },
+  {
+    "speciesId": 70,
+    "country": "US",
+    "action": "remove",
+    "reason": "Two records, each naming a captive site: Borror Lab recording \"Interior pens, Columbus Zoo\" and CAS skull \"San Francisco Zoo\". They're every counted record here."
   },
   {
     "speciesId": 71,
@@ -814,6 +1054,42 @@
     "country": "JP",
     "action": "remove",
     "reason": "An Ibaraki Nature Museum specimen, Kumamoto, 1998, no locality, and an iBOL record \"Mined from GenBank\", coordinates near the middle of Japan. Neither documents a free animal, and COL says South America. Inferred from the record types, not stated."
+  },
+  {
+    "speciesId": 71,
+    "country": "PA",
+    "action": "keep",
+    "reason": "LACM specimen, 1939, Caledonia Bay, establishmentMeans native, no captive sign. COL lists only South America, so no second source agrees for Panama."
+  },
+  {
+    "speciesId": 72,
+    "country": "PE",
+    "action": "keep",
+    "reason": "Two Conservation International RAP survey records, 1992 and 1996, Pampas del Heath and Aguas Clara Camp: field surveys, no captive sign. COL lists South America."
+  },
+  {
+    "speciesId": 72,
+    "country": "UY",
+    "action": "keep",
+    "reason": "Machine-observation record, Paso Centurión, Cerro Largo, 2013, 10 m uncertainty, from a local mammal survey, no captive sign. COL lists South America."
+  },
+  {
+    "speciesId": 73,
+    "country": "PY",
+    "action": "keep",
+    "reason": "Macaulay Library recording, 1999, Rio Negro, 8 km from its mouth, establishmentMeans native, remark on 5 animals in a bay: a wild record, but one dataset, and the species has no COL id, so no second source agrees."
+  },
+  {
+    "speciesId": 73,
+    "country": "SR",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Sipaliwini, 2018, coordinates to 31 km, no captive mark. A community-verified observation, but the only record here, and the species has no COL id, so no second source agrees."
+  },
+  {
+    "speciesId": 74,
+    "country": "CA",
+    "action": "remove",
+    "reason": "Two ROM specimens, no year, locality \"Colony at Ottawa\": a kept colony by the records' own words. They're every counted record here. COL says Middle America."
   },
   {
     "speciesId": 74,
@@ -832,5 +1108,11 @@
     "country": "UA",
     "action": "remove",
     "reason": "iBOL record \"Mined from GenBank\": a sequence, no locality, no date, coordinates near the middle of Ukraine. It documents no animal there, and COL says Middle America. Inferred from the record type, not stated by it."
+  },
+  {
+    "speciesId": 76,
+    "country": "BR",
+    "action": "remove",
+    "reason": "Two iBOL records \"Mined from GenBank\": sequences, no locality, no date, coordinates near the middle of Brazil. They document no animal there, and COL gives no distribution. Inferred from the record type, not stated by it."
   }
 ]
