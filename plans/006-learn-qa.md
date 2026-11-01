@@ -240,6 +240,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q34 | g7 | number | T0 | "Rivers and streams (501, 502) come out 3.9 and 4.8 % smaller": 501 is −4.8, 502 is −3.9 (`g7-country`, past the 5 rows printed). The medians beside them, 5 and 3, are in the right order (lab db) | fixed | `qa-fixes.ts` |
 | Q35 | g7 | prose | T0 | "The 0.75° square holding the most of the sample's records": true only on 0.05° steps. Stepped by 0.01°, a square holds 204 (`cr`) and 607 (`tas`) against 202 and 601 (lab db) | fixed | `qa-fixes.ts` |
 | Q36 | g7 | prose | T0 | As Q12: `tas` is called a country, in four places. And "the country reaches every edge of its box": Tasmania's box runs 3.5 km past the main island in the north, for records there (`scripts/ingest/habitat.ts:45`). What holds is that land lies in the outermost tiles | fixed | `qa-fixes.ts` |
+| Q37 | g7 | prose | T0 | Result: "the worst are islands under 135 km²". The list holds Vatican City and Macau | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
