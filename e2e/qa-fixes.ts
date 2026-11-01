@@ -86,6 +86,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q68", url: "/learn/power-bi/maps-report/", has: "it needs the <code>folium</code> package, not in the course's pins" },
   { q: "Q69", url: "/learn/capstone/game-feed/", has: "the worked example and the exercise run in your own PostgreSQL", not: "everything runs in your own PostgreSQL" },
   { q: "Q70", url: "/learn/capstone/game-feed/", has: "mostly one telemetry dataset gives a feed about that dataset", not: "one telemetry study" },
+  { q: "Q71", url: "/learn/capstone/game-feed/", has: "1,948 of the jaguar's 2,000 records are GPS-collar fixes", not: "2,000 records are 1,948" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
