@@ -494,7 +494,7 @@ Rules for every step. A session reads these, its item, the Architecture sections
     ```
     If it prints anything, rerun §3's whole fence (U2's items 1–2) and update every Labs row.
 
-- [ ] U12. **006 complete** (§5). No code; no heavy run.
+- [x] U12. **006 complete** (§5). No code; no heavy run.
   - Every issue has a state and no row is `queued`.
   - Fill `fixed` SHAs from `git log --format='%h %s' --grep='^Q[0-9]*:' origin/main..HEAD`.
   - Check all of it: header with commit walked and reproduce commands; 47 Pages rows, each with a read unit; 47 Labs rows; Links; Axe; Setup vs downloads; Astra leftovers; Ledger; Method fences (`qa-notebooks.mts`, `qa-read`, the link check).
@@ -609,5 +609,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 15:19 UTC: U9: R6 read (p1–p4, c1), every prose number judged, against the star files, the feed and its schema, DuckDB and pandas lines run, two Microsoft claims read at the source, ledger extended. 13 T0 fixes, Q63–Q75, each assertion seen to fail on the unfixed build. Power BI itself not run (H6 stays the owner's); H6's step 5 corrected. Nothing queued or listed. typecheck pass, `learn:port --check all` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U10.
 - 2026-11-01 15:33 UTC: U10: R7 read: ledger, sources, all 18 prose links with a verdict in 006, plus one scan of terms outside their home's closure. Two missing prereqs fixed (Q76 d1, g1 need f4; Q77 c1 needs e5), Q78, Q79, Q80 prose, each seen to fail on the unfixed build. Q81 queued for U11. Nothing listed. typecheck pass, `learn:port --check all` pass, `pnpm test` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U11.
 - 2026-11-01 16:27 UTC: U11: lab batch Q55, Q62, Q81 (comments only), each `QA_FIXES` row seen to fail first. Loop plain: `learn:check` ok, 189 block results unchanged, keys and 27 download shas moved; `checked.json` committed. e3, e4 `.ipynb` hashes moved, so notebooks rerun: 11/11 exit 0, Labs rows updated, hash check empty. typecheck pass, `learn:port --check all` pass, test 754/754, test:db 140/140, plain build pass, e2e 149/149 (11 min). Next: U12.
+- 2026-11-01 16:27 UTC: U12: 006 complete: 79 `fixed` SHAs filled and each resolved to its `Q<n>:` subject, 2 listed with recommendations, 0 queued, 81 rows; 47 Pages rows each with a read unit, every issue but Q2 (38 pages, noted) on its page; 47 Labs rows; hash check empty; `/v1` hashes equal baseline. typecheck pass, `learn:port --check all` pass (538 files). Next: Astra code review.
 
 ## Summary

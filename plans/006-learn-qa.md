@@ -6,7 +6,9 @@ title: Learn QA, one pass over all 33 modules
 
 For the owner: what a learner's walk through `/learn/` found. Plan and design: `plans/2026-11-01-critwire-learn-qa.md`.
 
-Commit walked: `20e20bb` (U1a; the final Verification refreshes Pages from `e2e-final/results.json`).
+Result: 81 issues, 79 fixed (SHAs under Issues), 2 listed for you (Q3, Q4, both dead dataset links at their publishers; recommendation: no change). The fixes correct prose (wrong facts: Q46, Q51, Q52, Q57, Q59, Q64, Q67, Q73), add missing steps and definitions, and move three prerequisites (Q76: d1 and g1 need f4; Q77: c1 needs e5). Only two block files changed, comments only (Q62, Q81); no recorded result moved and `/v1` is byte-identical to the baseline.
+
+Commit walked: `20e20bb` (U1a; the final Verification refreshes Pages from `e2e-final/results.json`). Evidence: `/srv/critter-ai/agent-state/missions/critwire-learn-qa/e2e-final/` (Playwright report, `results.json`, 48 screenshots), written by that Verification.
 
 Reproduce:
 ```sh
@@ -38,37 +40,37 @@ pnpm learn:check                                               # every .sql and 
 | track capstone | `/learn/capstone/` | 4 | 0 | 0 | 0 | 0 | R1 | Q14 |
 | f1 | `/learn/foundations/select/` | 4 | 0 | 0 | 8 | 66 | R1 |  |
 | f2 | `/learn/foundations/aggregate/` | 4 | 0 | 0 | 9 | 96 | R1 |  |
-| f3 | `/learn/foundations/join/` | 4 | 0 | 0 | 14 | 70 | R1 | Q15 |
+| f3 | `/learn/foundations/join/` | 4 | 0 | 0 | 14 | 70 | R1 | Q15, Q78 |
 | f4 | `/learn/foundations/window/` | 4 | 0 | 0 | 7 | 1018 | R1 | Q40 |
-| d1 | `/learn/database-architecture/keys/` | 4 | 0 | 0 | 13 | 26 | R2 | Q1, Q18, Q54 |
+| d1 | `/learn/database-architecture/keys/` | 4 | 0 | 0 | 13 | 26 | R2 | Q1, Q18, Q54, Q76 |
 | d2 | `/learn/database-architecture/normalize/` | 4 | 0 | 0 | 14 | 114 | R2 | Q19, Q20 |
 | d3 | `/learn/database-architecture/indexes/` | 4 | 0 | 0 | 0 | 0 | R2 | Q16, Q21–Q24 |
-| d4 | `/learn/database-architecture/transactions/` | 4 | 0 | 0 | 0 | 2 | R2 | Q25 |
+| d4 | `/learn/database-architecture/transactions/` | 4 | 0 | 0 | 0 | 2 | R2 | Q25, Q79 |
 | d5 | `/learn/database-architecture/roles/` | 4 | 0 | 0 | 0 | 0 | R2 |  |
 | d6 | `/learn/database-architecture/star/` | 4 | 0 | 0 | 2 | 2 | R2 | Q17 |
-| g1 | `/learn/gis-in-sql/crs/` | 4 | 0 | 0 | 0 | 0 | R3 | Q26 |
+| g1 | `/learn/gis-in-sql/crs/` | 4 | 0 | 0 | 0 | 0 | R3 | Q26, Q76 |
 | g2 | `/learn/gis-in-sql/load-validate/` | 4 | 0 | 0 | 0 | 0 | R3 | Q27, Q28 |
-| g3 | `/learn/gis-in-sql/spatial-join/` | 4 | 0 | 0 | 0 | 0 | R3 | Q29 |
+| g3 | `/learn/gis-in-sql/spatial-join/` | 4 | 0 | 0 | 0 | 0 | R3 | Q29, Q80 |
 | g4 | `/learn/gis-in-sql/measure-overlay/` | 4 | 0 | 0 | 0 | 0 | R3 | Q30 |
 | g5 | `/learn/gis-in-sql/spatial-index/` | 4 | 0 | 0 | 0 | 0 | R3 | Q31 |
 | g6 | `/learn/gis-in-sql/grids/` | 4 | 0 | 0 | 0 | 0 | R3 | Q32 |
-| g7 | `/learn/gis-in-sql/raster/` | 4 | 0 | 0 | 0 | 0 | R3 | Q33–Q37 |
+| g7 | `/learn/gis-in-sql/raster/` | 4 | 0 | 0 | 0 | 0 | R3 | Q33–Q37, Q80 |
 | s1 | `/learn/spatial-statistics/bias/` | 4 | 0 | 0 | 3 | 394 | R4 | Q38, Q39, Q41 |
-| s2 | `/learn/spatial-statistics/point-patterns/` | 4 | 0 | 0 | 0 | 0 | R4 | Q42–Q46 |
-| s3 | `/learn/spatial-statistics/weights/` | 4 | 0 | 0 | 0 | 0 | R4 | Q47 |
-| s4 | `/learn/spatial-statistics/moran/` | 4 | 0 | 0 | 0 | 0 | R4 | Q48, Q49 |
-| s5 | `/learn/spatial-statistics/local/` | 4 | 0 | 0 | 0 | 0 | R4 | Q50–Q53 |
-| s6 | `/learn/spatial-statistics/zonal/` | 4 | 0 | 0 | 0 | 0 | R4 | Q33, Q40 |
-| e1 | `/learn/etl/extract/` | 4 | 0 | 0 | 0 | 2 | R5 | Q56, Q57 |
-| e2 | `/learn/etl/transform-load/` | 4 | 0 | 0 | 0 | 2 | R5 | Q58–Q60 |
-| e3 | `/learn/etl/idempotent/` | 4 | 0 | 0 | 1 | 2 | R5 | Q61 |
+| s2 | `/learn/spatial-statistics/point-patterns/` | 4 | 0 | 0 | 0 | 0 | R4 | Q42–Q46, Q55 |
+| s3 | `/learn/spatial-statistics/weights/` | 4 | 0 | 0 | 0 | 0 | R4 | Q47, Q55 |
+| s4 | `/learn/spatial-statistics/moran/` | 4 | 0 | 0 | 0 | 0 | R4 | Q48, Q49, Q55 |
+| s5 | `/learn/spatial-statistics/local/` | 4 | 0 | 0 | 0 | 0 | R4 | Q50–Q53, Q55 |
+| s6 | `/learn/spatial-statistics/zonal/` | 4 | 0 | 0 | 0 | 0 | R4 | Q33, Q40, Q80 |
+| e1 | `/learn/etl/extract/` | 4 | 0 | 0 | 0 | 2 | R5 | Q56, Q57, Q80 |
+| e2 | `/learn/etl/transform-load/` | 4 | 0 | 0 | 0 | 2 | R5 | Q58–Q60, Q80 |
+| e3 | `/learn/etl/idempotent/` | 4 | 0 | 0 | 1 | 2 | R5 | Q61, Q81 |
 | e4 | `/learn/etl/quality-provenance/` | 4 | 0 | 0 | 0 | 0 | R5 | Q61, Q62 |
 | e5 | `/learn/etl/schedule/` | 4 | 0 | 0 | 0 | 2 | R5 |  |
-| p1 | `/learn/power-bi/power-query/` | 4 | 0 | 0 | 0 | 0 | R6 | Q63 |
+| p1 | `/learn/power-bi/power-query/` | 4 | 0 | 0 | 0 | 0 | R6 | Q63, Q80 |
 | p2 | `/learn/power-bi/model/` | 4 | 0 | 0 | 0 | 0 | R6 | Q64, Q74, Q75 |
 | p3 | `/learn/power-bi/dax/` | 4 | 0 | 0 | 0 | 0 | R6 | Q65 |
-| p4 | `/learn/power-bi/maps-report/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39, Q66, Q67, Q68 |
-| c1 | `/learn/capstone/game-feed/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39, Q40, Q69–Q73 |
+| p4 | `/learn/power-bi/maps-report/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39, Q66–Q68, Q80 |
+| c1 | `/learn/capstone/game-feed/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39, Q40, Q55, Q69–Q73, Q77 |
 
 Dialogs, open over their page:
 
@@ -76,6 +78,8 @@ Dialogs, open over their page:
 |---|---|---|---|---|
 | Schema dialog on f1 | 4 | 0 | 0 | 2 |
 | Lab schema dialog on d3 | 4 | 0 | 0 | 4 |
+
+Q2 touched 38 pages (see Axe), so it isn't listed per page.
 
 Totals: 196 views, 72 blocks, 0 violations, 0 overflow, nothing off-origin, no page error.
 
@@ -174,7 +178,7 @@ No notebook failed.
 
 ## Setup vs downloads
 
-`/learn/setup/` matches what the downloads need. One step gap, already known: the page says "in VS Code or Jupyter" and never installs Jupyter (finding 8; U4 fixes it).
+`/learn/setup/` matches what the downloads need. The gaps were in the steps, not the packages: it offered Jupyter with no way to install it (finding 8, Q5), and its commands didn't paste as written (Q6–Q8). All fixed.
 
 | Page's claim | Evidence |
 |---|---|
@@ -200,91 +204,91 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 
 ## Issues
 
-`Q<n>`: fix commits start with it; SHAs are filled by U12. Tier: the plan's §7.
+`Q<n>`: fix commits start with it; State names the fix's commit (`git log --grep='^Q71:'` also finds a test-row follow-up, `e8ed0ee`), refilled after a rebase. Tier: the plan's §7.
 
 | Q | Page | Kind | Tier | What | State | Caught by |
 |---|---|---|---|---|---|---|
-| Q1 | d1 | layout | T0 | After Run, `d1-ex-same-url`'s error (an unbroken URL) made the page 734 px wide at 375 | fixed | `learn-walk.spec.ts` scrollWidth |
-| Q2 | 38 pages | axe | T0 | Code, recorded results, result tables and diagrams that scroll sideways weren't in the tab order | fixed | `learn-walk.spec.ts` axe and keyboard `tabindex` |
+| Q1 | d1 | layout | T0 | After Run, `d1-ex-same-url`'s error (an unbroken URL) made the page 734 px wide at 375 | fixed `fbebd31` | `learn-walk.spec.ts` scrollWidth |
+| Q2 | 38 pages | axe | T0 | Code, recorded results, result tables and diagrams that scroll sideways weren't in the tab order | fixed `2c4e3ff` | `learn-walk.spec.ts` axe and keyboard `tabindex` |
 | Q3 | data | dead link | list | DOI `10.18165/qmltit` (UAMZ amphibians and reptiles, 5 records) resolves to `ipt.museums.ualberta.ca`, where the whole `/ipt/` path answers 404; GBIF still lists the dataset, with endpoints on that dead path | listed. Recommendation: no change. The DOI is the dataset's published identifier and the fault is the publisher's; rewriting it would break the credit. If you want it repaired, tell helpdesk@gbif.org | one-off link check |
 | Q4 | data | dead link | list | DOI `10.36102/dwc.3` (NCSM Herpetology, 109 records) resolves to `ipt.vertnet.org:8080`, connection refused. The same resource answers 200 on `https://ipt.vertnet.org/resource?r=ncsm_herps`, so the DOI record is out of date | listed. Recommendation: no change, same reason as Q3; VertNet can update the DOI's URL | one-off link check |
-| Q5 | setup | missing step | T0 | Says to run cells "in VS Code or Jupyter", but no step installs Jupyter and `requirements.txt` has none (finding 8). Added the install line, run as written in a learner's venv: `jupyter lab --version` 4.6.5, no pin moved, the next `uv pip sync` removes it | fixed | `qa-fixes.ts` |
-| Q6 | setup | missing step | T0 | The Python fences fail when pasted: uv's installer changes `PATH` for new terminals only, so the next `uv` line isn't found (run on Linux with an empty `HOME`; `install.ps1`'s own message says the same). Each fence now adds it for the current terminal, with the line the installer prints | fixed | `qa-fixes.ts` |
-| Q7 | setup | missing step | T0 | `psql -X -d learn -f pg-checks.sql` assumes `psql` on `PATH`, which neither Windows route gives: EDB's is `$psql`, Docker's is in the container. Added both forms, built from the page's own commands (Docker and EDB are hand-only here, as the page says) | fixed | `qa-fixes.ts` |
-| Q8 | setup | missing step | T0 | Connection settings gave PowerShell only, while the page promises Linux and macOS, and named libpq without saying what it is. Added the `export` line and `~/.pgpass`; libpq defined | fixed | `qa-fixes.ts` |
-| Q9 | setup | prose | T0 | "The same 16 counts mean your lab matches", but the recorded result prints 5 rows and "… 11 more rows", so the page can't be compared. Now says so, and that the lab file checked all 16 before it committed (`learn_curriculum.sql`'s validation) | fixed | `qa-fixes.ts` |
-| Q10 | data | prose | T0 | "Nothing but `psql` and the PostGIS extension", but the file stops without `postgis_raster` (its first check; setup installs both). 004 §4 already had it right | fixed | `qa-fixes.ts` |
-| Q11 | data | navigation | T0 | The only page with no way back to Learn: its header's "Learn" was plain text | fixed | `qa-fixes.ts` |
-| Q12 | schema-lab | prose | T0 | "Two whole-country clips": Tasmania is an Australian state, not a country. Names the two | fixed | `qa-fixes.ts` |
-| Q13 | map | prose | T0 | "Has an exercise that checks your answer": true of 8 of the 36 exercises, the browser's. The other 28 (PostGIS, Python, Power BI) show the answer to compare | fixed | `qa-fixes.ts` |
-| Q14 | capstone | prose | T0 | A track of one module told the learner to "work through them in order" | fixed | `qa-fixes.ts` |
-| Q15 | f3 | prose | T0 | The devil's box "across the Pacific": `min`/`max` of longitude give -106.66 to 150.25, 257° the long way round through Africa and Asia. The box misses the Pacific, which is why a lat/lon box can't wrap the antimeridian | fixed | `qa-fixes.ts` |
-| Q16 | d3, setup, every lab page | missing step | T0 | d3 says `ROLLBACK;` after each lab, but lab 2 needs lab 1's index and most blocks need `d3-analyze`, whose `ANALYZE` the `ROLLBACK` undoes (seen in the lab db: `dataset_key`'s common values back to the default's 100 after it). Only browser blocks showed `-- after:`; a PostGIS or Python block named nothing to run first, on any page. They now show the same Runs after line: linked on the page, named when it's another page's (`py-connect`, d6's star) | fixed | `learn-labs.spec.ts` Runs after; `qa-fixes.ts` |
-| Q17 | d6 | missing step | T0 | Lab 3 follows the worked example, which leaves the star built, and says "build the star after" the new record. Done in one transaction, `CREATE TABLE` refuses; with the star kept, the record never reaches it and step 3 isn't the 40,396 shown. Now says to roll back first | fixed | `qa-fixes.ts` |
-| Q18 | d1 | jargon | T0 | Lab 8 reads `pg_constraint` and `pg_index` and lab 9 says "as the catalog describes it" with no word on what the catalog is, `::regclass`, or why `indkey[0]` meets `conkey[1]`; d3, d4 and d5 read it too. Defined once | fixed | `qa-fixes.ts` |
-| Q19 | d2 | jargon | T0 | `read_parquet` and `species.parquet` carry the worked example, and no page says what Parquet is. Defined at the first module that uses it | fixed | `qa-fixes.ts` |
-| Q20 | d2 | prose | T0 | "The outside ids from Wikidata and GBIF", under a result whose first row is `ids.col`, from the Catalogue of Life | fixed | `qa-fixes.ts` |
-| Q21 | d3 | prose | T0 | Result: "40,386 of the pangolin's 40,395 rows". The pangolin has nine; 40,395 is the table | fixed | `qa-fixes.ts` |
-| Q22 | d3 | number | T0 | "`year` is partly ordered (0.62), the rest close to 0", over a result showing `license` at 0.39. 0.62 is the sixth row, which the page doesn't print; seen in the lab db, 0.624 | fixed | `qa-fixes.ts` |
-| Q23 | d3 | prose | T0 | "This year's records" over `year >= 2026`: wrong from next January | fixed | `qa-fixes.ts` |
-| Q24 | d3 | jargon | T0 | `VACUUM` and autovacuum carry the Index Only Scan rule, one module before d4 says what they do. Says it in a word, with a link | fixed | `qa-fixes.ts` |
-| Q25 | d4 | jargon | T0 | Lab 10, the exercise and the Check turn on `IS DISTINCT FROM`, and `month` is often `NULL`, which is the point of it. No page said what it does | fixed | `qa-fixes.ts` |
-| Q26 | g1 | number | T0 | Check: Greenland's north coast "about 81" times; 1 ÷ cos²(83.6°) is 80.5 (lab db, `ST_YMax` 83.5996) | fixed | `qa-fixes.ts` |
-| Q27 | g2 | jargon | T0 | `(ST_IsValidDetail(geom)).valid` carries the worked example, and `(d).reason` the lab; no page said why the parentheses. g6's `(part).geom` and s2, s4 lean on the same syntax. Said once | fixed | `qa-fixes.ts` |
-| Q28 | g2 | prose | T0 | "The square's left half": no square had been mentioned, only a bow-tie. Names it | fixed | `qa-fixes.ts` |
-| Q29 | g3 | missing step | T0 | The IUCN appendix asks for one multipolygon per taxon with the id in `iucn_id`, but not that IUCN's files name it `id_no` and hold several rows per taxon (presence, origin, season). Without a dissolve the block counts a record once per row. Field names from public listings of IUCN's layers, no file read; block not run, as the page says | fixed | `qa-fixes.ts` |
-| Q30 | g4 | prose | T0 | A strip is "close to" length × 10 km "and smaller", beside Nicaragua's 2,673 against 2,670. The buffer's round ends add area; said so | fixed | `qa-fixes.ts` |
-| Q31 | g5 | prose | T0 | Result: "436 lie within 5 km of one, 529 within 25 km". 965 lie within 25 km; 529 is the 5 to 25 km band | fixed | `qa-fixes.ts` |
-| Q32 | g6 | jargon | T0 | `ST_Dump` picks the main island in every g6 block (and s2, s4), and no page says what it does. Defined at its first use | fixed | `qa-fixes.ts` |
-| Q33 | g7, s6 | prose | T0 | "Two ways to summarise a country", named method 1 and method 3, and no page says what became of 2. The names are in the block's columns, so they stay; says where they come from (design plan's E3c) | fixed | `qa-fixes.ts` |
-| Q34 | g7 | number | T0 | "Rivers and streams (501, 502) come out 3.9 and 4.8 % smaller": 501 is −4.8, 502 is −3.9 (`g7-country`, past the 5 rows printed). The medians beside them, 5 and 3, are in the right order (lab db) | fixed | `qa-fixes.ts` |
-| Q35 | g7 | prose | T0 | "The 0.75° square holding the most of the sample's records": true only on 0.05° steps. Stepped by 0.01°, a square holds 204 (`cr`) and 607 (`tas`) against 202 and 601 (lab db) | fixed | `qa-fixes.ts` |
-| Q36 | g7 | prose | T0 | As Q12: `tas` is called a country, in four places. And "the country reaches every edge of its box": Tasmania's box runs 3.5 km past the main island in the north, for records there (`scripts/ingest/habitat.ts:45`). What holds is that land lies in the outermost tiles | fixed | `qa-fixes.ts` |
-| Q37 | g7 | prose | T0 | Result: "the worst are islands under 135 km²". The list holds Vatican City and Macau | fixed | `qa-fixes.ts` |
-| Q38 | s1 | number | T0 | "19 of the 28 museum specimens have no year": 20 do (10, 5, 3, 1, 1 across the rows, lab db) | fixed | `qa-fixes.ts` |
-| Q39 | s1, p4, c1 | prose | T0 | "A few collared animals": the Jaguar Movement Database holds 134,690 fixes from 117 jaguars ([its record](https://doi.org/10.5061/dryad.2dh0223)). s1 now says so, with the link; p4 and c1 drop "a few". What each page teaches stands | fixed | `qa-fixes.ts` |
-| Q40 | f4, s6, c1 | prose | T0 | "One collar study": the sample's dataset is a database that many teams' tracking fed, in 5 countries, so "study" says more than the data does. `jaguar_datasets` counts datasets; the prose now does too | fixed | `qa-fixes.ts` |
-| Q41 | s1 | jargon | T0 | "A Darwin Core term", with no word on what Darwin Core is. Defined here; d6's passing use reads as itself | fixed | `qa-fixes.ts` |
-| Q42 | s2 | prose | T0 | Result: "Every test says clustered", though the Concept says kernel density "doesn't test anything" and DBSCAN only labels. Two of the four are tests | fixed | `qa-fixes.ts` |
-| Q43 | s2 | prose | T0 | "A z-score below −1.96 means a mean distance this small would happen by chance less than 5 % of the time": that's the two-sided figure s5 gives; one side alone is 2.5 % | fixed | `qa-fixes.ts` |
-| Q44 | s2 | missing step | T0 | The worked example counts 1,972 records and lab 1 counts 1,784, with no word why. A hexagon that touches land reaches past the outline: 188 records lie in a cell but outside the island, at most 4.2 km from it (lab db) | fixed | `qa-fixes.ts` |
-| Q45 | s2 | prose | T0 | 913 noise and 913 distinct locations, in one page and one paragraph of its Result: unrelated counts that read as one. Said so at the first | fixed | `qa-fixes.ts` |
-| Q46 | s2 | wrong fact | T0 | "`ST_ClusterWithin` [is a] window function": it's an aggregate (`prokind` a, lab db). The window form is `ST_ClusterWithinWin`, PostGIS 3.4 | fixed | `qa-fixes.ts` |
-| Q47 | s3 | prose | T0 | "A cell with no neighbour wouldn't appear here at all", then says its `count(*)` gives 0. The `LATERAL` count returns a row for it, so it would appear, with 0; that's what the check rests on | fixed | `qa-fixes.ts` |
-| Q48 | s4 | number | T0 | "Differ … by 10⁻¹² at most": `z_norm` at 5 km differs by 1.05 × 10⁻¹² (`s4-moran-sql`, `s4-agree`) | fixed | `qa-fixes.ts` |
-| Q49 | s4 | missing step | T0 | "This block runs when a PostGIS run starts" is the checker's view, and a learner told to roll back (setup, d3) would lose s4's tables. Says to keep its work | fixed | `qa-fixes.ts` |
-| Q50 | s5 | jargon | T0 | "Under the null hypothesis", the course's only use, unexplained; s4 said "with no pattern" | fixed | `qa-fixes.ts` |
-| Q51 | s5 | wrong fact | T0 | `esda.fdr` returns the Bonferroni bound "if every test would pass": it does when none passes (`len(sig_all) == 0`, esda 2.10.0) | fixed | `qa-fixes.ts` |
-| Q52 | s5 | wrong fact | T0 | Concept's `m2 = Σ_k z_k² / n`, then the Dialects' esda gives `Is`: esda divides by `n − 1` (esda 2.10.0), so a learner comparing sees each off by (n − 1)/n. Says so; no sign or p-value moves | fixed | `qa-fixes.ts` |
-| Q53 | s5 | prose | T0 | "The museum's material samples 21.4 % against 28.1 %": those shares are the whole dataset, specimens and an observation included (`s1-devil`, 569 rows, 558 samples) | fixed | `qa-fixes.ts` |
-| Q54 | d1 | missing step | T0 | The tbls exercise says 16 tables agree, but `setup.py` and every download holding `s4-cells` leave s4's table and view in `learn_curriculum`, so a learner who ran one sees two more (the ledger's open item) | fixed | `qa-fixes.ts` |
-| Q55 | every `.sql` holding `s4-cells` (s2–s5, c1) | prose | T2 | The download's header says each block "changes nothing", and `-- tx: own` runs as written; a `-- boot` block commits its tables (`s4.sql` has the `COMMIT`). Add it to the header, `scripts/learn/assemble.ts:81-82` | fixed | `qa-fixes.ts`; `learn:check` |
-| Q56 | e1 | number | T0 | "73 GBIF keys and the lab sample's six filters": the request's six predicates are the keys plus five filters, as `e1-request` prints them | fixed | `qa-fixes.ts` |
-| Q57 | e1 | wrong fact | T0 | "Apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored": the stored one also holds `type`, `interpretedExtensions` and `verbatimExtensions` (`data/raw/gbif-sample/download.json`). Its `format`, `checklistKey` and `predicate` do equal `build_request`'s, every key in order (lab db), and those are what `same` compares | fixed | `qa-fixes.ts` |
-| Q58 | e2 | prose | T0 | "The decimal comma two records later": `e2-casts` puts `30 m` on the first record and the comma on the second | fixed | `qa-fixes.ts` |
-| Q59 | e2 | wrong fact | T0 | "`read_postgis(sql, con, geom_col=…)` needs the geometry column's name": it defaults to `geom` (geopandas signature, the pinned version) | fixed | `qa-fixes.ts` |
-| Q60 | e2 | prose | T0 | "The catalogue (`pg_class`…)": d1 defines the term as "catalog"; f1's "other catalogues" means something else and stays | fixed | `qa-fixes.ts` |
-| Q61 | e3, e4 | missing step | T0 | e4's lead says "everything runs in the Python environment" and e3's names only Python and the browser; e4 has 3 PostGIS blocks and e3 has 2, which a learner runs in a SQL client. Worded as s6's. No 004 sentence: the leads are only on the pages | fixed | `qa-fixes.ts` |
-| Q62 | e4 | prose | T2 | `e4-derived`'s comment ends "(§4.2)", a section of the design plan that a learner has no way to read as one. Drop it from 004's fence and `site/learn/sql/e4-derived.py`; the comment isn't output, so the result stays | fixed | `qa-fixes.ts`; `learn:check` |
-| Q63 | p1 | number | T0 | "The other six tables": the worked example builds `fact_records` only, so seven of the eight remain, and the step goes on to name seven | fixed | `qa-fixes.ts` |
-| Q64 | p2 | wrong fact | T0 | "Home → DAX query view": Microsoft's page says to select its icon on the left side. p2 opens Model view from the same bar. H6's step 5 corrected too | fixed | `qa-fixes.ts` |
-| Q65 | p3 | prose | T0 | The Check sorts every continent but one: Seven seas has 0.0002 of the records against 0.0001 of the area (star files), past the 5 rows printed | fixed | `qa-fixes.ts` |
-| Q66 | p4 | prose | T0 | "p3's `Records` measure": p2's Lab adds it, and p3's and p4's Labs both say it's there from p2 | fixed | `qa-fixes.ts` |
-| Q67 | p4 | wrong fact | T0 | "With no gateway, because the base URL is fixed": the fixed URL avoids a dynamic data source. p1 has it right: files on a public URL need no gateway | fixed | `qa-fixes.ts` |
-| Q68 | p4 | missing step | T0 | The pandas line's `.explore()` raises `ImportError` in the course's environment (run here): `folium` isn't pinned. Said as c1 says it of `jsonschema` | fixed | `qa-fixes.ts` |
-| Q69 | c1 | missing step | T0 | Lead: "everything runs in your own PostgreSQL", but the Lab's stages use Python (e1 to e4) and Power BI, and the module's tools say so. As Q61. No 004 sentence: the leads are only on the pages | fixed | `qa-fixes.ts` |
-| Q70 | c1 | prose | T0 | Q40's word left behind in the Concept: the records show a dataset, and the Lab already says "if one dataset dominates" | fixed | `qa-fixes.ts` |
-| Q71 | c1 | prose | T0 | "The jaguar's 2,000 records are 1,948 GPS-collar fixes" reads as if the rest weren't records. p4's wording used | fixed | `qa-fixes.ts` |
-| Q72 | c1 | prose | T0 | "A gateway, as d5's PostgreSQL connection does": d5 makes the login and sends the reader to p1; only p1's Lab connects and names the gateway. Removes §4's c1→d5 link | fixed | `qa-fixes.ts` |
-| Q73 | c1 | wrong fact | T0 | "From Web … on Windows and Mac": Microsoft's table of Excel versions lists no Web source for Mac, and From Web's dialog takes a URL, not M. p1's route used | fixed | `qa-fixes.ts` |
-| Q74 | p2 | jargon | T0 | DAX carries p2 to p4 and c1, and no page said what it is; p1 does say what M is. Defined at its first use | fixed | `qa-fixes.ts` |
-| Q75 | p2 | jargon | T0 | Slicers carry p2's, p3's and p4's Labs, and no page said what one is. Defined at its first use | fixed | `qa-fixes.ts` |
-| Q76 | d1, g1, and all after | missing prereq | T0 | f4 (CTEs, window functions) was in no other module's closure: tracks branched at f3, yet blocks of 18 modules carry CTEs and of 14 window functions, from `g1-distance` and `d1-ex` on, and s4, s5, s6 say "read it one CTE at a time". d1 and g1 now need f4; ETL from e2 and Power BI inherit it through d1. f4 keeps its skip check. Also 004 §2 and `course.test.ts`'s closure | fixed | `qa-fixes.ts` |
-| Q77 | c1 | missing prereq | T0 | Lab stage "Ship and refresh (e5)" and the Concept rest on e5's schedule to rebuild the feed, but c1 named e4. e5 needs e4, so nothing else is lost | fixed | `qa-fixes.ts` |
-| Q78 | f3 | jargon | T0 | d6 says "the fan-out of Joins, f3", and f3's prose only said "row multiplier"; the word was in a block id alone. The one other use, p2's "multiplies rows", reads as itself | fixed | `qa-fixes.ts` |
-| Q79 | d4 | jargon | T0 | Named as the fix for a duplicated batch, with no word on what it does; g7 and s2 say so where they use it, much later | fixed | `qa-fixes.ts` |
-| Q80 | e1, e2, p1, p4, g3, g7, s6 | prose | T0 | e1, e2, p1, p4 wrote "licence", every other page and the column "license"; g3, g7, s6 "summarise", the rest "summarize". Each now one form. "neighbor" stays where it quotes ArcGIS's labels; `e3-snapshot`'s comment is Q81 | fixed | `qa-fixes.ts` |
-| Q81 | e3 | prose | T2 | `e3-snapshot`'s two comments still say "licence", the last of Q80's split. Change 004's fence and `site/learn/sql/e3-snapshot.py`; comments aren't output, so the result stays | fixed | `qa-fixes.ts`; `learn:check` |
+| Q5 | setup | missing step | T0 | Says to run cells "in VS Code or Jupyter", but no step installs Jupyter and `requirements.txt` has none (finding 8). Added the install line, run as written in a learner's venv: `jupyter lab --version` 4.6.5, no pin moved, the next `uv pip sync` removes it | fixed `c9a31ef` | `qa-fixes.ts` |
+| Q6 | setup | missing step | T0 | The Python fences fail when pasted: uv's installer changes `PATH` for new terminals only, so the next `uv` line isn't found (run on Linux with an empty `HOME`; `install.ps1`'s own message says the same). Each fence now adds it for the current terminal, with the line the installer prints | fixed `f70ca53` | `qa-fixes.ts` |
+| Q7 | setup | missing step | T0 | `psql -X -d learn -f pg-checks.sql` assumes `psql` on `PATH`, which neither Windows route gives: EDB's is `$psql`, Docker's is in the container. Added both forms, built from the page's own commands (Docker and EDB are hand-only here, as the page says) | fixed `377e8b1` | `qa-fixes.ts` |
+| Q8 | setup | missing step | T0 | Connection settings gave PowerShell only, while the page promises Linux and macOS, and named libpq without saying what it is. Added the `export` line and `~/.pgpass`; libpq defined | fixed `3ccc6ae` | `qa-fixes.ts` |
+| Q9 | setup | prose | T0 | "The same 16 counts mean your lab matches", but the recorded result prints 5 rows and "… 11 more rows", so the page can't be compared. Now says so, and that the lab file checked all 16 before it committed (`learn_curriculum.sql`'s validation) | fixed `18604db` | `qa-fixes.ts` |
+| Q10 | data | prose | T0 | "Nothing but `psql` and the PostGIS extension", but the file stops without `postgis_raster` (its first check; setup installs both). 004 §4 already had it right | fixed `b7caeee` | `qa-fixes.ts` |
+| Q11 | data | navigation | T0 | The only page with no way back to Learn: its header's "Learn" was plain text | fixed `a1f05a1` | `qa-fixes.ts` |
+| Q12 | schema-lab | prose | T0 | "Two whole-country clips": Tasmania is an Australian state, not a country. Names the two | fixed `6e15af5` | `qa-fixes.ts` |
+| Q13 | map | prose | T0 | "Has an exercise that checks your answer": true of 8 of the 36 exercises, the browser's. The other 28 (PostGIS, Python, Power BI) show the answer to compare | fixed `a4e426d` | `qa-fixes.ts` |
+| Q14 | capstone | prose | T0 | A track of one module told the learner to "work through them in order" | fixed `fcf6a5e` | `qa-fixes.ts` |
+| Q15 | f3 | prose | T0 | The devil's box "across the Pacific": `min`/`max` of longitude give -106.66 to 150.25, 257° the long way round through Africa and Asia. The box misses the Pacific, which is why a lat/lon box can't wrap the antimeridian | fixed `809c147` | `qa-fixes.ts` |
+| Q16 | d3, setup, every lab page | missing step | T0 | d3 says `ROLLBACK;` after each lab, but lab 2 needs lab 1's index and most blocks need `d3-analyze`, whose `ANALYZE` the `ROLLBACK` undoes (seen in the lab db: `dataset_key`'s common values back to the default's 100 after it). Only browser blocks showed `-- after:`; a PostGIS or Python block named nothing to run first, on any page. They now show the same Runs after line: linked on the page, named when it's another page's (`py-connect`, d6's star) | fixed `eff277d` | `learn-labs.spec.ts` Runs after; `qa-fixes.ts` |
+| Q17 | d6 | missing step | T0 | Lab 3 follows the worked example, which leaves the star built, and says "build the star after" the new record. Done in one transaction, `CREATE TABLE` refuses; with the star kept, the record never reaches it and step 3 isn't the 40,396 shown. Now says to roll back first | fixed `4431bda` | `qa-fixes.ts` |
+| Q18 | d1 | jargon | T0 | Lab 8 reads `pg_constraint` and `pg_index` and lab 9 says "as the catalog describes it" with no word on what the catalog is, `::regclass`, or why `indkey[0]` meets `conkey[1]`; d3, d4 and d5 read it too. Defined once | fixed `766208f` | `qa-fixes.ts` |
+| Q19 | d2 | jargon | T0 | `read_parquet` and `species.parquet` carry the worked example, and no page says what Parquet is. Defined at the first module that uses it | fixed `72d870d` | `qa-fixes.ts` |
+| Q20 | d2 | prose | T0 | "The outside ids from Wikidata and GBIF", under a result whose first row is `ids.col`, from the Catalogue of Life | fixed `912862a` | `qa-fixes.ts` |
+| Q21 | d3 | prose | T0 | Result: "40,386 of the pangolin's 40,395 rows". The pangolin has nine; 40,395 is the table | fixed `5803531` | `qa-fixes.ts` |
+| Q22 | d3 | number | T0 | "`year` is partly ordered (0.62), the rest close to 0", over a result showing `license` at 0.39. 0.62 is the sixth row, which the page doesn't print; seen in the lab db, 0.624 | fixed `d783f7a` | `qa-fixes.ts` |
+| Q23 | d3 | prose | T0 | "This year's records" over `year >= 2026`: wrong from next January | fixed `476eac9` | `qa-fixes.ts` |
+| Q24 | d3 | jargon | T0 | `VACUUM` and autovacuum carry the Index Only Scan rule, one module before d4 says what they do. Says it in a word, with a link | fixed `4d6f973` | `qa-fixes.ts` |
+| Q25 | d4 | jargon | T0 | Lab 10, the exercise and the Check turn on `IS DISTINCT FROM`, and `month` is often `NULL`, which is the point of it. No page said what it does | fixed `5449c5a` | `qa-fixes.ts` |
+| Q26 | g1 | number | T0 | Check: Greenland's north coast "about 81" times; 1 ÷ cos²(83.6°) is 80.5 (lab db, `ST_YMax` 83.5996) | fixed `5e8a9b9` | `qa-fixes.ts` |
+| Q27 | g2 | jargon | T0 | `(ST_IsValidDetail(geom)).valid` carries the worked example, and `(d).reason` the lab; no page said why the parentheses. g6's `(part).geom` and s2, s4 lean on the same syntax. Said once | fixed `6e50ce2` | `qa-fixes.ts` |
+| Q28 | g2 | prose | T0 | "The square's left half": no square had been mentioned, only a bow-tie. Names it | fixed `0148fa1` | `qa-fixes.ts` |
+| Q29 | g3 | missing step | T0 | The IUCN appendix asks for one multipolygon per taxon with the id in `iucn_id`, but not that IUCN's files name it `id_no` and hold several rows per taxon (presence, origin, season). Without a dissolve the block counts a record once per row. Field names from public listings of IUCN's layers, no file read; block not run, as the page says | fixed `4960bcf` | `qa-fixes.ts` |
+| Q30 | g4 | prose | T0 | A strip is "close to" length × 10 km "and smaller", beside Nicaragua's 2,673 against 2,670. The buffer's round ends add area; said so | fixed `3619190` | `qa-fixes.ts` |
+| Q31 | g5 | prose | T0 | Result: "436 lie within 5 km of one, 529 within 25 km". 965 lie within 25 km; 529 is the 5 to 25 km band | fixed `c951e17` | `qa-fixes.ts` |
+| Q32 | g6 | jargon | T0 | `ST_Dump` picks the main island in every g6 block (and s2, s4), and no page says what it does. Defined at its first use | fixed `1a11f06` | `qa-fixes.ts` |
+| Q33 | g7, s6 | prose | T0 | "Two ways to summarise a country", named method 1 and method 3, and no page says what became of 2. The names are in the block's columns, so they stay; says where they come from (design plan's E3c) | fixed `1866d13` | `qa-fixes.ts` |
+| Q34 | g7 | number | T0 | "Rivers and streams (501, 502) come out 3.9 and 4.8 % smaller": 501 is −4.8, 502 is −3.9 (`g7-country`, past the 5 rows printed). The medians beside them, 5 and 3, are in the right order (lab db) | fixed `ae0b7ee` | `qa-fixes.ts` |
+| Q35 | g7 | prose | T0 | "The 0.75° square holding the most of the sample's records": true only on 0.05° steps. Stepped by 0.01°, a square holds 204 (`cr`) and 607 (`tas`) against 202 and 601 (lab db) | fixed `6d2c98f` | `qa-fixes.ts` |
+| Q36 | g7 | prose | T0 | As Q12: `tas` is called a country, in four places. And "the country reaches every edge of its box": Tasmania's box runs 3.5 km past the main island in the north, for records there (`scripts/ingest/habitat.ts:45`). What holds is that land lies in the outermost tiles | fixed `037c6fc` | `qa-fixes.ts` |
+| Q37 | g7 | prose | T0 | Result: "the worst are islands under 135 km²". The list holds Vatican City and Macau | fixed `5f136ce` | `qa-fixes.ts` |
+| Q38 | s1 | number | T0 | "19 of the 28 museum specimens have no year": 20 do (10, 5, 3, 1, 1 across the rows, lab db) | fixed `0e7e620` | `qa-fixes.ts` |
+| Q39 | s1, p4, c1 | prose | T0 | "A few collared animals": the Jaguar Movement Database holds 134,690 fixes from 117 jaguars ([its record](https://doi.org/10.5061/dryad.2dh0223)). s1 now says so, with the link; p4 and c1 drop "a few". What each page teaches stands | fixed `b576031` | `qa-fixes.ts` |
+| Q40 | f4, s6, c1 | prose | T0 | "One collar study": the sample's dataset is a database that many teams' tracking fed, in 5 countries, so "study" says more than the data does. `jaguar_datasets` counts datasets; the prose now does too | fixed `a47d5ec` | `qa-fixes.ts` |
+| Q41 | s1 | jargon | T0 | "A Darwin Core term", with no word on what Darwin Core is. Defined here; d6's passing use reads as itself | fixed `d1f1a81` | `qa-fixes.ts` |
+| Q42 | s2 | prose | T0 | Result: "Every test says clustered", though the Concept says kernel density "doesn't test anything" and DBSCAN only labels. Two of the four are tests | fixed `5015d7b` | `qa-fixes.ts` |
+| Q43 | s2 | prose | T0 | "A z-score below −1.96 means a mean distance this small would happen by chance less than 5 % of the time": that's the two-sided figure s5 gives; one side alone is 2.5 % | fixed `d8fca90` | `qa-fixes.ts` |
+| Q44 | s2 | missing step | T0 | The worked example counts 1,972 records and lab 1 counts 1,784, with no word why. A hexagon that touches land reaches past the outline: 188 records lie in a cell but outside the island, at most 4.2 km from it (lab db) | fixed `02049f1` | `qa-fixes.ts` |
+| Q45 | s2 | prose | T0 | 913 noise and 913 distinct locations, in one page and one paragraph of its Result: unrelated counts that read as one. Said so at the first | fixed `07c9fcb` | `qa-fixes.ts` |
+| Q46 | s2 | wrong fact | T0 | "`ST_ClusterWithin` [is a] window function": it's an aggregate (`prokind` a, lab db). The window form is `ST_ClusterWithinWin`, PostGIS 3.4 | fixed `7b29178` | `qa-fixes.ts` |
+| Q47 | s3 | prose | T0 | "A cell with no neighbour wouldn't appear here at all", then says its `count(*)` gives 0. The `LATERAL` count returns a row for it, so it would appear, with 0; that's what the check rests on | fixed `e39443f` | `qa-fixes.ts` |
+| Q48 | s4 | number | T0 | "Differ … by 10⁻¹² at most": `z_norm` at 5 km differs by 1.05 × 10⁻¹² (`s4-moran-sql`, `s4-agree`) | fixed `bf26206` | `qa-fixes.ts` |
+| Q49 | s4 | missing step | T0 | "This block runs when a PostGIS run starts" is the checker's view, and a learner told to roll back (setup, d3) would lose s4's tables. Says to keep its work | fixed `bc0bd0a` | `qa-fixes.ts` |
+| Q50 | s5 | jargon | T0 | "Under the null hypothesis", the course's only use, unexplained; s4 said "with no pattern" | fixed `5b1b860` | `qa-fixes.ts` |
+| Q51 | s5 | wrong fact | T0 | `esda.fdr` returns the Bonferroni bound "if every test would pass": it does when none passes (`len(sig_all) == 0`, esda 2.10.0) | fixed `a1e19a4` | `qa-fixes.ts` |
+| Q52 | s5 | wrong fact | T0 | Concept's `m2 = Σ_k z_k² / n`, then the Dialects' esda gives `Is`: esda divides by `n − 1` (esda 2.10.0), so a learner comparing sees each off by (n − 1)/n. Says so; no sign or p-value moves | fixed `90a680b` | `qa-fixes.ts` |
+| Q53 | s5 | prose | T0 | "The museum's material samples 21.4 % against 28.1 %": those shares are the whole dataset, specimens and an observation included (`s1-devil`, 569 rows, 558 samples) | fixed `69ef4cf` | `qa-fixes.ts` |
+| Q54 | d1 | missing step | T0 | The tbls exercise says 16 tables agree, but `setup.py` and every download holding `s4-cells` leave s4's table and view in `learn_curriculum`, so a learner who ran one sees two more (the ledger's open item) | fixed `5e2ea04` | `qa-fixes.ts` |
+| Q55 | every `.sql` holding `s4-cells` (s2–s5, c1) | prose | T2 | The download's header says each block "changes nothing", and `-- tx: own` runs as written; a `-- boot` block commits its tables (`s4.sql` has the `COMMIT`). Add it to the header, `scripts/learn/assemble.ts:81-82` | fixed `bbc4960` | `qa-fixes.ts`; `learn:check` |
+| Q56 | e1 | number | T0 | "73 GBIF keys and the lab sample's six filters": the request's six predicates are the keys plus five filters, as `e1-request` prints them | fixed `8a8dfba` | `qa-fixes.ts` |
+| Q57 | e1 | wrong fact | T0 | "Apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored": the stored one also holds `type`, `interpretedExtensions` and `verbatimExtensions` (`data/raw/gbif-sample/download.json`). Its `format`, `checklistKey` and `predicate` do equal `build_request`'s, every key in order (lab db), and those are what `same` compares | fixed `bf0d75e` | `qa-fixes.ts` |
+| Q58 | e2 | prose | T0 | "The decimal comma two records later": `e2-casts` puts `30 m` on the first record and the comma on the second | fixed `b20090d` | `qa-fixes.ts` |
+| Q59 | e2 | wrong fact | T0 | "`read_postgis(sql, con, geom_col=…)` needs the geometry column's name": it defaults to `geom` (geopandas signature, the pinned version) | fixed `1b7d895` | `qa-fixes.ts` |
+| Q60 | e2 | prose | T0 | "The catalogue (`pg_class`…)": d1 defines the term as "catalog"; f1's "other catalogues" means something else and stays | fixed `23a2dbe` | `qa-fixes.ts` |
+| Q61 | e3, e4 | missing step | T0 | e4's lead says "everything runs in the Python environment" and e3's names only Python and the browser; e4 has 3 PostGIS blocks and e3 has 2, which a learner runs in a SQL client. Worded as s6's. No 004 sentence: the leads are only on the pages | fixed `057fb7a` | `qa-fixes.ts` |
+| Q62 | e4 | prose | T2 | `e4-derived`'s comment ends "(§4.2)", a section of the design plan that a learner has no way to read as one. Drop it from 004's fence and `site/learn/sql/e4-derived.py`; the comment isn't output, so the result stays | fixed `6bab7e3` | `qa-fixes.ts`; `learn:check` |
+| Q63 | p1 | number | T0 | "The other six tables": the worked example builds `fact_records` only, so seven of the eight remain, and the step goes on to name seven | fixed `49adf3b` | `qa-fixes.ts` |
+| Q64 | p2 | wrong fact | T0 | "Home → DAX query view": Microsoft's page says to select its icon on the left side. p2 opens Model view from the same bar. H6's step 5 corrected too | fixed `a680407` | `qa-fixes.ts` |
+| Q65 | p3 | prose | T0 | The Check sorts every continent but one: Seven seas has 0.0002 of the records against 0.0001 of the area (star files), past the 5 rows printed | fixed `10214cf` | `qa-fixes.ts` |
+| Q66 | p4 | prose | T0 | "p3's `Records` measure": p2's Lab adds it, and p3's and p4's Labs both say it's there from p2 | fixed `65f16c8` | `qa-fixes.ts` |
+| Q67 | p4 | wrong fact | T0 | "With no gateway, because the base URL is fixed": the fixed URL avoids a dynamic data source. p1 has it right: files on a public URL need no gateway | fixed `1db0f5b` | `qa-fixes.ts` |
+| Q68 | p4 | missing step | T0 | The pandas line's `.explore()` raises `ImportError` in the course's environment (run here): `folium` isn't pinned. Said as c1 says it of `jsonschema` | fixed `5fed3bf` | `qa-fixes.ts` |
+| Q69 | c1 | missing step | T0 | Lead: "everything runs in your own PostgreSQL", but the Lab's stages use Python (e1 to e4) and Power BI, and the module's tools say so. As Q61. No 004 sentence: the leads are only on the pages | fixed `84208f3` | `qa-fixes.ts` |
+| Q70 | c1 | prose | T0 | Q40's word left behind in the Concept: the records show a dataset, and the Lab already says "if one dataset dominates" | fixed `a58ca21` | `qa-fixes.ts` |
+| Q71 | c1 | prose | T0 | "The jaguar's 2,000 records are 1,948 GPS-collar fixes" reads as if the rest weren't records. p4's wording used | fixed `df20320` | `qa-fixes.ts` |
+| Q72 | c1 | prose | T0 | "A gateway, as d5's PostgreSQL connection does": d5 makes the login and sends the reader to p1; only p1's Lab connects and names the gateway. Removes §4's c1→d5 link | fixed `138df70` | `qa-fixes.ts` |
+| Q73 | c1 | wrong fact | T0 | "From Web … on Windows and Mac": Microsoft's table of Excel versions lists no Web source for Mac, and From Web's dialog takes a URL, not M. p1's route used | fixed `3450f9e` | `qa-fixes.ts` |
+| Q74 | p2 | jargon | T0 | DAX carries p2 to p4 and c1, and no page said what it is; p1 does say what M is. Defined at its first use | fixed `67479cf` | `qa-fixes.ts` |
+| Q75 | p2 | jargon | T0 | Slicers carry p2's, p3's and p4's Labs, and no page said what one is. Defined at its first use | fixed `9fe5aad` | `qa-fixes.ts` |
+| Q76 | d1, g1, and all after | missing prereq | T0 | f4 (CTEs, window functions) was in no other module's closure: tracks branched at f3, yet blocks of 18 modules carry CTEs and of 14 window functions, from `g1-distance` and `d1-ex` on, and s4, s5, s6 say "read it one CTE at a time". d1 and g1 now need f4; ETL from e2 and Power BI inherit it through d1. f4 keeps its skip check. Also 004 §2 and `course.test.ts`'s closure | fixed `f003b8e` | `qa-fixes.ts` |
+| Q77 | c1 | missing prereq | T0 | Lab stage "Ship and refresh (e5)" and the Concept rest on e5's schedule to rebuild the feed, but c1 named e4. e5 needs e4, so nothing else is lost | fixed `f06057a` | `qa-fixes.ts` |
+| Q78 | f3 | jargon | T0 | d6 says "the fan-out of Joins, f3", and f3's prose only said "row multiplier"; the word was in a block id alone. The one other use, p2's "multiplies rows", reads as itself | fixed `78ac349` | `qa-fixes.ts` |
+| Q79 | d4 | jargon | T0 | Named as the fix for a duplicated batch, with no word on what it does; g7 and s2 say so where they use it, much later | fixed `29c8b94` | `qa-fixes.ts` |
+| Q80 | e1, e2, p1, p4, g3, g7, s6 | prose | T0 | e1, e2, p1, p4 wrote "licence", every other page and the column "license"; g3, g7, s6 "summarise", the rest "summarize". Each now one form. "neighbor" stays where it quotes ArcGIS's labels; `e3-snapshot`'s comment is Q81 | fixed `b065ded` | `qa-fixes.ts` |
+| Q81 | e3 | prose | T2 | `e3-snapshot`'s two comments still say "licence", the last of Q80's split. Change 004's fence and `site/learn/sql/e3-snapshot.py`; comments aren't output, so the result stays | fixed `0ba7b5d` | `qa-fixes.ts`; `learn:check` |
 
 ## Ledger
 
