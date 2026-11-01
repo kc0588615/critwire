@@ -279,6 +279,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q73 | c1 | wrong fact | T0 | "From Web … on Windows and Mac": Microsoft's table of Excel versions lists no Web source for Mac, and From Web's dialog takes a URL, not M. p1's route used | fixed | `qa-fixes.ts` |
 | Q74 | p2 | jargon | T0 | DAX carries p2 to p4 and c1, and no page said what it is; p1 does say what M is. Defined at its first use | fixed | `qa-fixes.ts` |
 | Q75 | p2 | jargon | T0 | Slicers carry p2's, p3's and p4's Labs, and no page said what one is. Defined at its first use | fixed | `qa-fixes.ts` |
+| Q76 | d1, g1, and all after | missing prereq | T0 | f4 (CTEs, window functions) was in no other module's closure: tracks branched at f3, yet 18 modules carry CTEs and 15 window functions, from `g1-distance` and `d1-ex` on, and s4, s5, s6 say "read it one CTE at a time". d1 and g1 now need f4; ETL from e2 and Power BI inherit it through d1. f4 keeps its skip check. Also 004 §2 and `course.test.ts`'s closure | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

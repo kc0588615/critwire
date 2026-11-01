@@ -189,7 +189,7 @@ test("XS1 afterScope: a module's prerequisites, transitively; setup and a module
   const file = new URL("../../site/learn/curriculum.json", import.meta.url);
   const pages = new Set(readdirSync(new URL("../../site/learn/modules/", import.meta.url)).map((n) => n.replace(/\.html$/, "")));
   const c = parseCurriculum("site/learn/curriculum.json", readFileSync(file, "utf8"), pages).curriculum!;
-  assert.deepEqual([...afterScope(c, "p3")].sort(), ["d1", "d2", "d3", "d4", "d6", "f1", "f2", "f3", "p1", "p2"]);
+  assert.deepEqual([...afterScope(c, "p3")].sort(), ["d1", "d2", "d3", "d4", "d6", "f1", "f2", "f3", "f4", "p1", "p2"]);
   assert.deepEqual([...afterScope(c, "setup")], []);
   assert.deepEqual([...afterScope(c, "f1")], []);
 });

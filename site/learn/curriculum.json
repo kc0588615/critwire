@@ -118,7 +118,7 @@
       ],
       "hours": 2,
       "prereqs": [
-        "f3"
+        "f4"
       ],
       "state": "built",
       "skill": "Entities; natural and surrogate keys; `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `CHECK`; generated columns",
@@ -237,7 +237,7 @@
       ],
       "hours": 1.5,
       "prereqs": [
-        "f3"
+        "f4"
       ],
       "state": "built",
       "skill": "SRIDs, `ST_Transform`, geometry vs geography, Web Mercator's area error",

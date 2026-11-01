@@ -407,7 +407,7 @@ pointpats: 2.6.0
 
 Seven tracks, 33 modules, about 68 hours. Foundations come first and go fast; then the five areas; then a capstone that uses all of them. Each module answers real questions with the lab data (§4) on one or two tools (the capstone on three): **B** the browser (DuckDB-WASM, nothing to install), **PG** your own PostgreSQL with PostGIS, **Py** Python in the `uv` environment, **PBI** Power BI Desktop (§3). Hours include the lab and the exercise. A module's id names its blocks (`d3-plan`) and its page (§7).
 
-The table is in prerequisite order: every module's prerequisites come above it, so working down the table never meets a module that needs a later one. After f3 the tracks branch: GIS in SQL needs only f3 (and d3 for g5), ETL starts from f2, and Power BI waits for d6. **Depth** is what this document holds: every module is `full`, written out in §5 (concept, worked example, lab, result, exercise, answer, check, dialects). Until its build mission (§9) wrote it, a module was an `outline`: the goal, data, key code and expected result.
+The table is in prerequisite order: every module's prerequisites come above it, so working down the table never meets a module that needs a later one. After f4 the tracks branch: GIS in SQL needs only f4 (and d3 for g5), ETL starts from f2, and Power BI waits for d6. **Depth** is what this document holds: every module is `full`, written out in §5 (concept, worked example, lab, result, exercise, answer, check, dialects). Until its build mission (§9) wrote it, a module was an `outline`: the goal, data, key code and expected result.
 
 | id | Track | Module | Skill | Questions it answers | Tool | h | Prereqs | Depth |
 |---|---|---|---|---|---|---|---|---|
@@ -415,13 +415,13 @@ The table is in prerequisite order: every module's prerequisites come above it, 
 | f2 | Foundations | aggregate | `GROUP BY`, `HAVING`, `CASE`, `COUNT(DISTINCT …)` | How many records does the sample hold per year, and by basis of record? Which species have more than 500 records? How many datasets contributed? | B | 1.5 | f1 | full |
 | f3 | Foundations | join | Inner, left and anti joins; many-to-many; reading an ERD; light spatial in plain SQL (bounding boxes, 10° bins) | Which animals were recorded in Brazil? Which have no records at all? How many records fall in each 10° box? | B | 2.0 | f2 | full |
 | f4 | Foundations | window | CTEs, subqueries, window functions | Which dataset contributed most of each species' records, and what share is that? How does each year rank against the others? | B | 1.5 | f3 | full |
-| d1 | Database architecture | keys | Entities; natural and surrogate keys; `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `CHECK`; generated columns | What does a foreign key check, and what doesn't it? Natural or surrogate key for a species? What does a `CHECK` refuse? | B (+ PG) | 2.0 | f3 | full |
+| d1 | Database architecture | keys | Entities; natural and surrogate keys; `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `CHECK`; generated columns | What does a foreign key check, and what doesn't it? Natural or surrogate key for a species? What does a `CHECK` refuse? | B (+ PG) | 2.0 | f4 | full |
 | d2 | Database architecture | normalize | 1NF to 3NF from nested JSON; functional dependencies; when to denormalize | Is a license a fact about a record or about a dataset? What goes wrong when a dataset's title is stored on every record? | B | 2.0 | d1 | full |
 | d3 | Database architecture | indexes | B-tree, GiST and BRIN indexes; `EXPLAIN` and `EXPLAIN ANALYZE`; planner statistics | Why is this a sequential scan? When does an index help a filter, a join or a spatial test? What does the planner believe about a table? | PG | 2.0 | d1 | full |
 | d4 | Database architecture | transactions | ACID, MVCC, isolation levels, locks, savepoints, `ON CONFLICT` | How do I re-run a failed load safely? What does another session see while a load runs? | PG | 2.0 | d3 | full |
 | d5 | Database architecture | roles | Schemas, roles, `GRANT` and `REVOKE`, default privileges, least privilege, a taste of row-level security | How do I give a reporting tool read-only access to one schema and nothing else? What do default privileges change? | PG | 1.5 | d4 | full |
 | d6 | Database architecture | star | Grain, facts, dimensions, conformed dimensions, unknown members, slowly changing dimensions (types 1 and 2); star vs snowflake; export | What is one record fact's grain? Which dimensions does it share with habitat area per country? Where does a record with no country go? | PG (+ DuckDB) | 2.5 | d2, d4 | full |
-| g1 | GIS in SQL | crs | SRIDs, `ST_Transform`, geometry vs geography, Web Mercator's area error | How big is Tasmania in EPSG:3857, in EPSG:3577 and as geography? Why does Web Mercator overstate it? | PG | 1.5 | f3 | full |
+| g1 | GIS in SQL | crs | SRIDs, `ST_Transform`, geometry vs geography, Web Mercator's area error | How big is Tasmania in EPSG:3857, in EPSG:3577 and as geography? Why does Web Mercator overstate it? | PG | 1.5 | f4 | full |
 | g2 | GIS in SQL | load-validate | The loader, WKT and WKB, `ST_IsValid`, `ST_MakeValid` | Which shapes are invalid, and why? What does `ST_MakeValid` change? | PG | 1.5 | g1 | full |
 | g3 | GIS in SQL | spatial-join | `ST_Contains`, `ST_Covers`, `ST_Intersects`; point in polygon; records on boundaries | Do GBIF's country codes agree with the country outlines? Which records fall on a coast or in no country? | PG | 2.0 | g2 | full |
 | g4 | GIS in SQL | measure-overlay | Distances on the ellipsoid, `ST_DWithin`, buffers, `ST_Intersection` | How much of each country does each ecoregion cover? Which records lie within 10 km of a border? | PG | 2.0 | g3 | full |
@@ -1970,7 +1970,7 @@ Six modules, twelve hours: how to design the tables the foundations queried, and
 
 #### d1 · keys
 
-**Tool:** B (browser) + PG · **Time:** 2.0 h · **Prereqs:** f3
+**Tool:** B (browser) + PG · **Time:** 2.0 h · **Prereqs:** f4
 
 **Concept:** An **entity** is a kind of thing a database keeps facts about, each one with its own identity: an animal, a country, a dataset, a record. Each entity becomes a table, and each table needs a **key**: a column, or a set of columns, whose value picks out exactly one row.
 - A table can have several **candidate keys**: columns, or sets of columns, that are never `NULL` and never repeated, so each one picks out every row. `species` has three: `id`, `slug` and `scientific_name`. The one picked as the main key is the **primary key**. The others are **alternate keys**, declared `NOT NULL` and `UNIQUE`. `species` also has six ids from other websites, declared `UNIQUE` too. Some animals have none of a given kind, so these are **optional unique ids**, not candidate keys: an id that is missing can't pick out its row.
@@ -4833,7 +4833,7 @@ Seven modules, twelve and a half hours, all in your own PostGIS (§3.2), on the 
 
 #### g1 · crs
 
-**Tool:** PG · **Time:** 1.5 h · **Prereqs:** f3
+**Tool:** PG · **Time:** 1.5 h · **Prereqs:** f4
 
 **Concept:** A shape is a list of coordinates, and coordinates mean nothing until you know the system they are in:
 - **A coordinate reference system** (CRS) says what the numbers measure: the model of the Earth's shape (an ellipsoid, and a datum that fixes it to the planet), the units, and, for a flat map, the projection that turns positions on the ellipsoid into x and y. An **SRID** is the number a database uses to name one. PostGIS's numbers are EPSG codes, from a public registry, and its table `spatial_ref_sys` holds each system's definition.
