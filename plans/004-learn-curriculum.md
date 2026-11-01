@@ -4616,7 +4616,7 @@ id | species_id | country_code_gbif | country_code | year
 1 | 48 | XZ | NULL | NULL
 ```
 
-Then build the star after it and count the records each way:
+Then build the star after it (in psql: `ROLLBACK;` a star you already built, `BEGIN;`, run `d6-at-sea`, then the star's blocks) and count the records each way:
 
 ```sql
 -- q: d6-unknown

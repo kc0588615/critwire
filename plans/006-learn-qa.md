@@ -220,6 +220,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q14 | capstone | prose | T0 | A track of one module told the learner to "work through them in order" | fixed | `qa-fixes.ts` |
 | Q15 | f3 | prose | T0 | The devil's box "across the Pacific": `min`/`max` of longitude give -106.66 to 150.25, 257° the long way round through Africa and Asia. The box misses the Pacific, which is why a lat/lon box can't wrap the antimeridian | fixed | `qa-fixes.ts` |
 | Q16 | d3, setup, every lab page | missing step | T0 | d3 says `ROLLBACK;` after each lab, but lab 2 needs lab 1's index and most blocks need `d3-analyze`, whose `ANALYZE` the `ROLLBACK` undoes (seen in the lab db: `dataset_key`'s common values back to the default's 100 after it). Only browser blocks showed `-- after:`; a PostGIS or Python block named nothing to run first, on any page. They now show the same Runs after line: linked on the page, named when it's another page's (`py-connect`, d6's star) | fixed | `learn-labs.spec.ts` Runs after; `qa-fixes.ts` |
+| Q17 | d6 | missing step | T0 | Lab 3 follows the worked example, which leaves the star built, and says "build the star after" the new record. Done in one transaction, `CREATE TABLE` refuses; with the star kept, the record never reaches it and step 3 isn't the 40,396 shown. Now says to roll back first | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

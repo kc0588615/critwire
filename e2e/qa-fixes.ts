@@ -28,6 +28,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q15", url: "/learn/foundations/join/", has: "stretch it over 257° of longitude, the long way round through Africa and Asia", not: "across the Pacific", from: { file: "e2e/__snapshots__/f3-bbox.txt", values: ["-106.663485", "150.254131"] } },
   { q: "Q16", url: "/learn/setup/", has: "names them under its heading, as Runs after" },
   { q: "Q16", url: "/learn/database-architecture/indexes/", has: "Runs after: <a href=\"#q-d3-analyze\">d3-analyze</a>, <a href=\"#q-d3-many-rows\">d3-many-rows</a>", not: "Every block of this module runs after this one" },
+  { q: "Q17", url: "/learn/database-architecture/star/", has: "<code>ROLLBACK;</code> a star you already built", from: { file: "site/learn/labs/checked/d6-unknown.txt", values: ["fact_records joined to dim_country | 40396"] } },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
