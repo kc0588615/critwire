@@ -472,7 +472,7 @@ Rules for every step. A session reads these, its item, the Architecture sections
 
 - [x] U8. **R5: e1–e5** (132 KB; §4). Reading protocol; T0/T1 fixes.
 
-- [ ] U9. **R6: p1–p4, c1** (74 KB; §4). Reading protocol; T0/T1 fixes.
+- [x] U9. **R6: p1–p4, c1** (74 KB; §4). Reading protocol; T0/T1 fixes.
 
 - [ ] U10. **R7: cross-module pass** (§4). T0/T1 fixes; no page rereads beyond what the ledger points to.
   - Read only 006's ledger, the sources it points to, and §4's 18 prose links outside the prereq closure. Give each link a verdict in 006: missing prereq or harmless aside. Forward links (28) are fine unless the text needs them.
@@ -605,5 +605,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 14:33 UTC: U6: R3 read (g1–g7), every prose number judged, claims and full results checked in the lab db (read only), ledger extended. 12 T0 fixes, Q26–Q37, every row seen to fail first on the unfixed build. Nothing queued or listed. typecheck pass, `learn:port --check all` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U7.
 - 2026-11-01 14:47 UTC: U7: R4 read (s1–s6), every prose number judged, claims checked in the lab db, esda, libpysal and DuckDB claims run or read in source, ledger extended, R1–R3's open items answered. 17 T0 fixes, Q38–Q54, each assertion seen to fail on the unfixed build; Q39 and Q40 also touch f4, p4, c1, Q54 d1, as the same facts. Q55 queued for U11 (`assemble.ts` header, T2). Nothing listed. typecheck pass, `learn:port --check all` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U8.
 - 2026-11-01 14:58 UTC: U8: R5 read (e1–e5), every prose number judged, claims checked in the lab db, data files and GBIF's docs, DuckDB dialects run, systemd units verified, ledger extended. 6 T0 fixes, Q56–Q61, each assertion seen to fail on the unfixed build. Q62 queued for U11 (`e4-derived` comment, T2). Nothing listed. typecheck pass, `learn:port --check all` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U9.
+- 2026-11-01 15:19 UTC: U9: R6 read (p1–p4, c1), every prose number judged, against the star files, the feed and its schema, DuckDB and pandas lines run, two Microsoft claims read at the source, ledger extended. 13 T0 fixes, Q63–Q75, each assertion seen to fail on the unfixed build. Power BI itself not run (H6 stays the owner's); H6's step 5 corrected. Nothing queued or listed. typecheck pass, `learn:port --check all` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U10.
 
 ## Summary

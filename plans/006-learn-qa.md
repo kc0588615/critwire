@@ -64,11 +64,11 @@ pnpm learn:check                                               # every .sql and 
 | e3 | `/learn/etl/idempotent/` | 4 | 0 | 0 | 1 | 2 | R5 | Q61 |
 | e4 | `/learn/etl/quality-provenance/` | 4 | 0 | 0 | 0 | 0 | R5 | Q61, Q62 |
 | e5 | `/learn/etl/schedule/` | 4 | 0 | 0 | 0 | 2 | R5 |  |
-| p1 | `/learn/power-bi/power-query/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
-| p2 | `/learn/power-bi/model/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
-| p3 | `/learn/power-bi/dax/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
-| p4 | `/learn/power-bi/maps-report/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39 |
-| c1 | `/learn/capstone/game-feed/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39, Q40 |
+| p1 | `/learn/power-bi/power-query/` | 4 | 0 | 0 | 0 | 0 | R6 | Q63 |
+| p2 | `/learn/power-bi/model/` | 4 | 0 | 0 | 0 | 0 | R6 | Q64, Q74, Q75 |
+| p3 | `/learn/power-bi/dax/` | 4 | 0 | 0 | 0 | 0 | R6 | Q65 |
+| p4 | `/learn/power-bi/maps-report/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39, Q66, Q67, Q68 |
+| c1 | `/learn/capstone/game-feed/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39, Q40, Q69–Q73 |
 
 Dialogs, open over their page:
 
@@ -343,6 +343,12 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | deterministic, idempotent batch, ledger, snapshot, job key, `TRANSFORM_VERSION`, `SCHEMA_VERSION` | e3; e5 agrees | |
 | reject and flag checks, `NaN`, quarantine, provenance, derived dataset | e4 | |
 | exit code, `EnvironmentFile=`, `OnFailure=`, `MAILTO`, advisory lock, incremental load | e5 | advisory lock named in e3's Dialects, with a link |
+| Power Query, M, culture, custom function, dynamic data source, on-premises data gateway | p1 | Power BI Desktop's own words (Applied steps, Data pane, card visual) read as themselves |
+| relationship, cardinality, filter direction, factless fact (again), measure, `SUMMARIZECOLUMNS` | p2 | |
+| DAX, slicer | p2 (Q74, Q75) | |
+| filter context, calculated column, `CALCULATE`, `ALL`, `REMOVEFILTERS`, `DIVIDE`, blank, context transition | p3 | |
+| data category, semantic model, Power BI Service, `SELECTEDVALUE`, `CALCULATETABLE`, `TREATAS` | p4 | Service named in p1, before p4, by what it does |
+| recording hot spot, encounter weight, feed, JSON Schema | c1 | |
 
 **Claims** (claim | where | checked):
 
@@ -420,6 +426,15 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | `POST /v1/derivedDataset`, `relatedDatasets` a map of dataset key to count | e4 | `scripts/gbif/derived-dataset.ts`, `scripts/gbif-register.ts` |
 | Systemd recipe: units parse, `Mon *-*-* 04:17:00` next falls on a Monday | e5 | `systemd-analyze verify` and `calendar` here; the one complaint is the example's unbuilt `.venv`. Not started as a timer |
 | DuckDB `read_csv` with `delim`, `quote = ''`, `all_varchar`, `store_rejects` into `reject_errors`; `NaN` equal to itself and greatest; `isfinite`, `isnan`, `isinf`; both upsert forms; `md5` | e2, e3, e4 | run here, DuckDB 1.5.6 |
+| Star: 8 files, rows and types as the manifest; 2,289 year `-1`, 0 `ZZ`, 6,545 no month, 24,002 no uncertainty, 176 Namibia; 246 countries with habitat, 146,579,613.97 km², Namibia 822,099.38 in 33 rows | p1, p2, H6 | star CSVs. Agrees with d6, setup |
+| By continent: 7 with records, summing to 40,395; Europe 19 recorded, 11 listed, the 8 others each 1 record a country (okapi `DE`), so the country rule's strays; Oceania's ninth listing is the cheetah, at the 2,000 cap; Antarctica area only, `ZZ` nothing | p2, p3 | star CSVs. No `country-overrides` yet, so the rule stands as written |
+| Forest: 215 countries, 105 with records, 40,394; Niue's 1 outside, 31 with habitat but no forest; none 0; 22 under 10 km²; Mauritania 20,000; over 1,000 km²: Benin 230.269, Kenya, South Africa; jaguar Costa Rica 4.050, Brazil 0.320; Trinidad and Tobago 0.713; Åland 187.69 | p3 | star CSVs |
+| Shares: Europe 1.2 and 15.7 %, Asia 7.4 and 21.2, South America 28.0 and 12.1, Oceania 12.7 and 5.8, Seven seas 0.02 and 0.01 (Q65). "Adds up to 1" holds for DAX's full decimals; the twin's rounded columns add to 0.9999, past the 5 rows printed | p3 | star CSVs |
+| Devil: 1,014 places; 4 north of Bass Strait (3 in Victoria at two points, 1 Northern Territory); 2 CC0 specimens at Albuquerque, MSB; 9 datasets, 7 CC BY, 1,982 + 13, 5 CC0 (MVZ 3, MSB 2). Jaguar: 1,948 Jaguar Movement Database, 25 datasets, 22 CC BY, Brazil 1,370, Paraguay 302. Maned Wolf 1,128 | p4, H6 | star CSVs. f3's 7 elsewhere: these 6 plus the one at 150.3° E, south of the line p4 draws |
+| Both citations in `star/manifest.json`, the derived dataset nested under the download's source | p4 | file |
+| Feed: 307 cells, 1,972 records, 37 hot spots, 7 credits, 35,178 bytes, cell 917 256 records, 0.129817, hot. Schema as c1 lists it | c1 | `c1-feed.json`, `c1-feed.schema.json`; 39 − 37 from s5's result |
+| DuckDB 1.5.6: `json_group_array` is a macro, so no `ORDER BY`; `to_json(list(… ORDER BY …))`; `json_object` keeps key order; `read_csv` `types`, `decimal_separator` | p1, c1 | run here |
+| pandas 3.1.0: `keep_default_na=False, na_values=[""]` keeps `NA`; `s.replace(0, pd.NA)` division gives `<NA>` (object dtype). `.explore()` needs `folium` (Q68) | p1, p3, p4 | run here |
 
 **R1's flagged numbers:** setup's 3.4, 3.5, 5432, 5433, 2024, 10,000 and 251, f2's 1.0, 4.0, 1,000 and 3.5 (`7 / 2`), f4's 1,000: all right; versions, ports, thresholds or the outside facts above. f1 and f3 flag none.
 
@@ -430,6 +445,10 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 **R4's flagged numbers:** s1's 40,395, 441, 192, 70.7, 1642, 1,198, 2007, 919, 362, 1976; s2's 1.96, 31,000, 37,000; s3's 1,094, 221, 296, 8.66, 155, 449, 1,972, 1.2; s4's 1.73, 3577, 8,660.254, the rounded 0.2733, 15.18, 0.2036, 15.25, 0.0008, 0.0182, 0.2291; s5's 1.96, 999, 1000, 1.29, 787, 0.001, 3.6, 1,108, 1,972, 1.5; s6's 7.41, 6933, 2.0, 501, 216, 2,107, 0.08, 514, 9.50, 20.01, 3.3, 4326: all right, by the claims above, by arithmetic or as outside facts. Small integers and rates (55 cells by chance, three in four, more than half, a seventh, a quarter, 31 %, 56 %, the chi-square's 77.4 by hand, the FDR cut 47 × 0.05 ÷ 1,094): each worked out. 19 (Q38) and 10⁻¹² (Q48) weren't.
 
 **R5's flagged numbers:** e1's 300 and 100,000 (GBIF's search limits, from what's known of its API, not re-read), 1.0, 4.0, 34,725,756, 394,532, 9110 and 10.2 (the RFC), 502, 504 (curl's retried codes), 1984 (WGS 1984); e2's 394,532, 6.7, 14.2, 2,385 (above), 180 (the `CHECK`); e4's 200,000 (an illustration), 1.0, 59.4, 1599, 1642, 3,992, 2031 (made up): all right, by the claims above, by arithmetic or as outside facts. e3 and e5 flag none. Small integers and rates (e1's 73, e2's three records and one-kilometre buffers, 6,273.1 km² as 2,000 × a 64-sided circle, GeoPandas' default, e3's 4,766, runs 1 to 8, e4's 29 and 4, e5's 124 and 400): each worked out from its result. "Six" (Q56) and "two records later" (Q58) weren't.
+
+**R6's flagged numbers:** p1's 17,918 (179.18 under a German culture), 5,578, 251, 400, 177, 40,395, 472, 246, 2,289, 6,545, 24,002, 176, 146,579,613.97, 822,099.38, 1,048,576 (Excel's row limit); p2's 176, 40,395, 2,000, 146,579,613.97, 2024.2 (Tableau's multi-fact release, from what's known of it, not re-read); p3's 2,000, 246, 251, 20,000, 0.10, 230.269, 961, 4,173.38, 4.050, 1,370, 0.320, 105, 40,394, 2,806.26, 0.713, 187.69, the shares; p4's 4.0, 40,395, 1,014, 1,948, 1,370, 302, 1,128, 176, 1,982; c1's 4.0, 1,094, 2,000, 13.0, 1,948, 6933, 2.0: all right, by the claims above, by arithmetic or as outside facts. Small integers and rates (p3's 22 and 30 others, p4's 4, 7, 9, 13, 22 of 25, c1's 28, 39 less 2, one devil in eight, 225 + 22 + 9): each worked out. "Six" (Q63) wasn't.
+
+R6's reading of the dialects and Power BI: no Power BI here, so nothing in p1 to p4 or `c1-report` was run; H6 stays the owner's check of it. Menu paths read against what's known of Power BI, and Microsoft's pages read for two (Q64, Q73). M and DAX read for what the prose says of them; `Table.NestedJoin`'s arguments, `TREATAS`, `SELECTEDVALUE`, `DIVIDE` of a blank, and `SUMMARIZECOLUMNS` leaving out all-blank groups all as written. Tableau and Excel lines against what's known of those products, not run. c1's Lab steps fit its blocks: `s4-cells` holds `island`, the species and every `3577`, it also creates `s4_neighbours`, and `s5-gistar` holds none, so "unchanged" is right; `e1.py` does carry `e1-submit` commented out. Left as written: p2's step 5 adds a slicer that step 2 already added; a second one does no harm. Diagrams' alt text (`c1-pipeline`, `c1-feed`) read: says what each figure shows. R6 prereqs read fine as ordered; R7 still owes the verdict on p1→d5, p3→s6, p4→e4, p4→s1, c1→e5; Q72 removed the c1→d5 link. H6's step 5 said "Home → DAX query view", corrected with Q64. Spelling: p1, p4 still "licence", as R5 noted.
 
 R5's reading of the dialects: DuckDB's as in the claims; PostgreSQL's by the blocks and `pg_proc`; GeoPandas's by the pinned signature (Q59). curl, urllib3, pygbif, rgbif, SQL Server, `pg_cron`, Task Scheduler and ArcGIS Pro lines read against what's known of those tools, not run. One doubt left as written: e5 says Task Scheduler "can restart a failed task", and the recipe sets `-RestartCount 2`. Microsoft's schema page says a task restarts "if the task fails for any reason"; whether a non-zero exit counts isn't stated, and there's no Windows here to try. The recipe's real alert is its last sentence, `LastTaskResult`, which holds either way. e2's and e5's diagram alt text read: says what each figure shows. `e1-submit` isn't run (`untested`, its reason on the page); read only.
 
