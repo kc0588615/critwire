@@ -78,7 +78,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -98,7 +98,7 @@ Run 2026-11-01 on `5ec037f` (= `origin/main` `daa896d` + mission start), worktre
 
 1. **An override that changes a published country blocks the next release, and nothing says so.** AGENTS.md (Countries, Overrides) and derive's own entry reasons (`scripts/derive/countries.ts:84,90,93`: "Settle with keep or remove in country-overrides.json") make settling look like one file edit plus `pnpm derive`. That holds only for **confirming** overrides (keep a kept country, remove an excluded stray): they just delete the entry from `mismatches.json`, which no build output contains. An **output-changing** override (remove a kept country, keep an excluded stray) changes `data/species.json`, so `/v1` and Learn's lab data (`dist/learn/data/postgis/learn_curriculum.sql` holds `species_countries`; `star/fact_species_country.csv`). Their sha256s enter every ran lab block's key (`scripts/learn/freshness.ts:1-14`, manifest `files`). Plain `pnpm build`, and so `deploy`, then refuses "lab <id> is stale: run pnpm learn:check". Results also change for the ~15 blocks that count `species_countries`/`range_status`: `setup-counts` (472 rows in `e2e/__snapshots__/setup-counts.txt`), `f3-*`, `d2-country-copies`, `pg-smoke`, `d4-xmin-load`, `d6-star-fact-species-country` and `p2-check`. The 004 rule then requires changing 004, `checked/` and `e2e/__snapshots__/` in one commit, plus prose numbers (`site/learn/modules/f3.html:36`, "The Jaguar has 2,000 records and 20 countries"). Fail fast holds (the build refuses), but the established interface hides the cost until deploy time. **Fix:** every proposal is classified as confirming or output-changing (`changesOutput`). 005 splits the high-confidence set that way, `review:accept` gets `--confirm-only` and prints the follow-on whenever a published country changes, and AGENTS.md Overrides gets one line. Derive is unchanged.
 2. **The countries rule's record filters can't be reused for a records query.** `occurrenceSearchQuery` (`scripts/ingest/gbif.ts:35`) hardcodes `limit=0`, and `OCCURRENCE_FILTERS` (`:27`) is private. Evidence must count exactly derive's records (license, basisOfRecord and geospatial filters); a copied filter list would drift (DRY). **Fix:** an optional third parameter `limit = 0`. Existing URLs stay byte-identical, and `assertGbifFresh` (`scripts/derive/gbif.ts:42-43`) proves it on every derive and build.
-3. **The SPARQL POST and the COL API base are inline or private** (`scripts/ingest/wikidata.ts:44-50`, `scripts/ingest/col.ts:7`). **Fix:** export `postSparql(query): Promise<unknown>` (`fetchWikidata` calls it and keeps its own head and bindings checks), and export `COL_API`. Minor.
+3. **The SPARQL POST, the COL API base and the atomic text write are inline or private** (`scripts/ingest/wikidata.ts:44-50`, `scripts/ingest/col.ts:7`, `scripts/json.ts:39-43`). **Fix:** export `postSparql(query): Promise<unknown>` (`fetchWikidata` calls it and keeps its own head and bindings checks), rename and export `API` as `COL_API`, and extract `writeText(url, text)` (temp + rename) from `writeJson`, which calls it (same bytes). Accept's byte-exact backup (Q5) needs `writeText`. Minor.
 4. **Review entries have no id.** `Mismatch` (`scripts/species.ts`) has no id field. Derive sorts by (speciesId, field, kind, country) (`pipeline.ts:118`) but never asserts that this tuple is unique. In live data it's unique, and (speciesId, country) is unique across the 186 country entries. **Fix:** the presort builds keys and asserts uniqueness itself; derive is out of scope.
 
 Fine as is (verified, reused unchanged):
@@ -126,18 +126,28 @@ proposal + recommendations + evidence + country-overrides.json
 | `data/review/presort/recommendations.json` | agents (owner may edit) | `review:presort`, `review:accept` |
 | `plans/005-review-presort.md` | `pnpm review:presort` | people |
 | `data/review/country-overrides.proposed.json` | `pnpm review:presort` | `review:accept`, the validation test |
+| `data/review/country-overrides.json.pre-accept` (untracked, only during an accept) | `pnpm review:accept` | its A13 refusal, and the Undo command (Q5) |
 
 Modules. Pure modules have no fs or network; the CLIs only do IO and printing.
-- `scripts/review/presort.ts` (pure): the file URLs, types `Evidence` and `Recommendation`, `entryKey`, `indexEntries`, `statusQuo`, `changesOutput`, `assertRecommendations`, `proposalOf`.
+- `scripts/review/presort.ts` (pure): the file URLs, types `Evidence` and `Recommendation`, `entryKey`, `indexEntries`, `statusQuo`, `changesOutput`, `assertEvidence`, `assertRecommendations`, `sameFlag`, `proposalOf`.
 - `scripts/review/evidence.ts`: fetch and normalize, no fs. Exports `fetchEvidence(entries, snapshots, species)`.
 - `scripts/review/render.ts` (pure): `renderPresort(...)` returns 005's text.
-- `scripts/review/accept.ts` (pure): `parseAcceptArgs`, `selectProposals`, `mergeOverrides`, `countryChanges`.
+- `scripts/review/accept.ts` (pure): `parseAcceptArgs`, `selectProposals`, `mergeOverrides`, `countryChanges`, `backupFile` (the URL).
 - CLIs: `scripts/review-evidence.ts`, `scripts/review-presort.ts` and `scripts/review-accept.ts`, plus three `package.json` scripts.
-- Reused as they are: `getJson` (`http.ts`); `occurrenceSearchQuery` and `BACKBONE_KEY` (`ingest/gbif.ts`); `postSparql` and `WIKIDATA_ENDPOINT` (`ingest/wikidata.ts`); `COL_API`; `gbifTaxonKey`, `assertNoIucnData` and `readSnapshot` (`raw.ts`); `utcDate`; `bindingsByName` (`derive/wikidata.ts`); `readJson`, `writeJson` and `formatJson` (`json.ts`); `parseOverrides`; `deriveCore`, `readCoreInputs`, `deriveAll`, `readDeriveInputs` and `assertDerivedFiles` (`derive/pipeline.ts`); `mismatchesFile` and `overridesFile` (`species.ts`); `isDeepStrictEqual` (as in `derive/sample.ts`).
+- Reused as they are: `getJson` (`http.ts`); `occurrenceSearchQuery` and `BACKBONE_KEY` (`ingest/gbif.ts`); `postSparql` and `WIKIDATA_ENDPOINT` (`ingest/wikidata.ts`); `COL_API`; `gbifTaxonKey`, `assertNoIucnData` and `readSnapshot` (`raw.ts`); `utcDate`; `bindingsByName` (`derive/wikidata.ts`); `readJson`, `readOptionalText`, `writeJson`, `writeText` and `formatJson` (`json.ts`); `parseOverrides`; `deriveCore`, `readCoreInputs`, `deriveAll`, `readDeriveInputs` and `assertDerivedFiles` (`derive/pipeline.ts`); `mismatchesFile` and `overridesFile` (`species.ts`); `isDeepStrictEqual` (as in `derive/sample.ts`).
 
 **Entry keys** (`entryKey`). A country entry is `<speciesId>:<CC>` (`25:DE`): the same pair `parseOverrides` treats as unique, so one key names exactly one override. Any other entry is `<speciesId>:<field>:<kind>` (`9:ids.gbif:identity`). `indexEntries` throws on a repeated key.
 
 **`statusQuo(entry)`**: `remove` for `country-captive-suspect` + `blocking` (an excluded stray), otherwise `keep` (§5.4 table). `changesOutput(entry, action)` is `action !== statusQuo(entry)`. Both are pure queries, used by R4, `--confirm-only`, 005's summary and accept's report.
+
+**`sameFlag(a, b)`**: the two entries are equal once `values.gbif.speciesRecords` and `reason` (which quotes that total) are left out. Everything that decides the flag stays compared: kind, severity, country, records, region and core. Accept uses it (A8), so a re-ingest that only moves a species' total doesn't void its keys.
+
+**`assertEvidence(evidence, gbif)`** throws, listing every problem:
+- each item's `key` equals `entryKey(entry)`, and keys are unique (`indexEntries`);
+- the IUCN gate on the fetched sections (Q1);
+- each country item's `taxonKey` equals `gbifTaxonKey` of the species' match in the current GBIF snapshot ("taxon changed: re-run pnpm review:evidence"). This binds the evidence to the identity that derive counts.
+
+`review:presort` and `review:accept` both run `assertEvidence` and `assertRecommendations` before anything else.
 
 #### Q1 Evidence
 
@@ -150,8 +160,8 @@ Modules. Pure modules have no fs or network; the CLIs only do IO and printing.
 The lab sample (`data/raw/gbif-sample`) is **not** used: it caps at 2,000 records per species, which misses flagged countries of large species, and it has no establishment fields.
 
 **Fetched (read-only):**
-- **GBIF, one query per country entry (186).** `occurrenceSearchQuery([gbifTaxonKey(match)], ["country=CC", "facet=basisOfRecord", "facet=datasetKey", "facet=institutionCode", "facet=establishmentMeans", "facet=degreeOfEstablishment", "facet=year", "facetLimit=100"], 20)`: the same taxon key and filters as derive.
-  - It stores the live `count` and the facets. A facet whose counts sum below `count` is marked `truncated`.
+- **GBIF, one query per country entry (186).** `occurrenceSearchQuery([gbifTaxonKey(match)], ["country=CC", "facet=basisOfRecord", "facet=datasetKey", "facet=institutionCode", "facet=establishmentMeans", "facet=degreeOfEstablishment", "facet=year", "facet=stateProvince", "facetLimit=100"], 20)`: the same taxon key and filters as derive.
+  - It stores the `taxonKey` it queried, the live `count` and the facets. A facet whose counts sum below `count` is marked `truncated`. `stateProvince` shows where a large entry's records cluster (a zoo city) at no extra request.
   - It stores up to 20 records, allowlisted to: `key, datasetKey, license, basisOfRecord, institutionCode, year, month, decimalLatitude, decimalLongitude, coordinateUncertaintyInMeters, stateProvince, locality, establishmentMeans, degreeOfEstablishment, issues`, plus `occurrenceRemarks` cut to 200 characters. The allowlist drops GBIF's `iucnRedListCategory` and `recordedBy`.
   - 20 records covers every record of 174 of the 186 entries. The 12 larger ones (for example elephant US 4,461 and dama gazelle ES 390) rely on the facets.
 - **GBIF datasets and publishers.** `/v1/dataset/{key}` for every dataset key in those records and facets (title, type, license, doi, publishingOrganizationKey), and `/v1/organization/{key}` for the publisher's title. A zoo publisher is the main captivity signal.
@@ -162,13 +172,15 @@ The lab sample (`data/raw/gbif-sample`) is **not** used: it caps at 2,000 record
 - **Wikidata: one SPARQL POST** (`postSparql`).
   - Items: those from the snapshot (`bindingsByName`) plus `wikidataItemsWithBaseId`.
   - Statements of P627, P846, P10585, P3151, P2341 (indigenous to) and P183 (endemic to), with rank, the value's P297 when it's a country, and references (P248, P813).
+  - **Label-free:** no `wikibase:label` service, no `rdfs:label` or `schema:name`. Items, references (P248) and ranks stay IRIs or Q-ids, and dates stay dates. A label such as "IUCN Red List" would trip the gate. Variable names and the stored query avoid "iucn" too (property ids only), unlike the ingest's `?iucnItem`.
 
 **Budget:** 186 + up to 300 datasets + up to 150 organizations + 42 + about 15 + 1 = **up to about 700 requests, at most 6 min** through `getJson` (pacing at ≤ 2 req/s, retries, one stderr line per attempt). Run it as `pnpm review:evidence 2>> /srv/critter-ai/agent-state/missions/critwire-review-presort/review-evidence.log`.
 
 **Shape and writing.**
 - Shape: `{retrieved, sources[], entries: [{key, entry, gbif|null}], datasets, organizations, col, gbifSpecies, wikidata}`.
-- `entries` copies `mismatches.json` verbatim: the queue the evidence was gathered for.
-- All or nothing: the file is built in memory first. Free text matching `/iucn/i` (locality, remarks, titles, area names) is set to `null`, and the record stays citable by key. Then `assertNoIucnData` runs on the whole file, and one `writeJson(…, {canonical: true})` writes it.
+- `entries[].entry` copies `mismatches.json` verbatim: the queue the evidence was gathered for.
+- All or nothing: the file is built in memory first. Free text matching `/iucn/i` (locality, remarks, titles, area names) is set to `null`, and the record stays citable by key.
+- **The IUCN gate** (`assertNoIucnData`, `raw.ts:95`, which throws on any key or string matching `/iucn/i`) runs on the fetched sections only: `sources`, `entries[].gbif`, `datasets`, `organizations`, `col`, `gbifSpecies` and `wikidata`. It skips `entries[].key` and `entries[].entry`: those are our own queue's words (`ids.iucn`, `iucn-id`, "has P627 17585", 20 strings in the live queue), which the gate would always reject. `assertEvidence` re-runs it on every read. Then one `writeJson(…, {canonical: true})` writes the file.
 - `sources` cites GBIF.org (each record keeps its datasetKey and license, CC0 or CC BY only by the query's filter), the COL release (as derive cites it) and Wikidata (CC0).
 
 **Where it lives:** committed, about 0.7 MB. The owner and Astra can check every citation and regenerate 005. Derive and build never read it (guard test, Q4).
@@ -184,7 +196,7 @@ There's no automatic keep or remove rule. Establishment fields are rarely filled
 
 **Confidence:**
 - **high:** the cited records settle it on their own.
-  - remove: each counted record is captive or misplaced according to its own fields, its dataset or publisher, or its locality.
+  - remove: each counted record is captive or misplaced according to its own fields, its dataset or publisher, or its locality (R7 checks coverage).
   - keep: at least one wild record (a field locality, or a community-verified observation), and an independent source agrees: a second dataset, a COL distribution, or Wikidata P2341/P183.
 - **medium:** the evidence points one way, but one condition of high is missing.
 - **low:** thin or conflicting evidence. The recommendation is then always the status quo, so accepting it never changes the output.
@@ -206,6 +218,7 @@ There's no automatic keep or remove rule. Establishment fields are rarely filled
 - **R4** low means the status quo.
 - **R5** a country entry at medium or high cites at least one `gbif:occurrence` or `gbif:dataset`.
 - **R6** the reason is 1–300 characters (it becomes the override's `reason`).
+- **R7** a `high` `remove` needs complete coverage: the live `count` equals the entry's `records`, and the `datasetKey` facet isn't `truncated`, so a judgment per dataset covers every counted record. Twenty records and a truncated facet can't prove that every record is captive.
 
 **Authoring:** agents write in batches by kind, so the same rubric gets applied consistently: the 28 non-country entries, the 38 strays, the 53 kept captive-suspect entries, then the 95 borderline entries in two batches. Each batch runs `pnpm review:presort`, which renders the pending entries' evidence into 005, then writes the batch's recommendations and runs it again.
 
@@ -214,8 +227,9 @@ There's no automatic keep or remove rule. Establishment fields are rarely filled
 **`pnpm review:presort`:**
 - Reads `mismatches.json`, evidence, recommendations, `base.json` (common names) and the GBIF snapshot (context).
 - Refuses unless evidence `entries` deep-equal `mismatches.json`: "queue changed: re-run pnpm review:evidence".
-- Runs R2–R6.
+- Runs `assertEvidence` and R2–R7.
 - Writes 005 (entries without a recommendation render as "pending") and the proposal (the recommended country entries only).
+- **Deterministic**, so `--check` gives the same answer on any day: `renderPresort` reads no clock. Its only dates are evidence `retrieved` and the snapshots' `retrieved`, in the front matter too. Numbers use a fixed `en-US` format, and the order is speciesId, then key. The proposal holds no date.
 
 **`--check`** (the coverage script):
 - R1 complete, so no "pending" entries are left.
@@ -225,7 +239,7 @@ There's no automatic keep or remove rule. Establishment fields are rarely filled
 **005 layout:**
 - Front matter; then how to read it (what keep and remove mean, the confidence rubric, the wording rule).
 - **Summary table:** recommendation (keep, remove, fix, no action) by confidence, plus a "changes /v1" column.
-- **Accept in one go:** the high-confidence keys, split into confirming and output-changing, with both commands and their consequences (Q6). It warns when a species would lose every published country (species 69 has every published country flagged).
+- **Accept in one go:** the high-confidence keys, split into confirming and output-changing (each with its count, also in the plan's Summary), with both commands and their consequences (Q6). It warns when a species would lose every published country (species 69 has every published country flagged).
 - **Per species**, in id order: a heading with id, scientific and common name, and the context line (snapshot counts per country with region, core, T). Then one block per entry:
   - heading `#### <key> · <kind> (<severity>, kept|excluded)`;
   - what was flagged: derive's reason;
@@ -246,57 +260,85 @@ There's no automatic keep or remove rule. Establishment fields are rarely filled
 - **P7** an empty reason, or one over 300 characters.
 - **P8** the committed proposal breaks an override rule.
 - **P9** some other script reads the presort files.
+- **P10** a `high` `remove` without complete coverage (R7).
+- **P11** evidence that breaks `assertEvidence`: a key that isn't `entryKey(entry)`, a fetched string or key matching `/iucn/i` (while `ids.iucn` in `entry` passes), or a changed taxon key.
 
 The tests:
 - **"The proposal passes the overrides rules" (P8):** `deriveCore({...await readCoreInputs(), overrides: <proposal JSON>})` doesn't throw. These are the exact checks derive runs on `country-overrides.json`: `parseOverrides`, `deriveCountries` and `matchCountries`. The test doesn't depend on the owner's current overrides; conflicts are accept's job.
-- **Reader guard (P9):** no `.ts` file under `scripts/` or `e2e/` outside `scripts/review/` and `scripts/review-*.ts` mentions `overrides.proposed` or `review/presort`, or imports `review/`. Together with the `dist/` hash comparison, this proves derive and build don't read the proposal.
-- Unit tests of `assertRecommendations` and `proposalOf` for P1–P7.
+- **Reader guard (P9):** one regex, `/overrides\.proposed|review\/presort|from "\.\.?\/(\.\.\/)*review\//`, over every `.ts` file under `scripts/` and `e2e/` except `scripts/review/` and `scripts/review-*.ts`. Together with the `dist/` hash comparison, this proves derive and build don't read the proposal.
+- Unit tests of `assertEvidence`, `assertRecommendations` and `proposalOf` for P1–P7, P10 and P11.
 
 Coverage and 005's freshness are **not** in `pnpm test`: they would fail after every legitimate accept or re-ingest. `review:presort --check` runs in this mission's Verification instead.
 
 #### Q5 `pnpm review:accept`
 
-Usage: `pnpm review:accept [--confidence high|medium|low] [--ids 25:DE,25:RU] [--confirm-only]`.
-- At least one of `--confidence` and `--ids` is required. With both, the selection is their union.
+Usage: `pnpm review:accept (--confidence high|medium|low | --ids 25:DE,25:RU) [--confirm-only]`.
+- Exactly one of `--confidence` and `--ids`. Each selects only what it says, so it can't select more than the owner expects. "High plus 25:DE" is two runs.
 - `--confidence medium` means medium or higher.
 - `--confirm-only` keeps only the proposals where `changesOutput` is false.
 
+**Backup:** `backupFile` = `data/review/country-overrides.json.pre-accept`. It's untracked and not ignored, so `git status` shows an unfinished accept. It exists only while an accept is writing.
+
 Flow. Every check runs before any write:
-1. Parse the arguments.
-2. Read the proposal, recommendations, evidence and current overrides (raw). Refuse unless the proposal file equals `formatJson(proposalOf(recommendations))`.
-3. `selectProposals`.
-4. `before = deriveAll(readDeriveInputs())`, then `assertDerivedFiles(before)`, so that the later derive reflects only the accepted overrides.
-5. `mergeOverrides(parseOverrides(current), selected)` returns `{merged, added, skipped}`.
+1. Parse the arguments. Refuse if the backup exists (A13).
+2. Read the proposal, recommendations, evidence, the GBIF snapshot and the current overrides (exact bytes).
+3. `assertEvidence` and `assertRecommendations` (R2–R7) on what was read, then refuse unless the proposal file equals `formatJson(proposalOf(recommendations))`. An edited confidence or cite therefore fails here, whether or not the proposal changed.
+4. `selectProposals`.
+5. `before = deriveAll(readDeriveInputs())`, then `assertDerivedFiles(before)`, so that the later derive reflects only the accepted overrides.
+6. `mergeOverrides(parseOverrides(current), selected)` returns `{merged, added, skipped}`.
    - The owner's existing entries keep their order and text. New ones are appended, sorted by speciesId, then country.
    - The same pair with the same action already present is skipped (already settled). The same pair with another action is a conflict, and it throws.
-   - Each added key's evidence `entry` must deep-equal an entry in `before.entries`, else the presort is stale for that key.
-6. `after = deriveAll({...inputs, overrides: merged})`. It throws on any override rule.
-7. `countryChanges(before.records, after.records)`: per species, the countries added and removed.
-8. If nothing was added: print "already accepted", exit 0, write nothing.
-9. `writeJson(overridesFile, merged)`, then spawn `pnpm derive` (cwd: the repo root from `import.meta.url`; stdio inherited). If derive exits non-zero, throw, saying the overrides file was written and that `git restore data/review/country-overrides.json` undoes it.
-10. Print the accepted and skipped keys and the country changes. If anything changed, print the follow-on from Q6.
+   - Each added key's evidence `entry` must `sameFlag` an entry in `before.entries`, else the presort is stale for that key (A8). A moved species total is printed as a warning.
+7. `after = deriveAll({...inputs, overrides: merged})`. It throws on any override rule.
+8. `countryChanges(before.records, after.records)`: per species, the countries added and removed.
+9. If nothing was added: print "already accepted", exit 0, write nothing.
+10. Write, in this order:
+    - `writeText(backupFile, <current bytes>)`;
+    - `writeJson(overridesFile, merged)`;
+    - spawn `pnpm derive` (cwd: the repo root from `import.meta.url`; stdio inherited);
+    - on exit 0, delete the backup.
+11. Print the accepted and skipped keys and the country changes. If anything changed, print the follow-on from Q6.
 
-Accept never writes the proposal, the recommendations or 005. Non-country keys are refused ("not an override; its fix is in 005"): their fixes are follow-on work the owner orders separately.
+**Recovery.** Derive writes its 6 files one by one (`derive.ts:15-18`). Each write is atomic (temp + rename, `json.ts:39-43`), but the set isn't: a failure or kill between renames leaves some files new and some old. If derive exits non-zero, or a kill leaves the backup, the error (and A13's refusal on the next run) names both ways out:
+- **Undo:** `mv data/review/country-overrides.json.pre-accept data/review/country-overrides.json && pnpm derive`. This restores the exact pre-run bytes, including uncommitted earlier accepts that `git restore` would lose. Step 5 proved the pre-run derived files equal derive's output from those inputs, so this derive also rewrites them byte for byte.
+- **Finish:** `pnpm derive && rm data/review/country-overrides.json.pre-accept`.
+
+Both re-run derive from inputs, and that is idempotent: derive reads none of its outputs except `issued-ids.json` (`pipeline.ts:61-72`, `sample.ts:53-61`), and an override can't change that file (ids and slugs come from `base.json`, `pipeline.ts:115-117`). A kill during a write can also leave a `<file>.tmp-<pid>`; `git status` shows it, and you delete it.
+
+Accept never writes the proposal, the recommendations or 005. Non-country keys are refused ("not an override; its fix is in 005"): their fixes are follow-on work the owner orders separately. After an accept, the queue no longer equals the evidence, so `review:presort` refuses: 005 is then the record of what was proposed, and a fresh presort needs `review:evidence` first.
 
 **Failure modes**, each throwing with nothing written unless the item says otherwise:
-- **A1** no selector, an unknown flag, or a bad level: usage message, exit 2.
+- **A1** no selector, both selectors, an unknown flag, or a bad level: usage message, exit 2.
 - **A2** an unknown key.
 - **A3** a non-country key.
 - **A4** an empty selection.
-- **A5** the proposal differs from `proposalOf(recommendations)`, or fails `parseOverrides`.
+- **A5** the evidence or the recommendations fail `assertEvidence` or R2–R7, or the proposal differs from `proposalOf(recommendations)` or fails `parseOverrides`.
 - **A6** the derived files are stale before the run.
 - **A7** a conflict with an override already in the file.
-- **A8** the entry moved since the evidence was gathered.
+- **A8** the flag moved (`sameFlag` false) or the taxon key changed since the evidence was gathered.
 - **A9** the merged overrides break a derive rule.
-- **A10** derive fails after the write: the error names the restore command.
+- **A10** derive fails after the write: the backup stays, and the error names Undo and Finish.
 - **A11** a rerun: idempotent, exit 0.
-- **A12** a file other than the overrides file and derive's outputs is touched.
+- **A12** a file other than the backup, the overrides file and derive's outputs is touched.
+- **A13** the backup exists (an earlier accept didn't finish): refused, naming Undo and Finish.
 
 **Tests:** `scripts/review/accept.test.ts`.
-- Pure tests of `selectProposals`, `mergeOverrides` and `countryChanges`.
-- CLI runs on a **throwaway copy**: `mkdtemp`; copy `scripts/`, `data/`, `package.json` and `tsconfig.json`; symlink `node_modules`. Every path resolves from `import.meta.url`, so the CLI and the `pnpm derive` it spawns act only on the copy. No test-only path parameters in production code.
-  - One success run with one confirming and one output-changing key, picked from the committed proposal. It asserts the overrides content, that both entries are gone, and that `species.json` changed for the output-changing key only.
-  - A rerun (A11), a conflict (A7) and a hand-edited proposal (A5), each leaving every file's hash unchanged.
+- Pure tests of `selectProposals`, `mergeOverrides`, `sameFlag` and `countryChanges`.
+- CLI runs on a **self-contained throwaway copy**. Every path resolves from `import.meta.url`, so the CLI and the `pnpm derive` it spawns act only on the copy. There are no test-only path parameters in production code, and no step reads the real repo's review state (proposal, recommendations, evidence or overrides).
+  - **Setup:**
+    1. `mkdtemp`; copy `scripts/`, `data/`, `package.json` and `tsconfig.json`; symlink `node_modules`; create `plans/`.
+    2. Write the overrides as hand-formatted bytes (`[ ]`, not `formatJson`'s), then run `pnpm derive`. The copy's queue now depends only on the committed raw data.
+    3. From that queue, pick two kept country entries of species with at least 2 published countries: K1 gets `keep` (confirming) and K2 gets `remove` (output-changing). Throw if there aren't two.
+    4. Write a fixture `evidence.json`: `entries` is the copy's queue, and every country item gets a synthetic `gbif` section (the snapshot's taxon key, `count` = `records`, one synthetic dataset covering them).
+    5. Write a fixture `recommendations.json` with K1 and K2 at `high`, citing that dataset.
+    6. Run `pnpm review:presort`.
+  - **Success** (`--ids K1,K2`): the overrides content, both entries gone, `species.json` changed only in K2's species' countries, and no backup left.
+  - A rerun (A11), a conflict (A7, the conflicting override set up and derived first), a hand-edited proposal (A5) and a recommendation edited to `low` with the proposal untouched (A5). Each leaves every file's hash unchanged.
+  - **Interrupted derive** (A10, A13). `chmod 0555 data/gbif-learn-sample/`, the last directory derive writes to, so derive fails after five renames (the test throws if run as root, where chmod doesn't block):
+    - accept K2 fails, naming Undo and Finish;
+    - the backup bytes equal `[ ]`, and `species.json` is already changed;
+    - a second accept is refused (A13), with no hash changed;
+    - after restoring the mode, Undo leaves the overrides bytes equal to `[ ]` and every hash equal to the pre-run hashes.
   - Afterwards, the real repo's `data/` hashes are unchanged.
 
 #### Q6 What accepting does downstream
@@ -315,9 +357,11 @@ The owner sees this table in 005's "Accept in one go" section, with two reply se
 #### Docs and invariants
 
 AGENTS.md changes:
-- **Data:** the 4 presort files with their writers, marked "never read by derive or build".
+- **Data:** the 4 presort files with their writers, marked "never read by derive or build", and the accept backup.
 - **Commands:** the 3 new commands.
 - **Overrides:** one line on output-changing overrides (Q6).
+
+`docs/recovery.md` §2 (state Git doesn't hold) gets one line: `country-overrides.json.pre-accept`, which exists only during an accept, and its Undo and Finish commands (Q5).
 
 The mission's end-state proof: `dist/` hashes equal the Baseline's, and `git diff origin/main -- data/review/country-overrides.json data/species.json data/review/mismatches.json` is empty.
 
@@ -329,18 +373,22 @@ About 11 units, well under 25:
 3. Accept, with its tests.
 4. Five recommendation batches (four kinds; the borderline kind in two).
 5. The final generation and `--check`.
-6. AGENTS.md.
+6. AGENTS.md and `docs/recovery.md`.
 7. Verification.
 
 ### Rejected alternatives
 
-- **A deterministic keep/remove rule engine over the signals:** the signals are sparse and zoo titles are heuristic, so it would add false precision. The rubric plus mechanical checks (R2–R5) keeps it honest instead.
+- **A deterministic keep/remove rule engine over the signals:** the signals are sparse and zoo titles are heuristic, so it would add false precision. The rubric plus mechanical checks (R2–R7) keeps it honest instead.
 - **Hand-writing 005 and the proposal:** it would duplicate the reasons, need hand-counted summaries, and make coverage depend on parsing markdown.
 - **Evidence only in the mission state folder:** the owner and Astra couldn't check it, 005 couldn't be regenerated, and the checks would depend on uncommitted files.
 - **The lab sample as offline per-record evidence:** it's capped at 2,000 records per species and has no establishment fields. The uniform live query costs 186 requests.
 - **Confidence in the proposal** (a fifth key, or a prefix in the reason): it breaks the exact override format, or hides data in prose.
 - **Accept writing the derived files in-process** (`derivedFiles` + `writeJson`): it would duplicate `derive.ts`'s write loop and summary. Spawning `pnpm derive` is the documented interface; the in-memory `deriveAll` serves only as the pre-write check.
 - **Path-injection parameters for accept:** they're test-only code. The throwaway copy runs the real CLI on real paths.
+- **`git restore` as accept's undo, or requiring a committed overrides file:** the first loses uncommitted earlier accepts. The second ties a data CLI to git, and the throwaway copy isn't a repo.
+- **The backup in `os.tmpdir()` or `~/.local/state/critwire/`:** it would be lost on reboot, or shared across checkouts, and invisible to `git status`.
+- **`--confidence` and `--ids` as a union or an intersection:** either can surprise the owner. Exclusive selectors say exactly what they select.
+- **A8 as a whole-entry deep-equal:** any re-ingest that moves a species' total would void all its keys. `sameFlag` plus the taxon-key check covers what decides the flag.
 - **Coverage and 005 freshness in `pnpm test`:** they would turn red after every legitimate accept or re-ingest.
 - **Changing derive** (an id on entries, a dataset-facet captive rule): derive rules are out of scope, and `dist/` must stay identical.
 
@@ -382,6 +430,33 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+MUST-FIX:
+- **Fable 1 / Astra 1 (the IUCN gate vs the verbatim queue):** the gate runs on the fetched sections only, never on `entries[].key` or `entries[].entry` (Q1). `assertEvidence` re-runs it on every read, and P11 tests both sides.
+- **Astra 2 (accept bypasses the rubric):** accept step 3 runs `assertEvidence` and R2–R7 before the proposal-equality check, the selection and any write. A5 covers it, with a test that edits a recommendation to `low` and leaves the proposal untouched.
+- **Astra 3 (recovery):**
+  - Accept first writes the exact pre-run bytes to `country-overrides.json.pre-accept` (atomic `writeText`), and deletes the file only after derive exits 0.
+  - The next accept refuses while it exists (A13). Both errors name Undo (`mv` + `pnpm derive`, which restores the exact bytes and, by step 5, the pre-run derived files) and Finish (`pnpm derive` + `rm`).
+  - Derive's 6 writes are each atomic but not transactional (`derive.ts:15-18`). Rerunning `pnpm derive` is idempotent, because derive reads no output except `issued-ids.json`, which an override can't change (`pipeline.ts:61-72,115-117`, `sample.ts:53-61`).
+  - A chmod test makes derive fail after 5 renames and proves Undo gives back the same bytes and hashes. `docs/recovery.md` gets one line.
+- **Fable 2 / Astra 4 (the test depends on live review state):** the throwaway copy resets its overrides to `[ ]` and re-derives. It then picks K1 and K2 from its own queue and writes fixture evidence and recommendations, and `review:presort` writes the proposal in the copy. No step reads the real repo's review state.
+
+MISSED:
+- **The clock:** `renderPresort` reads no clock (only the `retrieved` dates, a fixed number format, and a fixed order), so `--check` gives the same answer every day (Q3).
+- **SPARQL labels:** the query is label-free, and its variable names avoid "iucn" (Q1).
+
+SHOULD-CONSIDER, adopted:
+- Fable: A8 compares through `sameFlag` (the species total is a warning).
+- Fable: P9 is one regex.
+- Fable: `facet=stateProvince`.
+- Fable: the confirming/output-changing counts go in 005 and the Summary.
+- Astra 1: the evidence stores `taxonKey`, and `assertEvidence` checks it against the current snapshot.
+- Astra 2: R7, a high `remove` needs complete coverage.
+- Astra 3: `--confidence` and `--ids` are exclusive, not a union or an intersection.
+
+SHOULD-CONSIDER, rejected:
+- Fable: "derive's partial writes can't happen". That's wrong: the in-memory `deriveAll` stops a rule failure, but not a kill, a full disk or a permissions error between renames (Astra 3).
+- Fable: drop P9. It's kept as one regex: the Brief asks that no script read the proposal, and the test gives that message at `pnpm test` time.
+
 ## Steps
 
 ## Verification
@@ -398,5 +473,6 @@ SHOULD-CONSIDER:
 - 2026-11-01 08:25 UTC: Architecture. architect wrote findings (output-changing overrides make plain build refuse until learn:check --update; no DOI staleness) + target design (review:evidence/presort/accept, keys, deriveCore-based proposal validation). Plan-only change; no code to verify.
 - 2026-11-01 08:30 UTC: Fable review. APPROVE_WITH_CHANGES, 2 MUST-FIX (IUCN gate vs verbatim queue copy; accept CLI test must be self-contained). Plan-only change; no code to verify.
 - 2026-11-01 08:31 UTC: Astra review. APPROVE_WITH_CHANGES, 4 MUST-FIX (IUCN gate scope, accept must run assertRecommendations, overrides recovery must preserve pre-run bytes + interrupted derive writes, self-contained accept test). Plan-only change; no code to verify.
+- 2026-11-01 08:38 UTC: Revision. architect resolved all 6 MUST-FIX (IUCN gate on fetched sections only; accept runs assertEvidence + R2–R7 first; .pre-accept backup + Undo/Finish, derive rerun idempotent; self-contained accept test) + 2 MISSED; 7 SHOULD-CONSIDER adopted, 2 rejected. Plan-only change; no code to verify.
 
 ## Summary
