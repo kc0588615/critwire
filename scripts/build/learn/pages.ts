@@ -62,6 +62,14 @@ export function learnPages({ curriculum, pages, downloads, templates, erds, cont
   return out;
 }
 
+// What can scroll sideways. A block's code is escaped, so `<pre` only comes from our own markup.
+const SCROLLER = /<(pre(?=[\s>])|[a-z]+(?=\s[^<>]*class="(?:table-wrap|diagram)"))[^<>]*>/g;
+
+/** `main` with every sideways scroller in the tab order, so the keyboard can scroll it (WCAG 2.1.1). Pure. */
+export function focusableScrollers(main: string): string {
+  return main.replace(SCROLLER, (tag, name: string) => (/\stabindex=/.test(tag) ? tag : `<${name} tabindex="0"${tag.slice(name.length + 1)}`));
+}
+
 /** A page: `main` (HTML) inside `layout`. Pure. */
 export function renderPage(layout: string, style: string, bundle: BundleUrls, page: Pick<LearnPage, "page" | "title" | "main">): string {
   return fillSlots(layout, {
@@ -70,7 +78,7 @@ export function renderPage(layout: string, style: string, bundle: BundleUrls, pa
     css: `<link rel="stylesheet" href="${esc(bundle.css)}">`,
     js: `<script type="module" src="${esc(bundle.js)}"></script>`,
     page: esc(page.page),
-    main: page.main,
+    main: focusableScrollers(page.main),
   }, "site/learn/layout.html");
 }
 

@@ -51,7 +51,7 @@ td .note { display: block; }
 <section id="postgis">
 <h2>PostGIS</h2>
 <p><a href="/learn/data/postgis/learn_curriculum.sql"><code>learn_curriculum.sql</code></a> builds every lab table in the schema <code>learn_curriculum</code> with nothing but <code>psql</code> and the PostGIS extension:</p>
-<pre><code>psql -X -v ON_ERROR_STOP=1 -d your_database -f learn_curriculum.sql</code></pre>
+<pre tabindex="0"><code>psql -X -v ON_ERROR_STOP=1 -d your_database -f learn_curriculum.sql</code></pre>
 <p>It runs as one transaction and checks its own row counts before it commits. Loading it again replaces the whole schema, including any tables you added to it; a failed load leaves the previous schema as it was. It refuses to run if anything outside the schema depends on it, such as one of your views. A database used only for the labs avoids both problems.</p>
 </section>
 

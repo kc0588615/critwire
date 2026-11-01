@@ -43,7 +43,7 @@ export function showError(region: HTMLElement, error: Error): void {
 function table(result: Result): HTMLElement {
   const head = el("tr", {}, ...result.columns.map((c) => el("th", { scope: "col", textContent: c })));
   const body = result.rows.slice(0, DRAWN).map((r) => el("tr", {}, ...r.map((v) => el("td", { textContent: cellText(v) }))));
-  return el("div", { className: "table-wrap" }, el("table", {}, el("thead", {}, head), el("tbody", {}, ...body)));
+  return el("div", { className: "table-wrap", tabIndex: 0 }, el("table", {}, el("thead", {}, head), el("tbody", {}, ...body)));
 }
 
 /** Cards and Table tabs over their two panels, Cards first; the region's id names the panels. */
