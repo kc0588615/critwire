@@ -76,6 +76,7 @@ test("each download is served as assembled; each PostGIS (Python) block's page c
         expect(d.text.includes(commented), `${b.id} commented out in ${d.name}`).toBe(true);
       }
       expect(await page.locator(`#q-${b.id} .download a`).evaluateAll((as) => as.map((a) => a.getAttribute("href"))), b.id).toEqual(links);
+      expect(await page.locator(`#q-${b.id} .runs-after`).allTextContents(), `${b.id} says what to run first`).toEqual(b.after.length ? [`Runs after: ${b.after.join(", ")}`] : []);
     }
   }
   expect(offOrigin).toEqual([]);

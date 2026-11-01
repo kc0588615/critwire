@@ -13,10 +13,10 @@
 </ul>
 <p>The three ways a plan reads the table, on a small one of twelve pages where six hold the nine rows a query wants:</p>
 {{diagram:d3-scans}}
-<p>Each lab below starts from the loaded tables: critwire's tests run every block in a transaction and roll it back. To do the same in <code>psql</code>, type <code>BEGIN;</code> before a lab and <code>ROLLBACK;</code> after it, so the indexes you make in one lab don't change the plans of the next. The download runs the blocks in order, each after the blocks it needs.</p>
+<p>Each lab below starts from the loaded tables: critwire's tests run every block in a transaction and roll it back. To do the same in <code>psql</code>, type <code>BEGIN;</code> before a lab, run the blocks named under its Runs after first, and type <code>ROLLBACK;</code> after it, so the indexes you make in one lab don't change the plans of the next. The download does this for you.</p>
 
 <h2>Worked example</h2>
-<p>Why is this a sequential scan? First, statistics everyone can reproduce. <code>ANALYZE</code> reads a random sample, so its numbers could differ slightly from one run to the next; with the target set to 1,000 it reads 300,000 rows, more than <code>occurrences</code> holds, so it reads them all and gets the same statistics every time. <code>SET LOCAL</code> lasts until the transaction ends. Every block of this module runs after this one:</p>
+<p>Why is this a sequential scan? First, statistics everyone can reproduce. <code>ANALYZE</code> reads a random sample, so its numbers could differ slightly from one run to the next; with the target set to 1,000 it reads 300,000 rows, more than <code>occurrences</code> holds, so it reads them all and gets the same statistics every time. <code>SET LOCAL</code> lasts until the transaction ends, and <code>ROLLBACK</code> undoes the <code>ANALYZE</code> too, so the blocks that read these statistics run after this one:</p>
 {{block:d3-analyze}}
 <p>Temminck's pangolin (species 63) has nine records in the lab. With no index on <code>species_id</code>, PostgreSQL reads all 40,395 rows to find them:</p>
 {{block:d3-seq}}

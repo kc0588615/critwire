@@ -62,7 +62,7 @@ curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn
 {{block:pg-smoke}}
 <p>Labs that create roles or schemas clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. This check creates a read-only role, reads a table as that role, and removes it: <code>DROP OWNED BY</code> takes away what the role was granted, and only then can <code>DROP ROLE</code> remove it. If it fails with "permission denied to create role", see Privileges above.</p>
 {{block:pg-role-smoke}}
-<p>Most lab blocks are run inside a transaction that critwire's tests roll back. The transaction labs manage their own, with <code>BEGIN</code> and <code>COMMIT</code> or <code>ROLLBACK</code>, exactly as you type them in psql. This check rolls its table back, so it is gone afterwards.</p>
+<p>Most lab blocks are run inside a transaction that critwire's tests roll back. The transaction labs manage their own, with <code>BEGIN</code> and <code>COMMIT</code> or <code>ROLLBACK</code>, exactly as you type them in psql. This check rolls its table back, so it is gone afterwards. A block that needs earlier blocks names them under its heading, as Runs after: run those first, in the same transaction. The page's download does it for you.</p>
 {{block:pg-tx-smoke}}
 
 <h2>Python</h2>

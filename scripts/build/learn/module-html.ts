@@ -91,12 +91,16 @@ function dialogHtml(d: Dialog, title: string): string {
   ].join("\n");
 }
 
-function editorHtml(b: Block): string {
+/** The blocks to run first: a link on this page, the bare id for another page's (py-connect, d6's star). */
+const runsAfter = (b: Block, ctx: PageContext): string[] =>
+  b.after.length ? [`<p class="runs-after">Runs after: ${b.after.map((id) => (ctx.blocks.has(id) ? `<a href="#q-${id}">${id}</a>` : id)).join(", ")}</p>`] : [];
+
+function editorHtml(b: Block, ctx: PageContext): string {
   const expect = b.expectError === undefined ? "" : ` data-expect="${esc(b.expectError)}"`;
   return [
     `<div class="block editor" id="q-${b.id}">`,
     `<label for="sql-${b.id}">Query <span class="block-id">${b.id}</span></label>`,
-    ...(b.after.length ? [`<p class="runs-after">Runs after: ${b.after.map((id) => `<a href="#q-${id}">${id}</a>`).join(", ")}</p>`] : []),
+    ...runsAfter(b, ctx),
     `<textarea id="sql-${b.id}" data-block="${b.id}" data-after="${b.after.join(" ")}"${expect} rows="${rows(b.code)}" spellcheck="false" autocapitalize="off">`,
     `${esc(trimEnd(b.code))}</textarea>`,
     `<div class="buttons"><button type="button" data-run disabled>Run</button><button type="button" data-stop disabled>Stop</button><button type="button" data-reset disabled>Reset database</button>${dialogButton("schema")}</div>`,
@@ -119,9 +123,12 @@ function exerciseHtml(b: Block, inOrder: boolean, skip: boolean): string {
   ].join("\n");
 }
 
-const codeHead = (b: Block, engine: string, extra = "") =>
-  `<p class="block-head"><span class="block-id">${b.id}</span> · ${engine} <button type="button" class="copy" data-copy="code-${b.id}">Copy</button>${extra}</p>\n` +
-  `<pre class="code" id="code-${b.id}"><code>${esc(trimEnd(b.code))}</code></pre>`;
+const codeHead = (b: Block, engine: string, extra = "", note: string[] = []) =>
+  [
+    `<p class="block-head"><span class="block-id">${b.id}</span> · ${engine} <button type="button" class="copy" data-copy="code-${b.id}">Copy</button>${extra}</p>`,
+    ...note,
+    `<pre class="code" id="code-${b.id}"><code>${esc(trimEnd(b.code))}</code></pre>`,
+  ].join("\n");
 
 /** An EXPLAIN block's `-- plan:` lines in words, and the recorded plan labelled an example (plan D4); "" for other blocks. */
 function planChecks(b: Block): string {
@@ -154,7 +161,7 @@ function labHtml(b: Block, engine: keyof typeof LAB_ENGINES, ctx: PageContext): 
   });
   return [
     `<div class="block lab" id="q-${b.id}">`,
-    codeHead(b, name, ` ${dialogButton("lab")}`),
+    codeHead(b, name, ` ${dialogButton("lab")}`, runsAfter(b, ctx)),
     labResult(b, ctx),
     `<p class="download">In ${links.join(" and ")}, with the blocks it runs after.</p>`,
     `</div>`,
@@ -213,7 +220,7 @@ export function renderFragment(html: string, ctx: PageContext): string {
     if (slot.kind === "skip" && b.engine !== "duckdb") throw new Error(`${at}: a skip check runs in the browser, and ${b.id} is ${b.engine}`);
     if (b.engine === "duckdb") {
       dialogs.add("schema");
-      return slot.kind === "block" ? editorHtml(b) : exerciseHtml(b, slot.inOrder, slot.kind === "skip");
+      return slot.kind === "block" ? editorHtml(b, ctx) : exerciseHtml(b, slot.inOrder, slot.kind === "skip");
     }
     const html = b.engine === "powerbi" ? powerBiHtml(b, ctx) : lab(b, b.engine);
     return slot.kind === "block" ? html : `<details class="exercise-answer"><summary>Show answer</summary>\n${html}\n</details>`;
