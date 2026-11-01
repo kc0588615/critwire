@@ -6891,7 +6891,7 @@ clusters | clustered | noise | largest | one_location_clusters
 10 | 871 | 913 | 357 | 1
 ```
 
-DBSCAN finds 10 clusters holding 871 records and calls 913 noise; the largest cluster holds 357 records. One "cluster" is a single location repeated 20 times or more: by DBSCAN's rule, 20 records at one spot are 20 points within 2 km of each other. `count(DISTINCT (ST_X(geom), ST_Y(geom)))` counts a cluster's distinct locations. Change `eps` or `minpoints` and the clusters change; neither has a right value, so report them with the result.
+DBSCAN finds 10 clusters holding 871 records and calls 913 noise (the same number as the distinct locations above, by chance); the largest cluster holds 357 records. One "cluster" is a single location repeated 20 times or more: by DBSCAN's rule, 20 records at one spot are 20 points within 2 km of each other. `count(DISTINCT (ST_X(geom), ST_Y(geom)))` counts a cluster's distinct locations. Change `eps` or `minpoints` and the clusters change; neither has a right value, so report them with the result.
 
 3. Kernel density in Python (scikit-learn), a Gaussian kernel with a 5 km bandwidth, read at the 5 km hexagons' centroids. The coordinates are in metres, so the density comes out per m² and sums to 1 over the plane; multiplying by the number of records and by 10⁶ turns it into records per km². Summed over the cells it should give back roughly the records in them:
 
