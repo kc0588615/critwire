@@ -21,6 +21,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q8", url: "/learn/setup/", has: "libpq, PostgreSQL's client library", not: "libpq's standard environment variables" },
   { q: "Q9", url: "/learn/setup/", has: "the lab file checked all 16 before it committed", not: "The same 16 counts mean", from: { file: "site/learn/labs/checked/pg-smoke.txt", values: ["16 rows", "… 11 more rows"] } },
   { q: "Q10", url: "/learn/data/", has: "the extensions <code>postgis</code> and <code>postgis_raster</code>", not: "and the PostGIS extension" },
+  { q: "Q11", url: "/learn/data/", has: "<a href=\"/\">critwire</a> / <a href=\"/learn/\">Learn</a>" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
