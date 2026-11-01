@@ -2,7 +2,8 @@
 // every dist/ file is served with dist's bytes (each page at its folder URL), the .wasm files as application/wasm, and
 // f3's first browser block shows its recorded result; and (L4) the origin's s4.py, run in .venv-learn after the origin's
 // loader, prints s4's recorded lesson outputs; and (L5 T8) each star file hashes as the served star manifest says, and
-// c1's served feed is valid against its served schema and credits as the served data manifest and datasets.csv say.
+// c1's served feed is valid against its served schema and credits as the served data manifest and datasets.csv say;
+// and each fix of e2e/qa-fixes.ts shows on the origin.
 // dist/ must be the build of the released commit.
 // Run: RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts
 import { expect, test } from "@playwright/test";
@@ -23,6 +24,7 @@ import { childEnv, LAB_ROLE, labTarget, pgConnect, psqlArgs } from "../../script
 import { pythonApp, pythonEnv, pythonFailure, runPython } from "../../scripts/learn/python.ts";
 import { VENV_PYTHON } from "../../scripts/venv.ts";
 import { distPath, feedSchemaErrors, firstBrowserBlock, openDuckDB, rendered, repoPath, runBlock, servedFeedAttribution, sha256, waitReady } from "../helpers.ts";
+import { qaFixErrors } from "../qa-fixes.ts";
 
 // Every file under dist/, as its URL path: an index.html as its folder.
 async function distFiles(): Promise<{ file: string; url: string }[]> {
@@ -93,6 +95,10 @@ test("c1's served feed credits as the served data manifest and datasets.csv say"
   } finally {
     db.close();
   }
+});
+
+test("QA_FIXES on the origin: each fixed page shows its fix and lacks the old text", async ({ request }) => {
+  expect(await qaFixErrors(request)).toEqual([]);
 });
 
 // The download a learner runs (plan L4 S26): the origin's loader into LEARN_PG_URL's database as the lab role, under the

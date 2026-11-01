@@ -2,13 +2,16 @@
 // every exercise filled and checked, every <details> open, at 1280 and 375 px in light and dark: nothing scrolls sideways,
 // axe finds no violation, nothing leaves the origin, no page error. Results aren't re-asserted (learn-browser.spec.ts).
 // Each test's { page, views, blocks, incomplete } annotation lands in results.json; plans/006-learn-qa.md's tables come
-// from there. Then the keyboard: axe says a region can take focus, not that the keys scroll it.
+// from there. Then the keyboard: axe says a region can take focus, not that the keys scroll it. Then each fix's row of
+// e2e/qa-fixes.ts on dist/, its numbers in the result they came from.
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import axe from "axe-core";
 import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { CURRICULUM_FILE, type Curriculum, type Module } from "../scripts/learn/course.ts";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
 import { learnContext, learnPageUrls, repoPath, runBlock, runPlayground, SCHEMES, waitReady, WIDTHS } from "./helpers.ts";
+import { QA_FIXES, qaFixErrors } from "./qa-fixes.ts";
 
 // playwright.config.ts's trace is what makes a full run's artifacts large; 196 views don't need one.
 test.use({ trace: "off", screenshot: "only-on-failure" });
@@ -114,4 +117,14 @@ test("the keyboard reaches a code block and a result table on d1, the ring shows
   }
   expect(offOrigin).toEqual([]);
   await context.close();
+});
+
+test("QA_FIXES on dist: each fixed page has its fix and lacks the old text; its numbers are in the recorded result", async ({ request }) => {
+  const errors = await qaFixErrors(request);
+  for (const { q, from } of QA_FIXES) {
+    if (!from) continue;
+    const recorded = await readFile(repoPath(from.file), "utf8");
+    for (const value of from.values) if (!recorded.includes(value)) errors.push(`${q}: ${from.file} lacks "${value}"`);
+  }
+  expect(errors).toEqual([]);
 });

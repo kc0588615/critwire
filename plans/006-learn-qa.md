@@ -83,7 +83,18 @@ Keyboard (`learn-walk.spec.ts`, d1, 375 px, dark): Tab reaches a code block and 
 
 ## Links
 
-Filled by U1b (crawl, cross-page fragments, prerequisite hrefs) and U2 (external).
+Internal (`learn-map.spec.ts`; `crawl` annotation in `results.json`):
+
+| Check | Result |
+|---|---|
+| Crawl from `/learn/` | 47 pages reached, all 200, one `<h1>`; 126 internal targets, all 200 |
+| Same-page fragments | every one resolves to exactly one id |
+| Cross-page fragments | 22 links, 11 distinct targets (`/#files`, 8 tables and `#species_taxonomy` on `/learn/schema/`, `/learn/setup/#arcpy`): each visited, id present once. Not checked before this pass |
+| Prerequisite `href`s | map, 7 track pages and 33 module pages: each module's links equal `curriculum.json`'s `prereqs`, in order. Only the text was checked before, and module pages not at all |
+
+No broken link found. Each new check was seen to fail on a `dist/` with a wrong prerequisite `href` (map, f2's page) and a removed `#t-species`.
+
+External: filled by U2.
 
 ## Axe
 

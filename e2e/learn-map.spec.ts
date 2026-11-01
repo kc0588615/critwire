@@ -1,10 +1,11 @@
 // Learn's map, track pages, progress and navigation (plan D11 nav, D12, D13 learn-map; 004 §7.1, §7.4). Expectations
 // come from site/learn/curriculum.json, not from the page code: the map and each track list its modules in order, with
-// tools, hours and prerequisites, built modules linked and planned ones unlinked "in preparation"; a done tick survives
-// a reload and Clear progress removes it; all 33 built; every /learn/ page returns 200 with one <h1>, no "in preparation",
-// no broken internal link and an alt on every SVG picture (whose SVG has a <title>); the map links setup, the schemas,
-// the data and the playground; nav.ts swaps <main> without a full load, and falls back to one when the swap fails.
-import { expect, test, type Page } from "@playwright/test";
+// tools, hours and prerequisites (each linked to its module), built modules linked and planned ones unlinked "in
+// preparation"; a done tick survives a reload and Clear progress removes it; all 33 built, each page linking its
+// prerequisites in order; every /learn/ page returns 200 with one <h1>, no "in preparation", no broken internal link or
+// fragment, same-page or cross-page, and an alt on every SVG picture (whose SVG has a <title>); the map links setup, the
+// schemas, the data and the playground; nav.ts swaps <main> without a full load, and falls back to one when the swap fails.
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { hoursText, moduleUrl, TOOL_NAMES } from "../scripts/build/learn/module-html.ts";
 import { CURRICULUM_FILE, type Curriculum, type Module } from "../scripts/learn/course.ts";
@@ -16,6 +17,9 @@ const curriculum = async (): Promise<Curriculum> => JSON.parse(await readFile(re
 // Curriculum text as the page shows it: `code` spans lose their backticks.
 const shown = (s: string) => s.replaceAll("`", "");
 const h1 = (page: Page) => page.getByRole("heading", { level: 1 });
+const hrefs = (links: Locator) => links.evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+// Two crawls of every page, not one page's budget.
+const CRAWL_MS = 180_000;
 
 // One module's entry on the map or a track page: its link if built, else "in preparation" and no link.
 async function expectModule(page: Page, m: Module, prereqs: readonly Module[]): Promise<void> {
@@ -32,6 +36,7 @@ async function expectModule(page: Page, m: Module, prereqs: readonly Module[]): 
     await expect(title).toContainText("in preparation");
   }
   for (const p of prereqs) await expect(li.locator(".prereqs")).toContainText(p.id);
+  expect(await hrefs(li.locator(".prereqs a")), `${m.id}: prerequisite links`).toEqual(prereqs.filter((p) => p.state === "built").map((p) => moduleUrl(p)));
   if (!prereqs.length) await expect(li.locator(".prereqs")).toHaveCount(0);
 }
 
@@ -74,8 +79,10 @@ test("each track page lists its modules in order with their skills and questions
 
 // L5: the course is complete (004 §2), so a module set back to planned fails here, not only on its own page.
 const MODULES = 33;
-test(`all ${MODULES} modules built, each linked from the map and its track page and returning 200`, async ({ page, request }) => {
+test(`all ${MODULES} modules built, each linked from the map and its track page, returning 200 and linking its prerequisites`, async ({ page }) => {
+  test.setTimeout(CRAWL_MS);
   const ms = (await curriculum()).modules;
+  const byId = new Map(ms.map((m) => [m.id, m]));
   expect(ms).toHaveLength(MODULES);
   expect(ms.filter((m) => m.state !== "built").map((m) => m.id)).toEqual([]);
   await page.goto(MAP);
@@ -85,7 +92,10 @@ test(`all ${MODULES} modules built, each linked from the map and its track page 
     for (const m of ms.filter((x) => x.track === track))
       await expect(page.locator(`li[data-module="${m.id}"] .module-title a[href="${moduleUrl(m)}"]`), `${track} ${m.id}`).toHaveText(m.title);
   }
-  for (const m of ms) expect((await request.get(moduleUrl(m))).status(), m.id).toBe(200);
+  for (const m of ms) {
+    expect((await page.goto(moduleUrl(m)))?.status(), m.id).toBe(200);
+    expect(await hrefs(page.locator("main .prereqs a")), `${m.id}: prerequisite links`).toEqual(m.prereqs.map((id) => moduleUrl(byId.get(id)!)));
+  }
 });
 
 test("a done tick survives a reload, shows on the map and its track, and Clear progress removes it", async ({ page }) => {
@@ -114,10 +124,12 @@ test("a done tick survives a reload, shows on the map and its track, and Clear p
   await expect(page.locator(".mark-done")).toHaveAttribute("aria-pressed", "false");
 });
 
-test("every /learn/ page returns 200, has one <h1>, no \"in preparation\" and no broken internal link", async ({ page, request }) => {
+test("every /learn/ page returns 200, has one <h1>, no \"in preparation\" and no broken internal link or fragment", async ({ page, request }, info) => {
+  test.setTimeout(CRAWL_MS);
   const pages = [MAP];
   const seen = new Set(pages);
   const checked = new Map<string, number>();
+  const crossPage = new Map<string, string>();
   for (let i = 0; i < pages.length; i++) {
     const path = pages[i]!;
     expect((await page.goto(path))?.status(), path).toBe(200);
@@ -134,6 +146,7 @@ test("every /learn/ page returns 200, has one <h1>, no \"in preparation\" and no
       const url = new URL(href);
       if (url.origin !== ORIGIN) continue;
       if (url.hash && url.pathname === path) expect(await page.locator(`[id="${url.hash.slice(1)}"]`).count(), `${path} → ${href}`).toBe(1);
+      if (url.hash && url.pathname !== path) crossPage.set(url.pathname + url.hash, path);
       if (!checked.has(url.pathname)) checked.set(url.pathname, (await request.get(url.pathname)).status());
       expect(checked.get(url.pathname), `${path} → ${url.pathname}`).toBe(200);
       if (/^\/learn\/(?!assets\/)([a-z0-9-]+\/)*$/.test(url.pathname) && !seen.has(url.pathname)) {
@@ -143,6 +156,14 @@ test("every /learn/ page returns 200, has one <h1>, no \"in preparation\" and no
     }
   }
   expect(learnPageUrls(await curriculum()).filter((p) => !seen.has(p))).toEqual([]);
+  // A fragment on another page is only checkable there. `checked` already proved each path 200; goto returns null when
+  // only the fragment changes.
+  expect(crossPage.size).toBeGreaterThan(0);
+  for (const [target, from] of crossPage) {
+    await page.goto(target);
+    expect(await page.locator(`[id="${new URL(target, ORIGIN).hash.slice(1)}"]`).count(), `${from} → ${target}`).toBe(1);
+  }
+  info.annotations.push({ type: "crawl", description: JSON.stringify({ pages: pages.length, targets: checked.size, crossPageFragments: crossPage.size }) });
 });
 
 test("nav swaps <main>, keeps the page, focuses the <h1>, works with Back, and falls back to a full load", async ({ browser }) => {
