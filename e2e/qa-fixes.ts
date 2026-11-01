@@ -103,6 +103,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q80", url: "/learn/gis-in-sql/spatial-join/", has: "summarize per record", not: "summarise" },
   { q: "Q80", url: "/learn/gis-in-sql/raster/", has: "Two ways to summarize a country", not: "summarise" },
   { q: "Q80", url: "/learn/spatial-statistics/zonal/", has: "<strong>Zonal statistics</strong> summarize what falls", not: "summarise" },
+  { q: "Q55", url: "/learn/labs/s4.sql", has: "A `-- boot` block commits, so what it creates stays." },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
