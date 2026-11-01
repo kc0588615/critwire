@@ -79,7 +79,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -459,7 +459,57 @@ SHOULD-CONSIDER, rejected:
 
 ## Steps
 
+Shorthands: `<state>` = `/srv/critter-ai/agent-state/missions/critwire-review-presort`. GUARD = `git diff --exit-code $(git merge-base HEAD origin/main) -- data/review/country-overrides.json data/species.json data/review/mismatches.json` (must print nothing). Every step: `pnpm typecheck`, `pnpm test`, GUARD, then commit + push. Heavy jobs (test, build, e2e, evidence run) one at a time. `review:accept` is never run on the real `data/`.
+
+- [ ] S1. **Shared helpers (Findings 2–3).** `scripts/ingest/gbif.ts`: `occurrenceSearchQuery(taxonKeys, facets = [], limit = 0)`, `limit=${limit}` where `limit=0` stands. `scripts/ingest/wikidata.ts`: export `postSparql(query)`; `fetchWikidata` calls it, keeps its head/bindings checks. `scripts/ingest/col.ts`: `API` → exported `COL_API`. `scripts/json.ts`: `writeText(url, text)` (temp + rename); `writeJson` calls it. No new tests (existing ones cover the bytes). Check: also `pnpm derive && git diff --exit-code data/` (derive's `assertGbifFresh` proves URLs unchanged), then `pnpm build` and `(cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum) | diff - <state>/dist-baseline.sha256` empty.
+- [ ] S2. **Presort core, tests first.** Failure modes P1–P7, P9–P11 (Q4) are listed; write `scripts/review/presort.test.ts` first, one case per mode (P9 = the one reader-guard regex over `scripts/**/*.ts` and `e2e/**/*.ts` minus `scripts/review/`, `scripts/review-*.ts`); run it red. Then `scripts/review/presort.ts` (pure): file URLs (evidence, recommendations, proposal, 005), `Evidence`/`Recommendation` types, `entryKey`, `indexEntries`, `statusQuo`, `changesOutput`, `assertEvidence` (keys; IUCN gate via `assertNoIucnData` on fetched sections only; `taxonKey` = `gbifTaxonKey` of the snapshot), `assertRecommendations` (R1 opt-in, R2–R7), `proposalOf`. Check: `pnpm exec tsx --test scripts/review/presort.test.ts` green.
+- [ ] S3. **Evidence module, CLI and the one fetch run (network; riskiest).** `scripts/review/evidence.ts` (`fetchEvidence(entries, snapshots, species)`: Q1's queries through `getJson`, record/COL allowlists, `/iucn/i` free text → `null`, `truncated` facets, label-free SPARQL via `postSparql`, variables without "iucn"). `scripts/review-evidence.ts` (reads queue, snapshots, `species.json`; builds in memory; `assertEvidence`; one `writeJson(…, {canonical: true})`). `package.json` `review:evidence`. Run once: `pnpm review:evidence 2>> <state>/review-evidence.log` (≈ 700 requests, ≤ 6 min). Commit `data/review/presort/evidence.json`. Check: log has no unretried failure and paces ≤ 2 req/s; `jq '.entries|length'` = 214, `jq '[.entries[]|select(.gbif!=null)]|length'` = 186; file ≈ 0.7 MB; Log line counts entries whose live `count` ≠ `records`. If the session runs long: commit the code green, split the run into its own item.
+- [ ] S4. **Render + `review:presort`.** `scripts/review/render.ts` (`renderPresort`, Q3 layout; no clock, `en-US` numbers, order speciesId then key; pending blocks show full evidence so batches read 005). `scripts/review-presort.ts` (queue deep-equals evidence else "queue changed: re-run pnpm review:evidence"; `assertEvidence`, R2–R7; writes 005 + proposal; prints counts by recommendation × confidence and pending; `--check`: R1, byte freshness, one heading per key). `package.json` `review:presort`. `data/review/presort/recommendations.json` = `[]`. P8 case in `presort.test.ts` (`deriveCore` with the committed proposal as overrides). Run → `plans/005-review-presort.md` (214 pending), `data/review/country-overrides.proposed.json` (`[]`). Check: `pnpm test` (P8, P9 green); a second `pnpm review:presort` leaves `git status --porcelain` unchanged; `--check` fails only on 214 pending; `grep -c '^#### ' plans/005-review-presort.md` = 214.
+- [ ] S5. **Accept core, tests first.** Failure modes A1–A4, A7, A8, A11 and the selection rules (Q5) are listed; write the pure cases of `scripts/review/accept.test.ts` first: `parseAcceptArgs` (A1: none, both, unknown flag, bad level → usage, exit 2), `selectProposals` (`--confidence medium` = medium + high; `--confirm-only` drops `changesOutput`; A2 unknown, A3 non-country, A4 empty), `mergeOverrides` (owner entries keep order and text, new ones appended sorted; A11 same pair + action skipped; A7 other action throws), `sameFlag` (ignores `speciesRecords` and `reason`; false on kind, severity, country, records, region, core), `countryChanges`. Red, then `scripts/review/accept.ts` (`parseAcceptArgs`, `selectProposals`, `mergeOverrides`, `countryChanges`, `backupFile`) and `sameFlag` in `presort.ts`. Check: `pnpm exec tsx --test scripts/review/accept.test.ts` green.
+- [ ] S6. **`review:accept` CLI + throwaway-copy E2E (A5, A10–A13).** CLI cases first in `accept.test.ts` (Q5 Tests: `mkdtemp` copy of `scripts/`, `data/`, `package.json`, `tsconfig.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, symlinked `node_modules`, never `.env`; setup 1–6; success `--ids K1,K2`; A11 rerun; A7; A5 hand-edited proposal; A5 rec edited to `low`, proposal untouched; A10 + A13 + Undo via `chmod 0555 data/gbif-learn-sample/`, test throws as root; A12 per-file hashes of the copy; real repo `data/` hashes unchanged). Then `scripts/review-accept.ts` (Q5 flow 1–11, every check before any write; backup → overrides → spawn `pnpm derive` at the root from `import.meta.url` → delete backup on exit 0; Undo/Finish text on A10/A13; Q6 follow-on when a country changes), `package.json` `review:accept`, `docs/recovery.md` §2 line (backup, Undo, Finish; same text as the CLI's). Check: `pnpm test` green; `git status --porcelain` shows only this step's files (no `.pre-accept`, no `*.tmp-*`).
+- [ ] S7. **Recs batch 1: 28 non-country entries** (iucn-id 10, identity 7, synonym-info 4, not-found 4, multi-value 2, no-records 1). Each fix names where it lands (CC profile + `pnpm seed:cc`, Wikidata edit + `pnpm ingest wikidata`, or "no action" for `info`) and its cost (scientificName or `ids.gbif` → "Cost of a species change", ≈ 1 h; `ids.iucn` → Wikidata snapshot stale). `iucn-id`: Wikidata statement + references and the two `iucnredlist.org/species/<id>` links only. Files: `data/review/presort/recommendations.json`, then `pnpm review:presort` → 005, proposal. Check: `review:presort` exit 0, pending 186.
+- [ ] S8. **Recs batch 2: 38 strays** (`country-captive-suspect`, blocking, excluded; status quo `remove`). Same files and run. Check: `review:presort` exit 0, pending 148; P8 (proposal validates) green in `pnpm test`.
+- [ ] S9. **Recs batch 3: 53 kept `country-captive-suspect`** (review; status quo `keep`). Check: pending 95; P8 green.
+- [ ] S10. **Recs batch 4: borderline, first 48 keys** in 005 order (speciesId, country). Check: pending 47; P8 green.
+- [ ] S11. **Recs batch 5: borderline, remaining 47.** Check: pending 0; P8 green; `pnpm review:presort --check` exit 0.
+- [ ] S12. **Consistency pass + final presort.** Re-read all 214 against the rubric: the same dataset or publisher signal gets the same call and confidence across batches; every high `keep` cites an independent source (second dataset, COL distribution, Wikidata P2341/P183); no reason claims range in our voice (review `grep -in 'native\|range' data/review/presort/recommendations.json`); 005 warns for species 69 and any other species that would lose every published country. Regenerate. Record under Decisions: counts by recommendation × confidence, the high set split confirming / output-changing, and the two reply sentences (for the Summary). Check: `--check` exit 0.
+- [ ] S13. **Docs.** `AGENTS.md`: Data (the 4 presort files + writers, "never read by derive or build", the `.pre-accept` backup; `plans/005-review-presort.md`), Commands (`review:evidence`, `review:presort [--check]`, `review:accept` usage, "owner's word only"), Overrides (one line: an output-changing override makes plain `pnpm build`, so `deploy`, refuse until the `learn:check --update` follow-on, Q6). Check: AGENTS.md commands match each CLI's usage text and 005's "Accept in one go"; `pnpm review:presort --check` exit 0.
+- [ ] S14. **Final Verification.** Run `## Verification` 1–10 in order, artifacts in `<state>/e2e-final/`; one Log line with results.
+
 ## Verification
+
+E2E scenarios: (a) `review:accept` end to end on a throwaway copy: real CLI, real `pnpm derive` (success, rerun, conflict, tampered proposal, tampered rec, interrupted derive + refusal + Undo), in `scripts/review/accept.test.ts`; (b) `review:presort --check` over the committed files (coverage: 214 keys once each; 005 + proposal fresh); (c) the Playwright suite + `dist/` hashes proving the site unchanged.
+
+`A=/srv/critter-ai/agent-state/missions/critwire-review-presort/e2e-final`; `rm -rf $A && mkdir -p $A` first (keep `e2e-baseline/`; at most two artifact folders).
+1. `pnpm install --frozen-lockfile`: up to date.
+2. `pnpm typecheck`: exit 0.
+3. `pnpm test 2>&1 | tee $A/pnpm-test.log`: all pass (703 + the new `presort.test.ts`, `accept.test.ts` cases), 0 fail.
+4. `pnpm review:presort --check 2>&1 | tee $A/presort-check.log`: exit 0; 214/214, 0 pending; counts equal S12's Decisions.
+5. `pnpm build`: plain, exit 0.
+6. `(cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum) > $A/dist.sha256 && diff /srv/critter-ai/agent-state/missions/critwire-review-presort/dist-baseline.sha256 $A/dist.sha256`: empty.
+7. GUARD: empty. `git diff --stat $(git merge-base HEAD origin/main) -- data | tee $A/data-diff.txt`: only `data/review/presort/{evidence,recommendations}.json` and `data/review/country-overrides.proposed.json`.
+8. `git status --porcelain`: empty (no `.pre-accept`, no `*.tmp-*`).
+9. `E2E_ARTIFACTS=$A pnpm e2e`: 98/98 pass, as Baseline.
+10. `ls data/review/country-overrides.json.pre-accept` fails (absent); `git log -1 --format=%H > $A/commit.txt`.
+
+Artifact: `$A` holds the Playwright HTML report, traces and screenshots, `pnpm-test.log` (scenario a), `presort-check.log` (b), `dist.sha256` + `data-diff.txt` (c), `commit.txt`. Reproduce: `git checkout $(cat $A/commit.txt) && pnpm test && pnpm review:presort --check && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+Release smoke (runner's Release unit, not a step): `(cd /srv/apps/critwire/.live && find . -type f -print0 | sort -z | xargs -0 sha256sum) | diff - <state>/dist-baseline.sha256` empty, plus the release Playwright config.
+
+## Failure modes
+
+Isolated units: P1–P11 (Q4, tests in S2/S4) and A1–A13 (Q5, tests in S5/S6), listed before their code; each step writes its tests red first. Mission-level:
+- **`/v1` or Learn output moves** (a shared helper changes bytes): S1 build + hash diff; Verification 6.
+- **Derive or build reads a presort file:** P9 (S2); Verification 6–7.
+- **IUCN data enters evidence** (GBIF `iucnRedListCategory`, SPARQL labels, free text): allowlists + label-free query (S3); gate before write and on every read (P11).
+- **Evidence run fails midway** (network, rate limit, COL 404, SPARQL timeout): built in memory, nothing written; `getJson` retries; log in `<state>`. A 404 or a split SPARQL query is handled explicitly in S3 and recorded under Decisions, never swallowed.
+- **Evidence bound to a different queue or taxon:** queue deep-equal (P2) and `taxonKey` check (P11). If `origin/main` changes `data/raw/` or `mismatches.json` mid-mission, presort refuses; re-run S3, re-check affected recs, record under Decisions.
+- **Recommendation by plausibility:** R2 cites resolve, R5 GBIF cite, R7 complete coverage for high `remove`, R4 low = status quo; S12 cross-batch pass.
+- **"Native range" claim in our voice:** rubric in 005's header; S12 review.
+- **Owner-only files touched:** GUARD each step; accept never run on real data; S6 asserts real `data/` hashes unchanged.
+- **Accept test leaks into the real repo or passes vacuously:** paths from `import.meta.url` in the copy; `git status --porcelain` after `pnpm test`; chmod case throws as root; pnpm in the copy gets the lockfile and workspace file.
+- **005 not reproducible:** no clock in `renderPresort`; S4 double run; `--check`.
+- **Disk:** at most `e2e-baseline/` + `e2e-final/`; the throwaway copy removed by the test.
 
 ## Code review (Astra)
 
@@ -474,5 +524,6 @@ SHOULD-CONSIDER, rejected:
 - 2026-11-01 08:30 UTC: Fable review. APPROVE_WITH_CHANGES, 2 MUST-FIX (IUCN gate vs verbatim queue copy; accept CLI test must be self-contained). Plan-only change; no code to verify.
 - 2026-11-01 08:31 UTC: Astra review. APPROVE_WITH_CHANGES, 4 MUST-FIX (IUCN gate scope, accept must run assertRecommendations, overrides recovery must preserve pre-run bytes + interrupted derive writes, self-contained accept test). Plan-only change; no code to verify.
 - 2026-11-01 08:38 UTC: Revision. architect resolved all 6 MUST-FIX (IUCN gate on fetched sections only; accept runs assertEvidence + R2–R7 first; .pre-accept backup + Undo/Finish, derive rerun idempotent; self-contained accept test) + 2 MISSED; 7 SHOULD-CONSIDER adopted, 2 rejected. Plan-only change; no code to verify.
+- 2026-11-01 08:43 UTC: Steps. planner wrote S1–S14 (helpers, presort/accept cores tests-first, evidence fetch, 5 rec batches covering 214 entries, consistency pass, docs, final Verification), Verification (10 cmds, artifact e2e-final/) + Failure modes. Plan-only change; no code to verify.
 
 ## Summary
