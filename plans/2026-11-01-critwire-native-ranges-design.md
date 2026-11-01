@@ -68,7 +68,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -338,6 +338,25 @@ Steps must put O1 to O4 in the handoff file. The build brief starts only after t
 
 ## Architecture review (Fable)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+Checked against the code and the evidence (`arch-probe/`): every cited line (`columns.ts:17,47-50`, `contract.ts:177,185-197,116`, `raw.ts:95`, `record.ts:19,74`, `presort.ts:172-174`, `species.ts:60`, `pipeline.ts:119`, `learn/data.ts:80`, `build.ts:58`, `duckdb.spec.ts:59`, `001-mvp.md:49`) says what the plan says. Every license quote is in the saved `terms/` file or API JSON named: MDD `cc-by-4.0` and md5 `533e662f…` (`mdd/record-21654811.json`), the GBIF data-user and CC0 sentences (`archived-gbif-*.html`), Wikidata CC0, Natural Earth public domain, RESOLVE CC-BY 4.0, AmphibiaWeb BY-NC + bulk-download bar, CITES "may not redistribute", iNaturalist BY-NC, GARD CC0 (`gard/dryad.json`), Reptile Database © only. Dataset licenses: 15 CC BY / 8 CC0 / 7 BY-NC (`gbif/dataset/`), GRIIS 297 CC BY / 3 CC0 of 300 (`griis-datasets.json`). The MDD quotes ("initially sourced from the IUCN, HMW, and CMW"; `countryDistribution` definition) are in `papers/mdd-2025-fulltext.xml` and `mdd/META_v2.5.csv:42`. Class split 50/15/11, the 3 `identity-unsettled` ids and the 4 accepted-key cases match `data/species.json`. The IUCN checklist dataset `19491596-…` is CC BY on GBIF, so the by-datasetKey drop (not by license) is the right filter. GRIIS's IUCN strings live only in dataset `description` (3 of 300, `griis-datasets.json`), a field the design never stores, so `assertNoIucnData` over the snapshot is coherent with O2 = yes. The "Licenses decide" rule is respected: every kept row is CC0 1.0 or CC BY 4.0 by exact legalcode URL, and every unclear source (ASW, Reptile Database, COL's `unspecified` source) is rejected, not passed. Rate: ≈ 76 distribution calls + ≈ 800 usage lookups (cached per `sourceTaxonKey`) + ≈ 100 dataset calls + 76 Wikidata, ≈ 10 min at 0.55 s; measures all 76. Size (12 steps, 22–28 sessions) fits the brief.
+
+MUST-FIX:
+1. **§3 mapping isn't exhaustive, and the gap is the common case.** In the 94 probe rows (`gbif/dist-*.json`), 45 have no `status` and 53 no `establishmentMeans`; GBIF's `OccurrenceStatus` also has `COMMON`, `RARE`, `IRREGULAR`, `EXCLUDED`. The table defines blanks only for register rows and says nothing for an allowlisted *checklist* row with a blank or one of those values, so derive would either guess or silently skip (breaks fail fast, `~/AGENTS.md`). Fix: one line in §3: any (`role`, `establishmentMeans`, `status`) combination not in the table refuses at derive, naming the row, and the spike's Shape metric lists every distinct combination met so the table is complete before the build. Also state that `description` (and `rights`, `contacts`) are never read into the snapshot, since that is where GRIIS mentions IUCN.
+
+MISSED:
+- **Key-drift staleness between the two GBIF snapshots.** `ingest gbif-checklists` "reads the keys from `data/raw/gbif`", but §4's refusal list covers only base-name coverage. If `ingest gbif` changes an `ids.gbif` or an accepted key, the checklists snapshot still "covers the names" and derive would publish rows fetched for the old key. Store the keys fetched in the snapshot and have derive refuse when they differ from `data/raw/gbif`'s (same pattern as `assertBaseNames`).
+- **`presence = extirpated` overstates `ABSENT`.** A `NATIVE` + `ABSENT` checklist row (Central Asia, cheetah in KZ/TJ/TM/UZ) is mapped to `extirpated`, but GBIF's `ABSENT` is "not present", which a checklist may also use for an erroneous historical claim. `sourceTerm` keeps the verbatim, but the contract `means` for `extirpated` must say "the source lists it as native and absent", not "went extinct there", or name the value `absent`.
+- **`url` is NOT NULL but undefined.** Say which page: `https://www.gbif.org/species/{sourceTaxonKey}` for checklist rows and MDD's taxon page (`id` is kept for it) for MDD rows; the curated file's rows (O3) supply their own reference URL.
+
+SHOULD-CONSIDER:
+1. `area` from GBIF `locality` is free text in the probe ("Belgium", "Flanders", "Flemish Region", "Great Britain" on BE/GB rows) and sits in the row key, so one dataset can yield several near-duplicate rows. Simplest rule: `area` is set only when the *dataset* is a sub-national register (GRIIS Hawaii/Alaska), else null; drop `locality` otherwise. The spike's Shape metric can confirm.
+2. Contract `means` for `origin = native` from MDD should say "native or pre-1500 introduction (MDD's rule)", and `presence = uncertain` from MDD's `?` "uncertainly present or possibly extinct", so historical is not claimed where MDD blurs it.
+3. Attribution `fields: ["range-listings.*"]` is a new wildcard convention; Natural Earth lists its columns file-qualified (`attribution.ts:71`). List the columns the same way, so `e2e/attribution.spec.ts` and the Learn cards need no new rule.
+4. Make explicit in §7 and the deliverables that the build brief is written in *this* mission with the defaults (no answer = no MDD, no GRIIS, O3 (b)) and says what each owner answer flips, so the unattended mission isn't blocked on handoff replies; and note that the all-defaults build publishes only non-GRIIS register rows (probe: a handful), which the owner should know when weighing O1–O3.
+5. Document the conflict query (`GROUP BY speciesId, country HAVING COUNT(DISTINCT origin || presence) > 1`) on the docs page next to the file, since the published representation of a conflict is "two rows" and `range-conflicts.json` isn't served.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -356,5 +375,6 @@ Steps must put O1 to O4 in the handoff file. The build brief starts only after t
 
 - 2026-11-01 17:56 UTC: Baseline: typecheck pass, test 754/754, build pass, e2e 149/149; `dist/` 311 files = live.
 - 2026-11-01 18:26 UTC: Architecture: architect wrote findings + design, light probe (evidence `arch-probe/`). Picks: MDD v2.5 + GBIF checklist distributions; new `/v1/range-listings.*`. Spot-checked species counts, cited code lines, MDD license, md5 and quotes against evidence: all match; stripped MDD `extinct` from saved cut. Plan-only diff; no code, no build.
+- 2026-11-01 18:32 UTC: Fable review: APPROVE_WITH_CHANGES, 1 MUST-FIX (§3 mapping not exhaustive: refuse unlisted combos, spike lists all met, never store dataset `description`); 3 missed, 5 should-consider, all for Revision. Plan-only diff; no build.
 
 ## Summary
