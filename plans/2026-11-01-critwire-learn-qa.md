@@ -75,7 +75,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -230,6 +230,18 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. §3’s notebook runner must use the existing lab lock, guarded database targeting, and cleanup on failure/timeout. The loader drops and recreates `learn_curriculum`; running outside the shared protocol can disrupt another checkout’s lab run or leave sessions blocking later checks. Reuse the lifecycle established in `scripts/learn/cleanup.ts` and the release smoke.
+
+SHOULD-CONSIDER:
+
+1. Preserve the final walk’s HTML/JSON reports and selected screenshots alongside release evidence; release smoke cannot replace coverage evidence for all pages.
+2. Bind notebook evidence to final artifact hashes. U2 precedes possible U11 lab changes; rerun affected notebooks when those hashes change.
+3. Verify keyboard scrolling and visible focus directly on representative static and runtime regions; passing axe alone does not prove usability.
+
 ## Revision notes
 
 ## Steps
@@ -250,5 +262,6 @@ SHOULD-CONSIDER:
 - 2026-11-01 12:22 UTC: Architecture written by `architect`: d1 overflow at 375 px + axe `scrollable-region-focusable` found (probe, not yet fixed); walk spec, axe-core, one-off .ipynb run, reading units R1–R7. No checks run (plan only). Next: Fable review.
 - 2026-11-01 12:32 UTC: Fable review by `architecture-reviewer`: APPROVE, 0 MUST-FIX, 1 MISSED (`assemble.ts:190` is T2, not T0), 5 SHOULD-CONSIDER. Plan only, no checks run. Next: Astra review.
 - 2026-11-01 12:36 UTC: Corrected Fable's reason for `assemble.ts:190` being T2 (closure key, not download sha; see Decisions). Read code only, no checks run. Next: Astra review.
+- 2026-11-01 12:28 UTC: Astra review: APPROVE_WITH_CHANGES, 1 MUST-FIX (notebook runner must use lab lock, guarded db target, cleanup), 3 SHOULD-CONSIDER. Plan only, no checks run. Next: Revision.
 
 ## Summary
