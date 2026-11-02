@@ -69,7 +69,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -394,7 +394,221 @@ SHOULD-CONSIDER:
 
 ## Steps
 
+Written on `9612822`. Read **Architecture** as revised first: block texts, guard rules, copy and recipes live there, not here. `E1`–`E7` are under Verification, `F1`–`F12` under Failure modes, `R21`–`R29` in S7. Paths use `S=/srv/critter-ai/agent-state/missions/critwire-learn-range-lessons`.
+
+**Every step:**
+- Ends with, one at a time: `pnpm typecheck && pnpm test && pnpm build` (plain), `pnpm learn:port --check all`, the byte check. No lint script exists; typecheck is the static check.
+- **Byte check** (S1 creates `$S/baseline-html/`, because the hash list holds no text):
+  ```
+  norm() { sed -E 's/app-[A-Z0-9]+\.js/app-HASH.js/g; s/Checked [0-9-]{10} on /Checked DATE on /' "$1"; }
+  moved=$( (cd dist && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum) | diff $S/dist-baseline.sha256 - | grep '^[<>]' | awk '{print $3}' | sort -u)
+  echo "$moved" | grep -vE '\.html$|/learn/assets/app-[A-Z0-9]+\.js$'
+  for f in $(echo "$moved" | grep '\.html$'); do cmp -s <(norm $S/baseline-html/$f) <(norm dist/$f) || echo "$f"; done
+  ```
+  It prints exactly these lines. A page outside them differs by more than the bundle's name and the checked date: find out why.
+
+  | After | Lines |
+  |---|---|
+  | S1, S2 | `./learn/data/manifest.json`, `./learn/data/index.html`, `./learn/setup/index.html` |
+  | S3 | adds `./learn/foundations/join/index.html` |
+  | S4 | adds `./learn/spatial-statistics/bias/index.html` |
+  | S5 | adds `./learn/database-architecture/normalize/index.html` |
+  | S6 on | adds `./learn/labs/e4.sql`, `./learn/etl/quality-provenance/index.html` |
+- **Off limits:** `scripts/learn/`, `scripts/learn-check.ts` and `scripts/build/learn/sql.ts` (the checker's closure: one byte stales all 189 labs), `data/`, `contracts/`, `db/`, `site/learn/sql/setup.sql`, `site/learn/curriculum.json`, `site/learn/erd/`, existing block files and results. Held work too: PR #17, `data/review/country-overrides.json`. "lab … is stale" before S6 means something here moved: revert it, never `learn:check --update`.
+- **E2E artifacts:** `E2E_ARTIFACTS=$S/e2e-s<N>`, never the in-repo default. A full run is about 840 MB and 11 min; about 7.5 GB free. Before writing one: `rm -rf $S/e2e-baseline $S/e2e-s*`. Bash timeout 1800000 ms for a full E2E, a whole `learn:check` and the refusals harness.
+- **New browser block, in this order:**
+  1. `site/learn/sql/<id>.sql`: `-- q: <id>`, `-- status: ran`, d2-list's comment, then Q2's text. Its slot in the page.
+  2. `pnpm build --draft 2>&1 | tee $S/s<N>-draft.log`: the guard warns with the rendered result of each block with no snapshot. Row count and hash must equal Q2's table. A difference is a bug to find, not a number to take.
+  3. In 004, at the block's place on the page: a `sql` fence holding the file, byte for byte, then a `text` fence holding the rendered result, byte for byte; then the prose.
+  4. `pnpm learn:port <page>` seeds `e2e/__snapshots__/<id>.txt`.
+  5. Page prose. One `QA_FIXES` row per quoted number (`e2e/qa-fixes.ts`, ids `RL<n>`, `from` the recorded file). Quote only what that file shows: a row count, or its first 5 rows.
+- **A reader page's copy** (d2, f3, s1): holds this line, exactly:
+  ```html
+  <p>On this page, native, introduced and range words describe only <code>/v1/range-listings</code> rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.</p>
+  ```
+  Each page defines MDD once and links `/#licenses`. Every listing is a named source's claim. No row means critwire holds no open listing, and a listed country with no record shows nothing either way. No IUCN data, no Wikipedia prose, no mission names. Own words, for adults new to the topic.
+- **A deviation from 007 or Architecture:** edit it in the same commit, with a Decisions line.
+
+- [ ] S1. **The file reaches the engine by name.** Most enabling: every block needs it, and every page's boot changes.
+  - First: `mkdir -p $S/baseline-html && rsync -a --prune-empty-dirs --include='*/' --include='*.html' --exclude='*' /srv/apps/critwire/.live/ $S/baseline-html/`, then `(cd $S/baseline-html && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum) | diff - <(grep '\.html$' $S/dist-baseline.sha256)` prints nothing.
+  - E1 first, in `e2e/learn-browser.spec.ts` beside the Reset test: playground, `SELECT count(*) AS n FROM read_parquet('range-listings.parquet')` equals `rows.length` of `data/range-listings.json`; Reset database; same again. Seen failing: `E2E_ARTIFACTS=$S/e2e-s1 pnpm exec playwright test e2e/learn-browser.spec.ts -g "range-listings"`.
+  - Files: `scripts/build/learn/data.ts:80` (`V1_INPUTS`), `site/learn/src/engine.ts` (`DATA_FILES`; comments `:4,24,88`), `scripts/build/learn/dist-fixture.ts` (`writeRangeListings(derived.listings.file.rows, new URL("v1/", out))`), `site/learn/pages/setup.html:16`, `plans/004-learn-curriculum.md:475`, `site/learn/data/index.html:38` (all copy: Target design 1), `e2e/qa-fixes.ts` (`RL1` on `/learn/setup/`, `RL2` on `/learn/data/`, one header line).
+  - Verified: the common checks; full `E2E_ARTIFACTS=$S/e2e-s1 pnpm e2e`: 167 pass.
+  - Proves: boot fetches, pins and registers a fifth file on every page, and keeps it across Reset. The plain build passing with no `learn:check` proves 0 of 189 lab keys moved.
+
+- [ ] S2. **The guard.** Riskiest logic: a fault either blocks a deploy or lets a false lesson go live. No listing block exists yet, so it's proved in isolation, F1–F12 first, in the test file's header, seen failing (pattern: `scripts/build/learn/star.test.ts:1-8`, its `edited` helper and `withDist`).
+  - Files: `scripts/build/learn/listing-blocks.test.ts` (first), `scripts/build/learn/listing-blocks.ts` (new: `listingBlocks`, `assertListingBlocks`, Target design 2), `scripts/build/learn/star.ts` (export `asResult`), `scripts/build/learn/site.ts:62` (`LearnInputs.listings`; its `errors` into `all`), `scripts/build.ts` (after `writeStar`; one log line naming the count), `AGENTS.md` (build line: the refusal; `Listings:` rule beside "Raster:"; "Correcting a curated row"; "Cost of a species change"; texts in Q3, Q6), `plans/007-native-ranges.md` (`## Learn tie-in`: the guard).
+  - `assertListingBlocks` takes `recorded` as a map, as `writeStar` does, so its tests need no file; `scripts/build.ts` reads it from `SNAPSHOT_DIR`. A one-parameter change to Target design 2's signature: Decisions line.
+  - Verified: F1–F12 pass; the common checks; byte check as S1, so no E2E.
+  - Proves: every refusal, on synthetic blocks over real published files; a build with 0 listing blocks is unchanged. S7 repeats the refusals through the real CLI.
+
+- [ ] S3. **f3 and the copy gate.** First real reader, so the whole chain runs once.
+  - E5 first, in `e2e/learn-labs.spec.ts` (Target design 5), with `READERS = ["f3"]`; S4 and S5 grow it.
+  - Blocks: `f3-listed-no-records` (Lab step 1, same `<li>`, after `f3-no-countries`), `f3-ex-listed` (`{{exercise:…}}` under Exercise; the prose says how to read the file). Follow the browser-block order above; `f3-ex-listed`'s snapshot shows once its answer is right.
+  - Files: `plans/004-learn-curriculum.md` (`#### f3 · join`), `site/learn/sql/{f3-listed-no-records,f3-ex-listed}.sql`, their `e2e/__snapshots__/*.txt`, `site/learn/modules/f3.html`, `e2e/learn-browser.spec.ts` (first id in the first `seen`, second in the exercise `seen`; `WRONG["f3-ex-listed"]`: the answer without `l.speciesId = sc.species_id`, `hint: "Your result has 0 rows; the answer has 4."`), `e2e/qa-fixes.ts` (`89 rows`; 4 countries if quoted), `AGENTS.md` copy rule (Q3), `plans/007-native-ranges.md` (f3 gains a lesson block; `AGENTS.md:68` is `:69`).
+  - Verified: the common checks; hashes `d0d87c462f63`, `b70a76ec0dab`; `E2E_ARTIFACTS=$S/e2e-s3 pnpm exec playwright test e2e/learn-browser.spec.ts e2e/learn-labs.spec.ts e2e/learn-walk.spec.ts` (about 8 min).
+  - Proves: the guard passes a real block; data = snapshot = browser (E2); a wrong answer is refused (E3); prose = result (E6); the copy gate holds (E5).
+
+- [ ] S4. **s1: records against listings.** The brief's main lesson.
+  - Blocks: `s1-listed`, `s1-listed-species`, `s1-listed-conflicts`: one new `<li>` after the devil's, marked as running in the browser. Lead and Result gain a sentence each: the lead says "first part", so name this step too. `s1.html:19` stays.
+  - Prose: `on_no_listing` as "on no listing from any source". The rhino's conflict shows both claims with their sources and resolves nothing. The axolotl's conflict in Germany isn't shown here: link `/#range-listings`, whose query lists all animals.
+  - Files: `plans/004-learn-curriculum.md` (`#### s1 · bias`), `site/learn/sql/s1-listed{,-species,-conflicts}.sql`, their snapshots, `site/learn/modules/s1.html`, `e2e/learn-browser.spec.ts` (`seen`), `e2e/qa-fixes.ts` (364, 275, 75.5, 89, 379, 94 from `s1-listed`; each other number quoted), `e2e/learn-labs.spec.ts` (`READERS` adds `s1`).
+  - Verified: the common checks; hashes `157fdfaf5ca5`, `4b230741b745`, `9557e3eb4326`; same three specs, `E2E_ARTIFACTS=$S/e2e-s4`.
+  - Proves: the brief's comparison on real data, with its source and its conflict on the page.
+
+- [ ] S5. **d2: origin and presence as two facts.** Small: one block.
+  - Block: `d2-listing-facts`, in the Worked example, after `d2-provenance`'s paragraph. Prose: `native` with `absent` is why these are two columns. d1 stays out (Q4).
+  - Files: `plans/004-learn-curriculum.md` (`#### d2 · normalize`), `site/learn/sql/d2-listing-facts.sql`, its snapshot, `site/learn/modules/d2.html`, `e2e/learn-browser.spec.ts` (`seen`), `e2e/qa-fixes.ts` (364, 36, 7, 6, 3), `e2e/learn-labs.spec.ts` (`READERS` becomes `["d2", "f3", "s1"]`, final).
+  - Verified: the common checks; hash `2ab668eb6f13`; same three specs, `E2E_ARTIFACTS=$S/e2e-s5`.
+  - Proves: the gate's final reader list against the build's own detector.
+
+- [ ] S6. **e4: made-up lists.** The one lab change, so the one whole `learn:check` before Verification.
+  - Block: `e4-list-rows`, a new `<li>` after quarantine (Q2 rows and rules): inline `VALUES`, `row_no` 1–5, `ORDER BY row_no`; made-up animal, codes `XA`, `XB`, lists `List A`, `List B`, `List C`, `Catalogue D`. Three kept, two of which disagree and both stay; one dropped by CC BY-NC; one open, well-formed row dropped for its catalogue's lack of a role.
+  - Prose: no filter on license or a field's value catches the last row, only a person's check of the whole list; link `/#range-listings`. No count of real datasets. `e4.html` never holds "native" or "introduced" (E5 fails if it does); neither does it read the file, so no added line.
+  - Order: block file and slot; `pnpm build --draft`; `pnpm learn:check --module e4` prints the result; 004's fences (`#### e4 · quality-provenance`); `pnpm learn:port e4` seeds `checked/e4-list-rows.txt`; prose and `RL` rows; then `pnpm build --draft && pnpm learn:check 2>&1 | tee $S/s6-learncheck.log && pnpm build`.
+  - Plain `learn:check`, not Q6's `--update`: 004 already seeded the one new result, so any of the other 189 moving fails the run, and a whole run still writes `checked.json`. Decisions line.
+  - Files: `plans/004-learn-curriculum.md`, `site/learn/sql/e4-list-rows.sql`, `site/learn/labs/checked/{e4-list-rows.txt,checked.json}`, `site/learn/modules/e4.html`, `e2e/qa-fixes.ts`, `plans/007-native-ranges.md` (e4's row loses "44 of the 88 datasets": no committed file holds it).
+  - Verified: the common checks; once committed, the two result checks under Verification (`git diff --name-status`, `checked.json`); full `E2E_ARTIFACTS=$S/e2e-s6 pnpm e2e`, because `checked.json`'s new date moves `.checked` on all 28 lab pages (the byte check normalizes that date).
+  - Proves: 189 results byte-stable; the new block's result on the page equals what PostGIS gave (E4).
+
+- [ ] S7. **Refusals and the curated recipe, on real files.**
+  - `e2e/range-listings-refusals.ts` (Target design 6): `RESTORED` adds `site/learn/sql`, `e2e/__snapshots__`; header gains the second shape; a case flag lifts the db-load failure (`:198`); another lets `--draft` pass (R29); after the last case, `pnpm build`, then the hash check (`:208`). `AGENTS.md`'s harness line: its new "Interrupted" list.
+  - Each message is pinned with the doctored block's id:
+
+    | Case | Shape | File | Doctor | Refused for |
+    |---|---|---|---|---|
+    | R21 | static | `f3-listed-no-records.sql` | `FROM 'range-listings.parquet'` | another form of the name |
+    | R22 | static | `e4-checks.sql` | the name in a comment | same, PostGIS |
+    | R23 | static | `e1-checksum.py` | the name in a comment | same, Python |
+    | R24 | static | `d2-list.sql` | `read_parquet('spec*.parquet')` | a glob |
+    | R25 | static | `s1-ex.sql` | `-- after: s1-listed` | a chain. `s1-ex` is the one later non-listing block on the page; an earlier one only fails lint |
+    | R26 | guard | `f3-listed-no-records.sql` | drop `ORDER BY` | order |
+    | R27 | guard | `d2-listing-facts.sql` | drop the class filter | mammal scope |
+    | R28 | guard | `s1-listed.sql` | add a list cell | cell type |
+    | R29 | guard | `e2e/__snapshots__/s1-listed.txt` | one byte | plain: refused with the diff; `--draft`: warns, passes |
+  - Verified: commit first (the harness refuses a dirty tree), then `pnpm build && pnpm exec tsx e2e/range-listings-refusals.ts 2>&1 | tee $S/refusals.log`: last line `33 cases, 0 failed; tree clean, dist/ unchanged`. Then the curated proof under Verification, once. If an unrelated check refuses `[]`, follow Architecture's Open risks and record it. Typecheck; byte check as S6. The plan's Log goes in a second commit.
+  - Proves: the guard through the real CLI in both modes; a curated correction moves no lesson and needs no `learn:check`.
+
+- [ ] S8. **Live smoke, rehearsed locally.**
+  - `e2e/release/live.spec.ts`: one new test beside `:61`, one header line. For f3 (`f3-listed-no-records`), s1 (`s1-listed`) and d2 (`d2-listing-facts`): the page answers 200, the block runs, its result equals its snapshot. For e4: 200, and `#q-e4-list-rows pre.recorded` equals `checked/e4-list-rows.txt`.
+  - Dry run, on the plain build:
+    ```
+    mkdir -p $S/e2e-s8
+    CRITWIRE_DIST=$PWD/dist CRITWIRE_FIXTURES=$PWD/e2e/fixtures E2E_ARTIFACTS=$S/e2e-s8 caddy run --config e2e/Caddyfile --adapter caddyfile   # in the background; stop it after
+    curl --retry 20 --retry-connrefused --retry-delay 1 -fsS -o /dev/null http://127.0.0.1:3100/
+    RELEASE_ORIGIN=http://127.0.0.1:3100 E2E_ARTIFACTS=$S/e2e-s8 pnpm exec playwright test -c playwright.release.config.ts
+    ```
+  - Verified: the common checks; all pass; `ss -ltn` shows nothing left on 3100 or 3101.
+  - Proves: the release smoke works before the release needs it, `RL` rows included.
+
+**Risks and open questions, beyond Architecture's Open risks:**
+- `e4-list-rows`' result doesn't exist until S6: Q2 fixes its shape, not its hash.
+- Rebasing at release can move results if `origin/main` changed data. The guard or `learn:check` names what moved; put it in 004, the snapshot and the prose, then re-run Verification.
+- Disk: S1, S6 and the final run each write about 840 MB, and the release re-verifies. Hold to the deletion rule above.
+- `AGENTS.md` line numbers shift as S2 and S3 edit it: match by text.
+
 ## Verification
+
+**E2E scenarios** (Playwright, headless Chromium, local Caddy copy of the live block; `pnpm e2e` runs all):
+- **E1** `e2e/learn-browser.spec.ts`, new: `range-listings.parquet` resolves by name in the browser, before and after Reset.
+- **E2** `e2e/learn-browser.spec.ts:273`: every browser block equals its snapshot, the 5 new lesson blocks in `seen`.
+- **E3** `e2e/learn-browser.spec.ts`, exercise test: `f3-ex-listed` refuses `WRONG`, accepts its answer, result = snapshot.
+- **E4** `e2e/learn-labs.spec.ts:98`: `#q-e4-list-rows pre.recorded` = `checked/e4-list-rows.txt`.
+- **E5** `e2e/learn-labs.spec.ts`, new: the copy gate. `listingBlocks`' pages are exactly d2, f3, s1; each holds the line; `\b(native|introduced)\b` nowhere else in sources but `e4-list-rows.sql`.
+- **E6** `e2e/learn-walk.spec.ts:122`: `QA_FIXES` on dist; every `RL` row's text on its page, its numbers in its recorded file.
+- **E7** the rest of the suite, unchanged.
+
+**Order, on the final commit, clean tree, one at a time:**
+```
+S=/srv/critter-ai/agent-state/missions/critwire-learn-range-lessons; A=$S/e2e-final
+git fetch -q origin main
+pnpm typecheck 2>&1 | tee $S/final-typecheck.log
+pnpm test 2>&1 | tee $S/final-test.log
+pnpm learn:port --check all 2>&1 | tee $S/final-port.log
+pnpm build 2>&1 | tee $S/final-build.log
+pnpm learn:check 2>&1 | tee $S/final-learncheck-1.log
+pnpm learn:check 2>&1 | tee $S/final-learncheck-2.log
+git status --porcelain
+(cd dist && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum) > $S/dist-final.sha256
+# the byte check, under Steps
+git diff --name-status origin/main...HEAD -- site/learn/sql e2e/__snapshots__ site/learn/labs/checked | grep -v '^A'
+git diff --name-status origin/main...HEAD -- site/learn/sql e2e/__snapshots__ site/learn/labs/checked | grep -c '^A'
+node -e 'const a=JSON.parse(require("child_process").execSync("git show origin/main:site/learn/labs/checked/checked.json"));const b=require("./site/learn/labs/checked/checked.json");const d=[];for(const k of ["blocks","downloads"])for(const i of new Set([...Object.keys(a[k]),...Object.keys(b[k])]))if(JSON.stringify(a[k][i])!==JSON.stringify(b[k][i]))d.push(k+"."+i);for(const k of ["versions","labErd"])if(JSON.stringify(a[k])!==JSON.stringify(b[k]))d.push(k);console.log(d)'
+rm -rf $S/e2e-baseline $S/e2e-s* $A
+E2E_ARTIFACTS=$A pnpm e2e 2>&1 | tee $S/final-e2e.log
+(cd dist && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum) | cmp - $S/dist-final.sha256
+node -e 'const s=require(process.argv[1]).stats;console.log(s);process.exit(s.unexpected||s.skipped||s.flaky?1:0)' $A/results.json
+pnpm exec tsx e2e/range-listings-refusals.ts 2>&1 | tee $A/refusals.log
+# curated proof: the correction recipe at its worst
+printf '[]\n' > data/review/range-curated.json
+pnpm derive 2>&1 | tee $S/curated-derive.log
+pnpm build 2>&1 | tee $S/curated-build.log
+git status --porcelain
+(cd dist && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum) | diff $S/dist-final.sha256 - | grep '^[<>]' | awk '{print $3}' | sort -u
+git checkout -- data
+pnpm build 2>&1 | tee $S/final-build-2.log
+(cd dist && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum) | cmp - $S/dist-final.sha256
+# scope
+git diff --name-only origin/main...HEAD -- data contracts db scripts/learn scripts/learn-check.ts scripts/build/learn/sql.ts site/learn/sql/setup.sql site/learn/curriculum.json site/learn/erd
+git diff origin/main...HEAD -- site/learn | grep -iE '^\+.*(iucn|wikipedia)'
+git status --porcelain
+```
+
+**Must show:**
+- Typecheck exit 0. Test: `fail 0`, more than Baseline's 811 pass. `learn:port --check`: exit 0.
+- Build: exit 0, no `--draft`; log names 6 listing blocks; `dist/learn/data/` about 96.03 MB (Baseline's 96,026,558 B plus the manifest's new entry and one copy edit, under 1 KB), under the cap; committed lab data 18,822,906 B.
+- `learn:check`, both runs: last line `learn:check: ok`; `unchanged: site/learn/labs/checked/checked.json`; 25 `.sql` and 11 `.py` download lines. `git status` empty after.
+- **Byte check:** exactly the 8 lines of "S6 on": `./learn/data/manifest.json`, `./learn/labs/e4.sql`, and 6 pages. `dist-final.sha256` has 314 lines. `v1/**`, `index.html` and the rest of `learn/data/**` are identical.
+- **Results stable:** the first `git diff` prints only `M site/learn/labs/checked/checked.json`; the count prints 14 (7 block files, 6 snapshots, `e4-list-rows.txt`). The `node` line prints `[ 'blocks.e4-list-rows', 'downloads.e4.sql' ]`.
+- **E2E:** `results.json` `unexpected` 0, `skipped` 0, `flaky` 0, `expected` at least 168 (Baseline's 166, E1, E5). `cmp` silent: E2E changed nothing.
+- **Refusals:** every case `PASS` in both modes; last line `33 cases, 0 failed; tree clean, dist/ unchanged`.
+- **Curated proof:** derive and build pass with no `learn:check`. `git status`: exactly ` M data/range-listings.json`, ` M data/review/range-conflicts.json`, ` M data/review/range-curated.json`. Hash diff: exactly `./index.html`, `./learn/data/manifest.json`, `./v1/attribution.json`, `./v1/range-listings.csv`, `./v1/range-listings.json`, `./v1/range-listings.parquet`. After restoring: `cmp` silent.
+- **Scope:** the last three commands print nothing.
+- `pnpm test:db` isn't run: not in the Definition of done, and no `*.dbtest.ts`-covered code changes. If a step changes that, add it here.
+
+**Artifact:** `$S/e2e-final/`: `playwright-report/`, `test-results/` (traces, screenshots), `results.json`, `refusals.log`. Beside it: `$S/final-*.log`, `$S/curated-*.log`, `$S/dist-final.sha256`. The brief names no folder, so this one takes that role in the disk rule: never delete it. Reproduce: `pnpm install --frozen-lockfile && pnpm learn:venv && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+**Definition of done, line by line:**
+
+| Brief | Check |
+|---|---|
+| `typecheck`, `test`, `build`, `e2e` pass; `learn:check` twice | The commands above |
+| Every new block ran, result recorded and shown | The six browser blocks: guard at every plain build, E2, E3. `e4-list-rows`: `learn:check` twice, E4. File count: 14 |
+| A prose number on a changed page matches its block | E6, on dist; `QA_FIXES` on the origin. Also list `git diff origin/main...HEAD -- site/learn/modules \| grep '^+' \| grep -oE '[0-9][0-9,.]*' \| sort -u`: each number has an `RL` row, or is the copy line's 1500 or a link's own |
+| Live smoke after `deploy` | Release smoke, below |
+| Summary: per module, exact wording | Summary holds f3, s1, d2, e4 and the setup and data pages' copy; the line as published; `AGENTS.md`'s copy rule; that e4 doesn't read the file and why; that d1 stayed out |
+| Show the source, show conflicts | `s1-listed-conflicts`: both claims with source and url (E2); prose resolves nothing (S4) |
+| At most 12 steps | 8 |
+| Out of scope: `/v1`, new data, IUCN, held work | Byte check, scope commands; `git diff --name-only origin/main...HEAD -- data/review/country-overrides.json` prints nothing |
+
+**Release smoke,** after `deploy critwire`, with `dist/` the released commit's build. Delete `$S/e2e-s*` first; `$S/e2e-final/` stays.
+```
+for u in /learn/foundations/join/ /learn/spatial-statistics/bias/ /learn/database-architecture/normalize/ /learn/etl/quality-provenance/ /learn/setup/ /learn/data/ /learn/data/manifest.json /learn/labs/e4.sql /v1/range-listings.parquet; do curl -fsS -o /dev/null -w "%{http_code} $u\n" https://critwire.com$u; done
+curl -fsS https://critwire.com/v1/range-listings.parquet | sha256sum
+node -e 'console.log(require("./dist/learn/data/manifest.json").inputs.v1["range-listings.parquet"].sha256)'
+RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=$S/e2e-release pnpm exec playwright test -c playwright.release.config.ts
+```
+Nine lines of `200`; the two hashes equal; `e2e/release/live.spec.ts` all pass. Its new test is the Definition of done's smoke: each changed page answers 200, and its first new block shows the recorded result in headless Chromium. `QA_FIXES` on the origin covers the `RL` rows; "every dist/ file is served with dist's bytes" covers the rest.
+
+## Failure modes
+
+The guard alone is tested in isolation: at S2 no listing block exists to push through a real build, and a fault either blocks a deploy or publishes a false lesson. These go in the header of `scripts/build/learn/listing-blocks.test.ts`, as tests, before the code. S7 proves the same refusals through the real CLI.
+
+`listingBlocks`, in both modes, before the db load:
+- **F1. Another form of the name reads the file unguarded:** `FROM 'range-listings.parquet'`; double quotes; `parquet_scan('range-listings.parquet')`; a list argument; a URL; `.csv`; `.json`; a table named `range_listings`; Python's `f"{BASE}/v1/range-listings.parquet"`; a comment; `READ_PARQUET('range-listings.parquet')`. Each refused, naming the block.
+- **F2. The file is reached without its name:** `read_parquet('*.parquet')`; `read_parquet('spec*.parquet')`; `read_parquet('spe' || 'cies.parquet')`; `parquet_scan(x)`; `FROM '*.parquet'`. Each refused, on a block of any engine.
+- **F3. A listing block isn't plain:** engine PostGIS, Python or Power BI; status other than `ran`; `-- after:`; `-- expect:`; two statements; not `readsOnly`. Each refused.
+- **F4. A chain hides the dependency:** another block's `-- after:` names a listing block. Refused, naming both.
+- **F5. A false positive blocks the course:** the real course gives `errors: []`; `read_parquet('species.parquet')` and its named parameters pass.
+- **F6. The wrong page is named:** each block comes back with its page, which the copy gate relies on; the supported spelling is the one thing recognized as a listing block.
+
+`assertListingBlocks`, on real published files through `withLabTables`:
+- **F7. The block doesn't run in a browser's tables:** a SQL error, or a star table such as `dim_species`, refuses in both modes, naming the block, never a bare DuckDB error.
+- **F8. A cell the two engines render differently:** LIST, STRUCT, ENUM, DECIMAL, DATE or BOOLEAN refuses in both modes; VARCHAR, INTEGER, BIGINT and DOUBLE pass.
+- **F9. Row order isn't the query's own:** more than one row and no `ORDER BY` at paren depth 0 refuses in both modes. `OVER (ORDER BY a)`, `string_agg(a ORDER BY a)`, a CTE's `ORDER BY`, and `ORDER BY` inside a string or a comment don't count. `… ORDER BY a LIMIT 3` passes, and so does one row with none.
+- **F10. A curated correction would move the lesson:** an unscoped count, an origin-by-presence table with no class filter, and docs' whole-file conflict query each refuse in both modes, with "reads non-mammal rows". A block filtered on MDD or `Mammalia` passes.
+- **F11. The result differs from its snapshot:** plain throws with `lineDiff`, `--draft` warns and passes. A missing snapshot does the same and prints the rendered result. An equal one is silent.
+- **F12. One failure hides another, or the guard leaves a mess:** every failure of every block is named in one error; the session closes after a failure; 0 blocks passes; nothing under `dist/` changes.
 
 ## Code review (Astra)
 
@@ -409,5 +623,6 @@ SHOULD-CONSIDER:
 - 2026-11-02 01:00 UTC: Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (total ORDER BY on listing blocks + guard; copy gate clause), for Revision; Q2 numbers recomputed by reviewer from Baseline `dist/`; no code touched.
 - 2026-11-02 01:01 UTC: Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (guard fails closed on other spellings; deterministic cross-engine results), for Revision; no code touched.
 - 2026-11-02 01:17 UTC: Revision: all 4 MUST-FIX resolved in Architecture (total ORDER BY + guard, copy gate scope, fail-closed detector, replacement copy); 6 blocks + WRONG query byte-identical Node vs Baseline WASM; no code touched.
+- 2026-11-02 01:30 UTC: Steps: planner wrote 8 steps (limit 12), Verification, Failure modes (guard F1-F12); named paths checked; no code touched.
 
 ## Summary
