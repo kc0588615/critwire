@@ -2,7 +2,7 @@
 // readLearnInputs reads the course (learn/course-files.ts
 // readCourse: the curriculum, the pages' slots, every block file's lint, recorded results without a block) and the ERD
 // sources (erd.ts readErds: each parses, schema.mmd keeps v1.mmd, markers, accTitle/accDescr, sources), the star's
-// blocks and Power BI inputs (star.ts starBlocks, inputErrors), the engine pins (assets.ts assetErrors), and the
+// blocks and Power BI inputs (star.ts starBlocks, inputErrors), the listing blocks (listing-blocks.ts), the engine pins (assets.ts assetErrors), and the
 // teaching diagrams the pages name (diagrams.ts readDiagrams: both variants, sources, <title>, offline, used). A ran
 // PostGIS block without its recorded result fails a plain build and only warns with --draft (D16's loop: learn:check
 // --update writes it). Throws naming every error. Writes nothing.
@@ -35,6 +35,7 @@ import { assetErrors, writeAssets } from "./assets.ts";
 import { feedAttribution, type CreditContext } from "./credits.ts";
 import { learnPages, readTemplates, writePages } from "./pages.ts";
 import { DRAWN_ERDS, readErds, type ErdSvgs, type ErdTexts } from "./erd.ts";
+import { listingBlocks, type ListingBlock } from "./listing-blocks.ts";
 import { starBlocks, inputErrors, type StarBlock } from "./star.ts";
 import { readDiagrams, type Diagram } from "./diagrams.ts";
 
@@ -48,6 +49,8 @@ export interface LearnInputs {
   svgs: ErdSvgs;
   /** The blocks writeStar runs, in order. */
   star: StarBlock[];
+  /** The blocks reading /v1/range-listings.parquet, each with its page; assertListingBlocks runs them. */
+  listings: ListingBlock[];
   /** The teaching diagrams, checked, and their SVG files' texts by file name. */
   diagrams: { diagrams: Map<string, Diagram>; svgs: Map<string, string> };
 }
@@ -57,11 +60,12 @@ export async function readLearnInputs({ draft }: { draft: boolean }): Promise<Le
   const { curriculum, pages, errors, missing } = await readCourse();
   const erds = await readErds();
   const star = starBlocks(pages);
+  const listings = listingBlocks(pages);
   const diagrams = await readDiagrams(pages);
   if (draft) for (const m of missing) console.warn(`build --draft: ${m}`);
-  const all = [...errors, ...erds.errors, ...star.errors, ...inputErrors(pages), ...diagrams.errors, ...assetErrors(), ...(draft ? [] : missing)];
+  const all = [...errors, ...erds.errors, ...star.errors, ...listings.errors, ...inputErrors(pages), ...diagrams.errors, ...assetErrors(), ...(draft ? [] : missing)];
   if (all.length) throw new Error(`site/learn: ${all.length} error(s):\n${all.join("\n")}`);
-  return { curriculum: curriculum!, pages, erds: erds.texts, svgs: erds.svgs, star: star.blocks, diagrams };
+  return { curriculum: curriculum!, pages, erds: erds.texts, svgs: erds.svgs, star: star.blocks, listings: listings.blocks, diagrams };
 }
 
 const repo = new URL("../../../", import.meta.url);

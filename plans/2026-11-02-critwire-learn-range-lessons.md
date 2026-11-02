@@ -436,7 +436,7 @@ Written on `9612822`. Read **Architecture** as revised first: block texts, guard
   - Verified: the common checks; full `E2E_ARTIFACTS=$S/e2e-s1 pnpm e2e`: 167 pass.
   - Proves: boot fetches, pins and registers a fifth file on every page, and keeps it across Reset. The plain build passing with no `learn:check` proves 0 of 189 lab keys moved.
 
-- [ ] S2. **The guard.** Riskiest logic: a fault either blocks a deploy or lets a false lesson go live. No listing block exists yet, so it's proved in isolation, F1–F12 first, in the test file's header, seen failing (pattern: `scripts/build/learn/star.test.ts:1-8`, its `edited` helper and `withDist`).
+- [x] S2. **The guard.** Riskiest logic: a fault either blocks a deploy or lets a false lesson go live. No listing block exists yet, so it's proved in isolation, F1–F12 first, in the test file's header, seen failing (pattern: `scripts/build/learn/star.test.ts:1-8`, its `edited` helper and `withDist`).
   - Files: `scripts/build/learn/listing-blocks.test.ts` (first), `scripts/build/learn/listing-blocks.ts` (new: `listingBlocks`, `assertListingBlocks`, Target design 2), `scripts/build/learn/star.ts` (export `asResult`), `scripts/build/learn/site.ts:62` (`LearnInputs.listings`; its `errors` into `all`), `scripts/build.ts` (after `writeStar`; one log line naming the count), `AGENTS.md` (build line: the refusal; `Listings:` rule beside "Raster:"; "Correcting a curated row"; "Cost of a species change"; texts in Q3, Q6), `plans/007-native-ranges.md` (`## Learn tie-in`: the guard).
   - `assertListingBlocks` takes `recorded` as a map, as `writeStar` does, so its tests need no file; `scripts/build.ts` reads it from `SNAPSHOT_DIR`. A one-parameter change to Target design 2's signature: Decisions line.
   - Verified: F1–F12 pass; the common checks; byte check as S1, so no E2E.
@@ -617,6 +617,8 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 ## Decisions
 
 - S1: also edited `plans/004-learn-curriculum.md`'s manifest `inputs` line and `data.ts`'s `inputs` comment. Both said `v1` holds only the files the lab tables are built from, which the pin makes false; Finding 6 missed them.
+- S2: `assertListingBlocks(out, blocks, { recorded, draft })`: `recorded` is a map, as `writeStar`'s, so its tests need no file; `readSnapshots` in the same module fills it for `scripts/build.ts`.
+- S2: Target design 2's reader regex corrected: with `\s*` outside the lookahead, it backtracked past the space and refused `read_parquet( 'species.parquet' )`. Now `\((?!\s*'…'\s*[,)])`. F5's own spaced case found it; no course block is spelled that way.
 - S1: Q1's "`dist/learn/data/` stays 96,026,558 B" holds for the manifest's own `bytes` (95,877,990, unmoved: it counts `files` only). The build's logged total, which counts `manifest.json` and `index.html`, is 96,026,726: +168 B from the pin and the copy edit.
 
 ## Log
@@ -628,5 +630,6 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - 2026-11-02 01:17 UTC: Revision: all 4 MUST-FIX resolved in Architecture (total ORDER BY + guard, copy gate scope, fail-closed detector, replacement copy); 6 blocks + WRONG query byte-identical Node vs Baseline WASM; no code touched.
 - 2026-11-02 01:30 UTC: Steps: planner wrote 8 steps (limit 12), Verification, Failure modes (guard F1-F12); named paths checked; no code touched.
 - 2026-11-02 01:47 UTC: S1: `range-listings.parquet` fetched, pinned, registered by name on every page; E1 seen failing, then passing. typecheck pass, test 811/811, plain build pass with no `learn:check`, port check 538 files equal, byte check exactly the 3 expected lines, E2E 167/167 (`$S/e2e-s1`).
+- 2026-11-02 02:02 UTC: S2: guard `listing-blocks.ts` in the build, 0 listing blocks yet. F1-F12 seen failing on a stub (11 of 12; F5 can't fail on a stub's empty errors, and later caught the regex bug), then all pass. typecheck pass, test 823/823 (811 + 12), plain build pass with no `learn:check`, port check 538 files equal, byte check exactly the 3 expected lines. No E2E, per the step.
 
 ## Summary

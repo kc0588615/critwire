@@ -496,7 +496,7 @@ The wording names no source, so an O1 no leaves nothing false or dangling: `nati
 
 ## Learn tie-in
 
-Recommended: **no Learn change in the first build**, then a small separate mission, whose native-row lessons (s1, f3) need O1 or O3 (a). Each addition follows the 004-and-site-together rule. A browser block needs one entry in `V1_INPUTS` (`scripts/build/learn/data.ts:80`) and in `DATA_FILES` (`site/learn/src/engine.ts:25`), which changes `manifest.json`, but no loader table.
+Recommended: **no Learn change in the first build**, then a small separate mission, whose native-row lessons (s1, f3) need O1 or O3 (a). Each addition follows the 004-and-site-together rule. A browser block needs one entry in `V1_INPUTS` (`scripts/build/learn/data.ts:80`) and in `DATA_FILES` (`site/learn/src/engine.ts:25`), which changes `manifest.json`, but no loader table. No lab key sees that file, so a build guard (`scripts/build/learn/listing-blocks.ts`) runs each block reading it against its snapshot: mammal rows only, so a curated correction moves no lesson. Plan `2026-11-02-critwire-learn-range-lessons`.
 
 | Module | What it gains | Path | Cost |
 |---|---|---|---|
