@@ -462,7 +462,7 @@ Written on `9612822`. Read **Architecture** as revised first: block texts, guard
   - Verified: the common checks; hash `2ab668eb6f13`; same three specs, `E2E_ARTIFACTS=$S/e2e-s5`.
   - Proves: the gate's final reader list against the build's own detector.
 
-- [ ] S6. **e4: made-up lists.** The one lab change, so the one whole `learn:check` before Verification.
+- [x] S6. **e4: made-up lists.** The one lab change, so the one whole `learn:check` before Verification.
   - Block: `e4-list-rows`, a new `<li>` after quarantine (Q2 rows and rules): inline `VALUES`, `row_no` 1–5, `ORDER BY row_no`; made-up animal, codes `XA`, `XB`, lists `List A`, `List B`, `List C`, `Catalogue D`. Three kept, two of which disagree and both stay; one dropped by CC BY-NC; one open, well-formed row dropped for its catalogue's lack of a role.
   - Prose: no filter on license or a field's value catches the last row, only a person's check of the whole list; link `/#range-listings`. No count of real datasets. `e4.html` never holds "native" or "introduced" (E5 fails if it does); neither does it read the file, so no added line.
   - Order: block file and slot; `pnpm build --draft`; `pnpm learn:check --module e4` prints the result; 004's fences (`#### e4 · quality-provenance`); `pnpm learn:port e4` seeds `checked/e4-list-rows.txt`; prose and `RL` rows; then `pnpm build --draft && pnpm learn:check 2>&1 | tee $S/s6-learncheck.log && pnpm build`.
@@ -624,6 +624,7 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - S4: 007's s1 row said one block; Q2 has three (the numbers, per animal, the conflict, so a source's disagreement is shown), so 007 now says three. Prose says MDD's rows are all native or introduced before 1500: of MDD's 400 rows, 364 present and 36 uncertain, all that origin (checked on `data/range-listings.json`).
 - S5: d2's lead says "published files" (it now reads two). Prose also says neither column fixes the other, and names the source of the 6 `native` + `absent` rows (Central Asia checklist, checked on `data/range-listings.json`); per the contract it says nothing about why or since when. Its Result gains one sentence.
 - S1: Q1's "`dist/learn/data/` stays 96,026,558 B" holds for the manifest's own `bytes` (95,877,990, unmoved: it counts `files` only). The build's logged total, which counts `manifest.json` and `index.html`, is 96,026,726: +168 B from the pin and the copy edit.
+- S6: plain `learn:check`, not Q6's `--update`: 004 had seeded the one new result, so any of the other 189 moving would fail the run; a whole run still writes `checked.json`. `e4.html` holds neither word: row 5 is worded "came from elsewhere to XA, the place List A says it comes from". Lead and Result each gain one clause. 007's row loses "44 of the 88".
 
 ## Log
 
@@ -638,5 +639,6 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - 2026-11-02 02:18 UTC: S3: f3 reads the listings (`f3-listed-no-records`, `f3-ex-listed`), copy line on the page, `AGENTS.md` copy rule, copy gate E5 seen failing then passing. Hashes `d0d87c462f63`, `b70a76ec0dab` as planned. typecheck pass, test 823/823, plain build pass (2 listing blocks), port check 542 files equal, byte check exactly the 4 expected lines, three specs 83/83 (`$S/e2e-s3`).
 - 2026-11-02 02:34 UTC: S4: s1 compares records with listings (`s1-listed`, `s1-listed-species`, `s1-listed-conflicts`), copy line on the page, `READERS` adds s1. Hashes `157fdfaf5ca5`, `4b230741b745`, `9557e3eb4326` as planned. typecheck pass, test 823/823, plain build pass (5 listing blocks), port check 548 files equal, byte check exactly the 5 expected lines, three specs 83/83 (`$S/e2e-s4`).
 - 2026-11-02 02:49 UTC: S5: d2 reads the listings (`d2-listing-facts`), copy line on the page, `READERS` final `["d2", "f3", "s1"]`. Hash `2ab668eb6f13` as planned. typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 550 files equal, byte check exactly the 6 expected lines, three specs 83/83 (`$S/e2e-s5`).
+- 2026-11-02 03:18 UTC: S6: e4 `e4-list-rows` (5 rows, hash `a4db17261e6f`), whole `learn:check` ok, 189 results unmoved (`checked.json` diff: `blocks.e4-list-rows`, `downloads.e4.sql`, date; 14 added files). typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 552 files equal, byte check exactly the 8 expected lines, E2E 168/168 (`$S/e2e-s6`).
 
 ## Summary
