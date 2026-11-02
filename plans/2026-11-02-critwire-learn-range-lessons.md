@@ -570,7 +570,7 @@ git status --porcelain
 - **Refusals:** every case `PASS` in both modes; last line `33 cases, 0 failed; tree clean, dist/ unchanged`.
 - **Curated proof:** derive and build pass with no `learn:check`. `git status`: exactly ` M data/range-listings.json`, ` M data/review/range-conflicts.json`, ` M data/review/range-curated.json`. Hash diff: exactly `./index.html`, `./learn/data/manifest.json`, `./v1/attribution.json`, `./v1/range-listings.csv`, `./v1/range-listings.json`, `./v1/range-listings.parquet`. After restoring: `cmp` silent.
 - **Scope:** the last three commands print nothing.
-- `pnpm test:db` isn't run: not in the Definition of done, and no `*.dbtest.ts`-covered code changes. If a step changes that, add it here.
+- `pnpm test:db`: not in the Definition of done. S1 and S9 changed `dist-fixture.ts` and `projection.ts`, so it ran once at final Verification: 140/140.
 
 **Artifact:** `$S/e2e-final/`: `playwright-report/`, `test-results/` (traces, screenshots), `results.json`, `refusals.log`. Beside it: `$S/final-*.log`, `$S/curated-*.log`, `$S/dist-final.sha256`. The brief names no folder, so this one takes that role in the disk rule: never delete it. Reproduce: `pnpm install --frozen-lockfile && pnpm learn:venv && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
 
@@ -663,6 +663,7 @@ SHOULD-CONSIDER:
 - 2026-11-02 03:37 UTC: Astra code review: APPROVE_WITH_CHANGES, 1 MUST-FIX (guard's tables wider than a browser's); reproduced in 2 forms on `dist/`, added as S9; 1 SHOULD-CONSIDER kept for the Summary. No code touched.
 - 2026-11-02 03:50 UTC: S9: guard runs in a browser's tables and 5 files only (`withBrowserTables`, one `DATA_FILES` in `assets.ts`); F7's new cases seen failing, then passing; absolute paths refused too. typecheck pass, test 823/823, plain build pass (6 listing blocks, no stale lab), port check 552 files equal, byte check exactly the 8 expected lines, two specs 32/32 (`$S/e2e-s9`).
 - 2026-11-02 04:30 UTC: Final Verification on `81cfe90`: typecheck pass, test 823/823, port check 552 equal, plain build pass (6 listing blocks), `learn:check` ok twice (`checked.json` unchanged), byte check exactly 8 lines, 14 added result files, E2E 168/168 (`$S/e2e-final`), refusals 33 cases 0 failed, curated proof exactly 3 `data/` + 6 `dist/` files, restored byte-identical, scope commands empty. Summary written, status done; release next.
+- 2026-11-02 04:54 UTC: `pnpm test:db` 140/140, added to Verification since S1 and S9 changed `dist-fixture.ts` and `projection.ts`; on `7c222b9`, code as `81cfe90`.
 
 ## Summary
 
@@ -699,6 +700,6 @@ Three modules and d2 now use `/v1/range-listings`; e4 teaches the same lesson on
 
 **For the owner to consider (Astra's SHOULD-CONSIDER, not done):** extend the tampered-file E2E check (`e2e/learn-browser.spec.ts:68`) to `range-listings.parquet`, to prove its new manifest pin.
 
-**Not run:** `pnpm test:db`: not in the Definition of done, and no code it covers changed.
+**Also run, beyond the plan:** `pnpm test:db` 140/140 (24 min, `final-testdb.log`). Verification had it out, but `projection.ts` and `dist-fixture.ts` changed, so that reason didn't obviously hold.
 
 **Handoff:** H3, H6, H12 still wait on the owner; none blocks this mission.
