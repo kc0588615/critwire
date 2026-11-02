@@ -67,7 +67,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -237,6 +237,19 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **Guard coverage must fail closed.** Target design 2 recognizes one SQL spelling, and the copy gate shares that detector. An equivalent file reference could bypass both protections, allowing stale lessons through deployment. Require every listings dependency to be guarded; reject unsupported reference forms.
+2. **Define deterministic cross-engine results.** The guard compares order-sensitive hashes, but Q2 specifies total ordering for only one multi-row block. Require stable ordering and compatible scalar representations for every guarded result; otherwise unchanged data can fail builds or browser checks.
+
+SHOULD-CONSIDER:
+
+1. Clarify that the copy gate permits terminology throughout reader pages and e4’s fictional examples, not just the mandatory sentence.
+2. Keep listing validation separate from star generation; sharing a connection solely to save two seconds adds unnecessary coupling.
+3. Preserve the curated-row independence check as repeatable regression evidence supporting the revised correction workflow.
+
 ## Revision notes
 
 ## Steps
@@ -254,5 +267,6 @@ SHOULD-CONSIDER:
 - 2026-11-02 00:43 UTC: Baseline: typecheck pass, test 811/811, build pass, E2E 166/166; dist equals live; listings live.
 - 2026-11-02 00:55 UTC: Architecture written: browser blocks read `/v1/range-listings.parquet` by name, 7 new blocks (f3, s1, d2, e4), new build guard, copy gate; candidate queries ran on Baseline `dist/`, nothing built yet.
 - 2026-11-02 01:00 UTC: Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (total ORDER BY on listing blocks + guard; copy gate clause), for Revision; Q2 numbers recomputed by reviewer from Baseline `dist/`; no code touched.
+- 2026-11-02 01:18 UTC: Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (guard fails closed on other spellings; deterministic cross-engine results), for Revision; no code touched.
 
 ## Summary
