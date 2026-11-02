@@ -12,14 +12,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseBlock, type Block } from "../../learn/blocks.ts";
 import type { CoursePage } from "../../learn/course.ts";
 import { readCourse } from "../../learn/course-files.ts";
 import { withDist } from "./dist-fixture.ts";
+import { DATA_FILES } from "../../../site/learn/src/assets.ts";
 import { assertListingBlocks, listingBlocks, type ListingBlock } from "./listing-blocks.ts";
+import { withBrowserTables } from "./projection.ts";
 
 const FILE = "read_parquet('range-listings.parquet')";
 const MDD = `${FILE} AS l WHERE l.sourceKey = 'mdd'`;
@@ -171,6 +173,13 @@ test("F6 each listing block comes back with its page; only the one spelling make
 test("F7 a block that doesn't run in a browser's tables is refused in both modes, naming it", () => withDist(async (out) => {
   await refusedBothWays(out, browser("f7-error", `SELECT nope FROM ${FILE};`), /doesn't run/);
   await refusedBothWays(out, browser("f7-star", `SELECT count(*) FROM ${FILE} AS l JOIN dim_species AS d ON d.species_id = l.speciesId;`), /doesn't run/);
+  // Published, built in Node's lab tables, and not on a learner's page: a lab-only table, and a file the page never registers.
+  const joined = (name: string, source: string) => browser(name, `SELECT count(*) AS n FROM ${FILE} AS l JOIN ${source} ON true WHERE l.sourceKey = 'mdd';`);
+  await refusedBothWays(out, joined("f7-lab-table", "country_shapes AS c"), /doesn't run/);
+  await refusedBothWays(out, joined("f7-lab-file", "read_parquet('country_shapes.parquet') AS c"), /doesn't run/);
+  await refusedBothWays(out, joined("f7-lab-csv", "read_csv('biomes.csv', header = true) AS b"), /doesn't run/);
+  // The path the page can't reach either: no folder of the site is on a learner's disk.
+  await refusedBothWays(out, joined("f7-absolute", `read_parquet('${fileURLToPath(new URL("learn/data/country_shapes.parquet", out))}') AS c`), /doesn't run/);
 }));
 
 test("F8 only VARCHAR, INTEGER, BIGINT and DOUBLE cells pass", () => withDist(async (out) => {
@@ -254,4 +263,13 @@ test("F12 every failure of every block is named in one error; 0 blocks passes; t
   const fine = browser("f12-fine", `SELECT count(*) AS n FROM ${MDD};`);
   assert.equal((await guard(out, [listing(fine)], new Map([[fine.id, await rendered(out, fine)]]), false)).error, undefined);
   assert.deepEqual(tree(dist), before);
+
+  // The folder of links holds the page's files alone, and goes, also after a failure.
+  const seen: string[] = [];
+  await assert.rejects(withBrowserTables(out, async (con) => {
+    seen.push(String((await con.runAndReadAll("SELECT current_setting('file_search_path')")).getRows()[0]![0]));
+    assert.deepEqual(readdirSync(seen[0]!).sort(), DATA_FILES.map((f) => f.name).sort());
+    throw new Error("the failure");
+  }), /the failure/);
+  assert.equal(existsSync(seen[0]!), false);
 }));

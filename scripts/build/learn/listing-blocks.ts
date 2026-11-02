@@ -3,8 +3,8 @@
 // doesn't run, is the only other thing comparing those results: without this, a refreshed file publishes prose and
 // snapshots that disagree with the block. listingBlocks (before the db load, both modes) finds the blocks reading the
 // file, in the one spelling supported, and refuses every other way to reach it; assertListingBlocks (after the star)
-// runs each in Node DuckDB over the lab tables as published. Both engines render through the same code, and the rules
-// here keep their values and order the same. Out of scripts/learn/ so that no lab key moves.
+// runs each in Node DuckDB over a browser's tables and files, as published. Both engines render through the same code,
+// and the rules here keep their values and order the same. Out of scripts/learn/ so that no lab key moves.
 // Tests: listing-blocks.test.ts.
 import { existsSync, readFileSync } from "node:fs";
 import type { DuckDBConnection, DuckDBResultReader } from "@duckdb/node-api";
@@ -12,7 +12,7 @@ import { SNAPSHOT_DIR, type Block } from "../../learn/blocks.ts";
 import type { CoursePage } from "../../learn/course.ts";
 import { lineDiff, renderResult } from "../../learn/result.ts";
 import { codeOnly, readsOnly } from "./sql.ts";
-import { withLabTables } from "./projection.ts";
+import { withBrowserTables } from "./projection.ts";
 import { asResult } from "./star.ts";
 
 /** The only way a block may reach the file; holding it is what makes a block a listing block. */
@@ -121,7 +121,7 @@ export function readSnapshots(blocks: readonly ListingBlock[]): Map<string, stri
 }
 
 /**
- * Runs each block in Node DuckDB over the lab tables `out` publishes, a browser's tables, and throws naming every fault.
+ * Runs each block in Node DuckDB over the tables and files a browser gets from `out`, and throws naming every fault.
  * A fault in the block refuses in both modes. A result unlike `recorded` (id to snapshot text) refuses a plain build and
  * only warns with `draft`, printing the result, which is how an author gets the text for 004's fence.
  */
@@ -131,7 +131,7 @@ export async function assertListingBlocks(out: URL, blocks: readonly ListingBloc
   if (!blocks.length) return;
   const faults: string[] = [];
   const snapshots: string[] = [];
-  await withLabTables(out, async (con) => {
+  await withBrowserTables(out, async (con) => {
     for (const { block: { id, statements } } of blocks) {
       const text = statements[0]!.text;
       let now: DuckDBResultReader;

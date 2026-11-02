@@ -2,9 +2,12 @@
 // assertLearnProjection checks the records against the projection's assumptions before anything is written;
 // projectLearn builds the tables in DuckDB from dist/'s bytes (site/learn/sql/setup.sql, 004 §0's setup block byte for
 // byte, plus the eight lab-only tables from /learn/data/) and counts LAB_CHECKS on them.
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { DuckDBConnection } from "@duckdb/node-api";
 import { fileURLToPath } from "node:url";
+import { DATA_FILES } from "../../../site/learn/src/assets.ts";
 import type { Species } from "../../species.ts";
 import { sqlText, withOfflineDuckDb } from "../duckdb.ts";
 import { countLabChecks } from "./checks.ts";
@@ -72,16 +75,41 @@ export function assertLearnProjection(species: readonly Species[]): void {
   }
 }
 
-// Runs fn on an offline DuckDB holding the 16 lab tables, built from out/v1/ and out/learn/data/ as published (query).
-export async function withLabTables<T>(out: URL, fn: (con: DuckDBConnection) => Promise<T>): Promise<T> {
+// Runs fn on an offline DuckDB holding setup.sql's tables, its bare file names resolved in `folders` (query).
+async function withSetup<T>(folders: readonly string[], fn: (con: DuckDBConnection) => Promise<T>): Promise<T> {
   const setup = await readFile(setupSql, "utf8");
-  const searchPath = [new URL("v1/", out), new URL("learn/data/", out)].map((u) => fileURLToPath(u)).join(",");
   return withOfflineDuckDb(async (con) => {
-    await con.run(`SET file_search_path = ${sqlText(searchPath)}`);
+    await con.run(`SET file_search_path = ${sqlText(folders.join(","))}`);
     await con.run(setup);
+    return fn(con);
+  });
+}
+
+// Runs fn on an offline DuckDB holding the 16 lab tables, built from out/v1/ and out/learn/data/ as published (query).
+export function withLabTables<T>(out: URL, fn: (con: DuckDBConnection) => Promise<T>): Promise<T> {
+  return withSetup([new URL("v1/", out), new URL("learn/data/", out)].map((u) => fileURLToPath(u)), async (con) => {
     for (const t of LAB_TABLES) if (t.from) await con.run(`CREATE TABLE ${t.name} AS SELECT * FROM ${t.from}`);
     return fn(con);
   });
+}
+
+// Runs fn on what a learner's page holds: setup.sql's tables, and of out/'s files only DATA_FILES, under the names the
+// page registers. They are links in a temp folder, removed afterwards, so nothing is written under out/ (query).
+export async function withBrowserTables<T>(out: URL, fn: (con: DuckDBConnection) => Promise<T>): Promise<T> {
+  const folder = await mkdtemp(join(tmpdir(), "critwire-browser-files-"));
+  try {
+    await Promise.all(DATA_FILES.map((f) => symlink(fileURLToPath(new URL(f.path.slice(1), out)), join(folder, f.name))));
+    return await withSetup([folder], async (con) => {
+      // The page reads nothing else, so neither does fn: an absolute path would pass here and fail there.
+      // DuckDB checks each name twice, as written and as found.
+      const allowed = DATA_FILES.flatMap((f) => [f.name, join(folder, f.name)]);
+      await con.run(`SET allowed_paths = [${allowed.map(sqlText).join(", ")}]`);
+      await con.run("SET enable_external_access = false");
+      return fn(con);
+    });
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
 }
 
 // The lab tables' row counts and every LAB_CHECKS count, over out/'s published files (query).

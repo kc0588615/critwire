@@ -24,3 +24,16 @@ export const DUCKDB_EXT = { dir: "duckdb-ext", duckdbVersion: "v1.5.6", platform
 /** Each extension's path under the mirror's folder (DUCKDB_EXT.dir). */
 export const extensionFile = (name: string): string =>
   `${DUCKDB_EXT.duckdbVersion}/${DUCKDB_EXT.platform}/${name}.duckdb_extension.wasm`;
+
+/**
+ * The data files a page fetches and registers: the four setup.sql reads and the one lesson blocks read in place, by the
+ * name they are read under and the path they are served at. The page has no other file, so the listing-block guard runs
+ * over exactly these (scripts/build/learn/projection.ts withBrowserTables).
+ */
+export const DATA_FILES = [
+  { name: "species.parquet", path: "/v1/species.parquet" },
+  { name: "countries.parquet", path: "/v1/countries.parquet" },
+  { name: "datasets.csv", path: "/learn/data/datasets.csv" },
+  { name: "occurrences.parquet", path: "/learn/data/occurrences.parquet" },
+  { name: "range-listings.parquet", path: "/v1/range-listings.parquet" },
+] as const;

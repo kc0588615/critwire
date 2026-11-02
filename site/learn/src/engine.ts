@@ -13,7 +13,7 @@
 import * as duckdb from "@duckdb/duckdb-wasm";
 import { scriptStatements, statementError } from "../../../scripts/build/learn/sql.ts";
 import SETUP from "../sql/setup.sql";
-import { ASSETS, DUCKDB_DIR, DUCKDB_EXT } from "./assets.ts";
+import { ASSETS, DATA_FILES, DUCKDB_DIR, DUCKDB_EXT } from "./assets.ts";
 import { SPECIES_LOOKUP, speciesMap, type SpeciesInfo } from "./cards.ts";
 import { decimalText } from "./format.ts";
 import { assertPersistable, changesTables, runIsolated, TransactionLost, type Script } from "./isolation.ts";
@@ -22,20 +22,14 @@ import { ROW_CAP, type Result } from "./query-result.ts";
 const ENGINE_DIR = `${ASSETS}/${DUCKDB_DIR}`;
 const MANIFEST = "/learn/data/manifest.json";
 
-/** The files the page fetches: the four setup.sql reads and the one lesson blocks read in place, by the name they are read under, the path they are served at, and their pin in the manifest. */
-const DATA_FILES = [
-  { name: "species.parquet", path: "/v1/species.parquet", pin: (m: DataManifest) => m.inputs.v1["species.parquet"] },
-  { name: "countries.parquet", path: "/v1/countries.parquet", pin: (m: DataManifest) => m.inputs.v1["countries.parquet"] },
-  { name: "datasets.csv", path: "/learn/data/datasets.csv", pin: (m: DataManifest) => m.files["datasets.csv"] },
-  { name: "occurrences.parquet", path: "/learn/data/occurrences.parquet", pin: (m: DataManifest) => m.files["occurrences.parquet"] },
-  { name: "range-listings.parquet", path: "/v1/range-listings.parquet", pin: (m: DataManifest) => m.inputs.v1["range-listings.parquet"] },
-] as const;
-
 /** The part of manifest.json (scripts/build/learn/data.ts LabManifest) the engine reads. */
 interface DataManifest {
   inputs: { v1: Record<string, { sha256: string } | undefined> };
   files: Record<string, { sha256: string } | undefined>;
 }
+
+/** A data file's pin: /v1's files under `inputs`, /learn/data/'s under `files`. */
+const pinOf = (f: (typeof DATA_FILES)[number], m: DataManifest) => (f.path.startsWith("/v1/") ? m.inputs.v1 : m.files)[f.name];
 
 
 export type EngineState =
@@ -91,7 +85,7 @@ async function get(path: string, init: RequestInit = {}): Promise<Response> {
 async function fetchData(): Promise<Map<string, Uint8Array>> {
   const manifest: DataManifest = await (await get(MANIFEST)).json();
   const files = await Promise.all(DATA_FILES.map(async (f) => {
-    const want = f.pin(manifest)?.sha256;
+    const want = pinOf(f, manifest)?.sha256;
     if (!want) throw new Error(`${MANIFEST} doesn't list ${f.path}`);
     const bytes = new Uint8Array(await (await get(f.path)).arrayBuffer());
     const got = await sha256(bytes);
