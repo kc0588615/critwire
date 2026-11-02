@@ -64,7 +64,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -72,6 +72,17 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Run 2026-11-02 on `0d8556c` (`origin/main` `bceb0bf` + mission start), db `critwire_dev` (`.env`). Logs: `/srv/critter-ai/agent-state/missions/critwire-learn-range-lessons/` (`baseline.log`, `baseline-e2e.log`).
+- `pnpm install --frozen-lockfile`: up to date. `pnpm learn:venv`: ok. No migrations (build rebuilds tables each run). No lint script; typecheck is the static check.
+- `pnpm typecheck`: pass.
+- `pnpm test`: 811/811 pass (4 min).
+- `pnpm build` (plain): pass; `dist/learn/data/` 96,026,558 B, committed lab data 18,822,906 B (cap 120,000,000 each).
+- `pnpm e2e`: 166/166 pass (11.2 min); artifacts `.../critwire-learn-range-lessons/e2e-baseline/` (839 MB). Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+- `dist/` hashes: 314 files, list `.../critwire-learn-range-lessons/dist-baseline.sha256` (list's sha256 `9fd1afc7763a859f…`); unchanged after E2E; live `/srv/apps/critwire/.live` identical (`cmp` clean).
+- `/v1/range-listings.{json,csv}` live: 200 (brief's precondition holds).
+- Not run: `pnpm test:db`, `pnpm learn:check`: brief's Baseline doesn't name them; plain build already refuses a lab not proven as committed.
+- Working tree clean after. Handoff: H3, H6, H12 waiting on owner, none blocks this mission.
 
 ## Architecture
 
@@ -92,5 +103,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-11-02 00:43 UTC: Baseline: typecheck pass, test 811/811, build pass, E2E 166/166; dist equals live; listings live.
 
 ## Summary
