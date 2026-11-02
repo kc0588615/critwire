@@ -279,7 +279,7 @@ test("/learn/labs/requirements.txt is site/learn/labs/requirements.txt", async (
 });
 
 // The pages with a block reading /v1/range-listings; each holds COPY_LINE, and only they may use the words.
-const READERS = ["f3"];
+const READERS = ["f3", "s1"];
 const COPY_LINE = `<p>On this page, native, introduced and range words describe only <code>/v1/range-listings</code> rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.</p>`;
 const LISTING_WORDS = /\b(native|introduced)\b/i;
 /** The one block outside READERS that may use the words: e4's made-up rows. */

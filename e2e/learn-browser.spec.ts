@@ -311,7 +311,7 @@ test("every browser block of the course pages equals its snapshot, and cards fol
   }
   // f3-brazil-list is the release smoke's block (cards, as its `-- show: cards` says).
   expect(seen).toEqual(
-    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-listed-no-records", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d2-list", "d2-sources", "d2-update-anomaly", "d2-delete-anomaly", "d2-ex-two-titles", "d6-export", "s1-basis", "s1-dominance"]),
+    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-listed-no-records", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d2-list", "d2-sources", "d2-update-anomaly", "d2-delete-anomaly", "d2-ex-two-titles", "d6-export", "s1-basis", "s1-dominance", "s1-listed", "s1-listed-species", "s1-listed-conflicts"]),
   );
   expect(offOrigin).toEqual([]);
   await context.close();

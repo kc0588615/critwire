@@ -6773,7 +6773,111 @@ Museums Victoria provider for OZCAM | PRESERVED_SPECIMEN | 5 | 0.3 | NULL | NULL
 
 The devil's 2,000 records are 70.7 % the Tasmanian Natural Values Atlas (1,367 `OBSERVATION` and 46 `OCCURRENCE`) and 27.9 % material samples, such as tissue, at the Tasmanian Museum and Art Gallery (558 `MATERIAL_SAMPLE`, 2000 to 2023); the other 9 rows are museum specimens and one observation. The atlas's first year, 1599, comes before the first European sighting of Tasmania (1642): a date to check before trusting a time series (Quality and provenance, e4). 20 of the 28 museum specimens have no year at all.
 
-**Result:** Human observations are 43.5 % of the sample's 40,395 records, preserved specimens 26.2 % and machine observations 20.8 %, from only 22 species. Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more. The jaguar's 97.4 % is one GPS-collar dataset: 1,948 records at 1,948 points in 5 countries between 2001 and 2016, against 52 records from 24 other datasets. The devil's records are 70.7 % one atlas and 27.9 % one museum's material samples. So s2–s5 measure where the atlas and the museum's field teams recorded devils, and say so; the honest sentence is always about records.
+4. What the records can't say on their own is where a source expects the animal. For that there's a different kind of list. `/v1/range-listings` holds what named sources list: each row is one source's claim about one animal in one country. Every mammal in critwire has rows from the Mammal Diversity Database (MDD), the American Society of Mammalogists' open list of mammal species; [Licenses](/#licenses) gives its license and where its data came from. MDD's rows here all say native or introduced before 1500. No lab table holds this file, so this step runs in the browser and reads it where it's published, with `read_parquet('range-listings.parquet')`. For the mammals, MDD's rows marked present against `species_countries`, in both directions: `listed` asks how many of those rows have open records, and `recorded` asks how many countries with open records have no row from any source.
+
+   On this page, native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.
+
+```sql
+-- q: s1-listed
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+WITH listed AS (
+  SELECT l.source, sc.species_id IS NOT NULL AS has_records
+  FROM read_parquet('range-listings.parquet') AS l
+  LEFT JOIN species_countries AS sc ON sc.species_id = l.speciesId AND sc.country_code = l.country
+  WHERE l.sourceKey = 'mdd' AND l.presence = 'present'
+), recorded AS (
+  SELECT NOT EXISTS (SELECT 1 FROM read_parquet('range-listings.parquet') AS l
+                     WHERE l.speciesId = sc.species_id AND l.country = sc.country_code) AS on_no_listing
+  FROM species_countries AS sc
+  JOIN species_taxonomy AS t ON t.species_id = sc.species_id
+  WHERE t.class = 'Mammalia'
+)
+SELECT source,
+       count(*) AS listed,
+       count(*) FILTER (WHERE has_records) AS with_records,
+       round(100.0 * count(*) FILTER (WHERE has_records) / count(*), 1) AS pct,
+       count(*) FILTER (WHERE NOT has_records) AS no_records,
+       (SELECT count(*) FROM recorded) AS record_countries,
+       (SELECT count(*) FROM recorded WHERE on_no_listing) AS on_no_listing
+FROM listed
+GROUP BY source;
+```
+
+```text
+-- result: s1-listed · 1 row · sha256 157fdfaf5ca5
+source | listed | with_records | pct | no_records | record_countries | on_no_listing
+Mammal Diversity Database | 364 | 275 | 75.5 | 89 | 379 | 94
+```
+
+   MDD lists these animals as present in 364 animal and country pairs: 275 of them (75.5 %) have open records and 89 have none. A listed country with no record shows nothing either way: the animal may be gone, or nobody may have shared a record. The other way round, the mammals have open records in 379 animal and country pairs, and 94 of those are on no listing from any source. Each of the 94 is a question to ask, not a finding: a captive animal and a misplaced record look the same here, and no row means critwire holds no open listing, not that no source anywhere lists the animal there.
+
+   The same split per animal, the largest gaps first:
+
+```sql
+-- q: s1-listed-species
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT s.common_name AS animal, l.source, count(*) AS listed,
+       count(sc.species_id) AS with_records,
+       count(*) - count(sc.species_id) AS no_records
+FROM read_parquet('range-listings.parquet') AS l
+JOIN species AS s ON s.id = l.speciesId
+LEFT JOIN species_countries AS sc ON sc.species_id = l.speciesId AND sc.country_code = l.country
+WHERE l.sourceKey = 'mdd' AND l.presence = 'present'
+GROUP BY s.id, s.common_name, l.source
+ORDER BY no_records DESC, listed DESC, s.id;
+```
+
+```text
+-- result: s1-listed-species · 50 rows · sha256 4b230741b745
+animal | source | listed | with_records | no_records
+Aardvark | Mammal Diversity Database | 42 | 19 | 23
+African Savanna Elephant | Mammal Diversity Database | 34 | 24 | 10
+Giant Pangolin | Mammal Diversity Database | 17 | 7 | 10
+Cheetah | Mammal Diversity Database | 21 | 13 | 8
+African Wild Dog | Mammal Diversity Database | 19 | 11 | 8
+… 45 more rows
+```
+
+   These 50 rows start with the Aardvark: MDD lists it in 42 countries, 19 with open records and 23 without. The African Savanna Elephant has 10 of 34 without, and the Giant Pangolin 10 of 17. A gap says where open records were shared, and nothing about whether the animal is still there.
+
+   Sources can also disagree. A conflict is a claim against its opposite, for one animal and country, on rows with no narrower `area`: native against introduced, or present against absent. Among the mammals, one place qualifies, and the block shows both its rows:
+
+```sql
+-- q: s1-listed-conflicts
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+WITH mammal_rows AS (
+  SELECT l.*
+  FROM read_parquet('range-listings.parquet') AS l
+  JOIN species_taxonomy AS t ON t.species_id = l.speciesId
+  WHERE t.class = 'Mammalia' AND l.area IS NULL
+), conflicts AS (
+  SELECT speciesId, country
+  FROM mammal_rows
+  GROUP BY speciesId, country
+  HAVING (count(*) FILTER (origin LIKE 'native%') > 0 AND count(*) FILTER (origin = 'introduced') > 0)
+      OR (count(*) FILTER (presence = 'present') > 0 AND count(*) FILTER (presence = 'absent') > 0)
+)
+SELECT s.common_name AS animal, c.name AS country, m.origin, m.presence, m.source, m.url
+FROM mammal_rows AS m
+JOIN conflicts USING (speciesId, country)
+JOIN species AS s ON s.id = m.speciesId
+JOIN countries AS c ON c.code = m.country
+ORDER BY s.id, m.country, m.origin, m.presence, m.sourceKey;
+```
+
+```text
+-- result: s1-listed-conflicts · 2 rows · sha256 9557e3eb4326
+animal | country | origin | presence | source | url
+Black Rhinoceros | South Africa | introduced | present | Global Register of Introduced and Invasive Species - South A… | https://www.gbif.org/species/134848921
+Black Rhinoceros | South Africa | native-or-pre-1500 | present | Mammal Diversity Database | https://www.mammaldiversity.org/taxon/1006113
+```
+
+   For the Black Rhinoceros in South Africa, South Africa's list in the Global Register of Introduced and Invasive Species says introduced, and MDD says native or introduced before 1500. Each row is a named source's claim with its own link; both stay in the file, and this lesson doesn't pick one. This block reads mammals only, so the axolotl's conflict in Germany isn't here; [the query under Range listings](/#range-listings) lists every animal's.
+
+**Result:** Human observations are 43.5 % of the sample's 40,395 records, preserved specimens 26.2 % and machine observations 20.8 %, from only 22 species. Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more. The jaguar's 97.4 % is one GPS-collar dataset: 1,948 records at 1,948 points in 5 countries between 2001 and 2016, against 52 records from 24 other datasets. The devil's records are 70.7 % one atlas and 27.9 % one museum's material samples. So s2–s5 measure where the atlas and the museum's field teams recorded devils, and say so; the honest sentence is always about records. Listings are a different kind of claim, by a named source: of MDD's 364 rows marked present for the mammals, 275 (75.5 %) have open records and 89 have none, and 94 of the mammals' 379 animal and country pairs with open records are on no listing from any source.
 
 **Exercise:** Datasets aren't the only thing that piles up: so do years. For each species with at least 100 records, find the year with the most records (the earliest one on a tie), how many records it holds, and its share of all the species' records. Records with no year count in the total but can't be a busiest year. Run it in the browser. Which species have half or more of their records in one year, and why?
 

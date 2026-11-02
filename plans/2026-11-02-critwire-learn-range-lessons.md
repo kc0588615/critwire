@@ -449,7 +449,7 @@ Written on `9612822`. Read **Architecture** as revised first: block texts, guard
   - Verified: the common checks; hashes `d0d87c462f63`, `b70a76ec0dab`; `E2E_ARTIFACTS=$S/e2e-s3 pnpm exec playwright test e2e/learn-browser.spec.ts e2e/learn-labs.spec.ts e2e/learn-walk.spec.ts` (about 8 min).
   - Proves: the guard passes a real block; data = snapshot = browser (E2); a wrong answer is refused (E3); prose = result (E6); the copy gate holds (E5).
 
-- [ ] S4. **s1: records against listings.** The brief's main lesson.
+- [x] S4. **s1: records against listings.** The brief's main lesson.
   - Blocks: `s1-listed`, `s1-listed-species`, `s1-listed-conflicts`: one new `<li>` after the devil's, marked as running in the browser. Lead and Result gain a sentence each: the lead says "first part", so name this step too. `s1.html:19` stays.
   - Prose: `on_no_listing` as "on no listing from any source". The rhino's conflict shows both claims with their sources and resolves nothing. The axolotl's conflict in Germany isn't shown here: link `/#range-listings`, whose query lists all animals.
   - Files: `plans/004-learn-curriculum.md` (`#### s1 · bias`), `site/learn/sql/s1-listed{,-species,-conflicts}.sql`, their snapshots, `site/learn/modules/s1.html`, `e2e/learn-browser.spec.ts` (`seen`), `e2e/qa-fixes.ts` (364, 275, 75.5, 89, 379, 94 from `s1-listed`; each other number quoted), `e2e/learn-labs.spec.ts` (`READERS` adds `s1`).
@@ -621,6 +621,7 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - S2: Target design 2's reader regex corrected: with `\s*` outside the lookahead, it backtracked past the space and refused `read_parquet( 'species.parquet' )`. Now `\((?!\s*'…'\s*[,)])`. F5's own spaced case found it; no course block is spelled that way.
 - S3: `f3-ex-listed` sits after `f3-not-in`, so `f3-ex`, its answer note and the `NOT IN` trap stay together. f3's lead gains "and one published file" (the blocks no longer read only the Schema page's tables); its Result gains one sentence with the 89.
 - S3: 007's copy rule cites `AGENTS.md`'s Learn rules, not a line number (S3's `:69`): S2 and S3 edit that file, so a number goes stale.
+- S4: 007's s1 row said one block; Q2 has three (the numbers, per animal, the conflict, so a source's disagreement is shown), so 007 now says three. Prose says MDD's rows are all native or introduced before 1500: of MDD's 400 rows, 364 present and 36 uncertain, all that origin (checked on `data/range-listings.json`).
 - S1: Q1's "`dist/learn/data/` stays 96,026,558 B" holds for the manifest's own `bytes` (95,877,990, unmoved: it counts `files` only). The build's logged total, which counts `manifest.json` and `index.html`, is 96,026,726: +168 B from the pin and the copy edit.
 
 ## Log
@@ -634,5 +635,6 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - 2026-11-02 01:47 UTC: S1: `range-listings.parquet` fetched, pinned, registered by name on every page; E1 seen failing, then passing. typecheck pass, test 811/811, plain build pass with no `learn:check`, port check 538 files equal, byte check exactly the 3 expected lines, E2E 167/167 (`$S/e2e-s1`).
 - 2026-11-02 02:02 UTC: S2: guard `listing-blocks.ts` in the build, 0 listing blocks yet. F1-F12 seen failing on a stub (11 of 12; F5 can't fail on a stub's empty errors, and later caught the regex bug), then all pass. typecheck pass, test 823/823 (811 + 12), plain build pass with no `learn:check`, port check 538 files equal, byte check exactly the 3 expected lines. No E2E, per the step.
 - 2026-11-02 02:18 UTC: S3: f3 reads the listings (`f3-listed-no-records`, `f3-ex-listed`), copy line on the page, `AGENTS.md` copy rule, copy gate E5 seen failing then passing. Hashes `d0d87c462f63`, `b70a76ec0dab` as planned. typecheck pass, test 823/823, plain build pass (2 listing blocks), port check 542 files equal, byte check exactly the 4 expected lines, three specs 83/83 (`$S/e2e-s3`).
+- 2026-11-02 02:34 UTC: S4: s1 compares records with listings (`s1-listed`, `s1-listed-species`, `s1-listed-conflicts`), copy line on the page, `READERS` adds s1. Hashes `157fdfaf5ca5`, `4b230741b745`, `9557e3eb4326` as planned. typecheck pass, test 823/823, plain build pass (5 listing blocks), port check 548 files equal, byte check exactly the 5 expected lines, three specs 83/83 (`$S/e2e-s4`).
 
 ## Summary
