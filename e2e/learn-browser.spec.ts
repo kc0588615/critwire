@@ -1,5 +1,5 @@
 // Learn's browser engine (plan D11, D13 learn-browser; S11–S13, S15): boot, the origin fence, SC2's hash check, the
-// row cap, Reset and Stop, on the playground; then the playground's refusals, the changed generation, its table list
+// row cap, Reset and Stop, the listings file by name, on the playground; then the playground's refusals, the changed generation, its table list
 // and Download CSV, the test hook, cards and "N rows changed"; then every browser block of the course pages against its
 // snapshot, every exercise and "Already know this?" check against its answer and a fixed wrong one (a passed skip check
 // marks its module done); one engine (one worker) across three pages; the changed generation across pages, and a
@@ -122,6 +122,23 @@ test("Reset restores the tables; Stop ends a runaway query; the next query runs"
   await expect(result(page).locator(".result-summary")).toHaveText("Stopped. The database was restarted.");
   await run(page, "SELECT 1 AS one");
   expect(await cells(page)).toEqual([["1"]]);
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("range-listings.parquet reads by name, and still does after Reset", async ({ browser }) => {
+  const { rows } = JSON.parse(await readFile(repoPath("data/range-listings.json"), "utf8")) as { rows: unknown[] };
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(PLAYGROUND);
+  await waitReady(page);
+  const LISTINGS = "SELECT count(*) AS n FROM read_parquet('range-listings.parquet')";
+  await run(page, LISTINGS);
+  expect(await cells(page)).toEqual([[String(rows.length)]]);
+  await page.getByRole("button", { name: "Reset database" }).click();
+  await waitReady(page);
+  await run(page, LISTINGS);
+  expect(await cells(page)).toEqual([[String(rows.length)]]);
   expect(offOrigin).toEqual([]);
   await context.close();
 });

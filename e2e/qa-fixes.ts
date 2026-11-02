@@ -1,7 +1,7 @@
 // One row per prose or external-URL fix of the Learn QA pass (plans/006-learn-qa.md): the served page holds `has` and not
 // `not`, in its HTML as written, so a link's URL counts and a sentence is matched between its tags. `from`: the recorded
 // result (repo path) a number came from, checked on dist/ only by learn-walk.spec.ts. Run on dist/ and, by
-// release/live.spec.ts, on the origin.
+// release/live.spec.ts, on the origin. RL rows: the Learn range lessons (plans/2026-11-02-critwire-learn-range-lessons.md).
 import type { APIRequestContext } from "@playwright/test";
 
 export interface QaFix {
@@ -106,6 +106,8 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q55", url: "/learn/labs/s4.sql", has: "A `-- boot` block commits, so what it creates stays." },
   { q: "Q62", url: "/learn/etl/quality-provenance/", has: "# the GBIF download the records came from", not: "came from (§4.2)" },
   { q: "Q81", url: "/learn/etl/idempotent/", has: "adds a CHECK on the license", not: "licence" },
+  { q: "RL1", url: "/learn/setup/", has: "The page also fetches <code>/v1/range-listings.parquet</code>, which builds no table: a few lesson blocks read that file in place." },
+  { q: "RL2", url: "/learn/data/", has: "critwire's species, countries and range-listings files under", not: "critwire's species and countries files" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

@@ -429,7 +429,7 @@ Written on `9612822`. Read **Architecture** as revised first: block texts, guard
   Each page defines MDD once and links `/#licenses`. Every listing is a named source's claim. No row means critwire holds no open listing, and a listed country with no record shows nothing either way. No IUCN data, no Wikipedia prose, no mission names. Own words, for adults new to the topic.
 - **A deviation from 007 or Architecture:** edit it in the same commit, with a Decisions line.
 
-- [ ] S1. **The file reaches the engine by name.** Most enabling: every block needs it, and every page's boot changes.
+- [x] S1. **The file reaches the engine by name.** Most enabling: every block needs it, and every page's boot changes.
   - First: `mkdir -p $S/baseline-html && rsync -a --prune-empty-dirs --include='*/' --include='*.html' --exclude='*' /srv/apps/critwire/.live/ $S/baseline-html/`, then `(cd $S/baseline-html && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum) | diff - <(grep '\.html$' $S/dist-baseline.sha256)` prints nothing.
   - E1 first, in `e2e/learn-browser.spec.ts` beside the Reset test: playground, `SELECT count(*) AS n FROM read_parquet('range-listings.parquet')` equals `rows.length` of `data/range-listings.json`; Reset database; same again. Seen failing: `E2E_ARTIFACTS=$S/e2e-s1 pnpm exec playwright test e2e/learn-browser.spec.ts -g "range-listings"`.
   - Files: `scripts/build/learn/data.ts:80` (`V1_INPUTS`), `site/learn/src/engine.ts` (`DATA_FILES`; comments `:4,24,88`), `scripts/build/learn/dist-fixture.ts` (`writeRangeListings(derived.listings.file.rows, new URL("v1/", out))`), `site/learn/pages/setup.html:16`, `plans/004-learn-curriculum.md:475`, `site/learn/data/index.html:38` (all copy: Target design 1), `e2e/qa-fixes.ts` (`RL1` on `/learn/setup/`, `RL2` on `/learn/data/`, one header line).
@@ -616,6 +616,9 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 
 ## Decisions
 
+- S1: also edited `plans/004-learn-curriculum.md`'s manifest `inputs` line and `data.ts`'s `inputs` comment. Both said `v1` holds only the files the lab tables are built from, which the pin makes false; Finding 6 missed them.
+- S1: Q1's "`dist/learn/data/` stays 96,026,558 B" holds for the manifest's own `bytes` (95,877,990, unmoved: it counts `files` only). The build's logged total, which counts `manifest.json` and `index.html`, is 96,026,726: +168 B from the pin and the copy edit.
+
 ## Log
 
 - 2026-11-02 00:43 UTC: Baseline: typecheck pass, test 811/811, build pass, E2E 166/166; dist equals live; listings live.
@@ -624,5 +627,6 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - 2026-11-02 01:01 UTC: Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (guard fails closed on other spellings; deterministic cross-engine results), for Revision; no code touched.
 - 2026-11-02 01:17 UTC: Revision: all 4 MUST-FIX resolved in Architecture (total ORDER BY + guard, copy gate scope, fail-closed detector, replacement copy); 6 blocks + WRONG query byte-identical Node vs Baseline WASM; no code touched.
 - 2026-11-02 01:30 UTC: Steps: planner wrote 8 steps (limit 12), Verification, Failure modes (guard F1-F12); named paths checked; no code touched.
+- 2026-11-02 01:47 UTC: S1: `range-listings.parquet` fetched, pinned, registered by name on every page; E1 seen failing, then passing. typecheck pass, test 811/811, plain build pass with no `learn:check`, port check 538 files equal, byte check exactly the 3 expected lines, E2E 167/167 (`$S/e2e-s1`).
 
 ## Summary

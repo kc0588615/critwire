@@ -1,8 +1,9 @@
 // Learn's one DuckDB-WASM engine (plan D11; port of the spike's src/engine.ts). Boot:
 //   1. HEAD the .wasm, so a missing file fails here instead of hanging instantiate; the worker's `error` races it;
 //   2. instantiate the eh build (the only one vendored) and open `:memory:`;
-//   3–5. fetch manifest.json and the four files setup.sql reads (cache: no-cache), check each sha256 against the
-//      manifest (SC2), and register the checked bytes as buffers, kept for restarts;
+//   3–5. fetch manifest.json, the four files setup.sql reads and the one lesson blocks read in place (cache:
+//      no-cache), check each sha256 against the manifest (SC2), and register the checked bytes as buffers, kept for
+//      restarts;
 //   6. settings: no extension is installed or loaded implicitly; parquet loads from our own mirror;
 //   7. setup.sql, then the `setup` performance mark (learn-timing reads it), then the species lookup for cards.
 // Every statement is streamed and cut at ROW_CAP rows; one script runs at a time. Lesson editors run isolated, the
@@ -21,12 +22,13 @@ import { ROW_CAP, type Result } from "./query-result.ts";
 const ENGINE_DIR = `${ASSETS}/${DUCKDB_DIR}`;
 const MANIFEST = "/learn/data/manifest.json";
 
-/** The files setup.sql reads, by the name it reads them under, the path they are served at, and their pin in the manifest. */
+/** The files the page fetches: the four setup.sql reads and the one lesson blocks read in place, by the name they are read under, the path they are served at, and their pin in the manifest. */
 const DATA_FILES = [
   { name: "species.parquet", path: "/v1/species.parquet", pin: (m: DataManifest) => m.inputs.v1["species.parquet"] },
   { name: "countries.parquet", path: "/v1/countries.parquet", pin: (m: DataManifest) => m.inputs.v1["countries.parquet"] },
   { name: "datasets.csv", path: "/learn/data/datasets.csv", pin: (m: DataManifest) => m.files["datasets.csv"] },
   { name: "occurrences.parquet", path: "/learn/data/occurrences.parquet", pin: (m: DataManifest) => m.files["occurrences.parquet"] },
+  { name: "range-listings.parquet", path: "/v1/range-listings.parquet", pin: (m: DataManifest) => m.inputs.v1["range-listings.parquet"] },
 ] as const;
 
 /** The part of manifest.json (scripts/build/learn/data.ts LabManifest) the engine reads. */
@@ -85,7 +87,7 @@ async function get(path: string, init: RequestInit = {}): Promise<Response> {
   return res;
 }
 
-/** The four files setup.sql reads, each checked against manifest.json (SC2). Throws naming the first that differs. */
+/** The files, each checked against manifest.json (SC2). Throws naming the first that differs. */
 async function fetchData(): Promise<Map<string, Uint8Array>> {
   const manifest: DataManifest = await (await get(MANIFEST)).json();
   const files = await Promise.all(DATA_FILES.map(async (f) => {

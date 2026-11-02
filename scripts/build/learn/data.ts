@@ -70,14 +70,14 @@ export async function writeLabLoader(out: URL): Promise<void> {
 export interface LabManifest {
   cap: number;
   bytes: number; // the files below, together
-  // SC2: the /v1 files the lab projection read, and the sample file the DOI deposit holds.
+  // SC2: the /v1 files the lab projection read and the one lesson blocks read in place, and the sample file the DOI deposit holds.
   inputs: { v1: Record<(typeof V1_INPUTS)[number], { bytes: number; sha256: string }>; sample: { file: string; sha256: string; rows: number } };
   dois: { download: string; sample: string | null }; // sample: the derived dataset's, null in a --draft build
   // Every file under /learn/data/ but manifest.json and index.html, sorted. columns and rows for Parquet and CSV;
   // tables (each lab table's rows) for the loader.
   files: Record<string, { columns?: { name: string; type: string }[]; rows?: number; tables?: Record<string, number>; bytes: number; sha256: string; sources: Credit[] }>;
 }
-const V1_INPUTS = ["species.parquet", "countries.parquet"] as const;
+const V1_INPUTS = ["species.parquet", "countries.parquet", "range-listings.parquet"] as const;
 const PAGES = ["manifest.json", "index.html"];
 
 const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");

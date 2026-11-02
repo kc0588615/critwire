@@ -8,6 +8,7 @@ import { deriveAll, readDeriveInputs } from "../../derive/pipeline.ts";
 import { labDataDir, readLabFiles } from "../../learn/lab-files.ts";
 import { speciesFile } from "../../species.ts";
 import { writeCountries } from "../countries.ts";
+import { writeRangeListings } from "../range-listings.ts";
 import { writeTables } from "../tables.ts";
 import { writeLearnData } from "./data.ts";
 
@@ -22,6 +23,7 @@ export async function withDist(fn: (out: URL) => Promise<void>, occurrences = de
     mkdirSync(join(dir, "v1"));
     await writeTables(speciesFile, new URL("v1/", out));
     await writeCountries(derived.countries.rows, new URL("v1/", out));
+    await writeRangeListings(derived.listings.file.rows, new URL("v1/", out));
     await writeLearnData(new URL("learn/data/", out), { learn: { ...derived.learn, occurrences }, files: await readLabFiles(labDataDir) });
     await fn(out);
   } finally {
