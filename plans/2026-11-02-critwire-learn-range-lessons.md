@@ -267,6 +267,6 @@ SHOULD-CONSIDER:
 - 2026-11-02 00:43 UTC: Baseline: typecheck pass, test 811/811, build pass, E2E 166/166; dist equals live; listings live.
 - 2026-11-02 00:55 UTC: Architecture written: browser blocks read `/v1/range-listings.parquet` by name, 7 new blocks (f3, s1, d2, e4), new build guard, copy gate; candidate queries ran on Baseline `dist/`, nothing built yet.
 - 2026-11-02 01:00 UTC: Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (total ORDER BY on listing blocks + guard; copy gate clause), for Revision; Q2 numbers recomputed by reviewer from Baseline `dist/`; no code touched.
-- 2026-11-02 01:18 UTC: Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (guard fails closed on other spellings; deterministic cross-engine results), for Revision; no code touched.
+- 2026-11-02 01:01 UTC: Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (guard fails closed on other spellings; deterministic cross-engine results), for Revision; no code touched.
 
 ## Summary
