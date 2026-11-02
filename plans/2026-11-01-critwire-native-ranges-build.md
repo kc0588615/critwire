@@ -655,6 +655,14 @@ SHOULD-CONSIDER: none
 
 ## Release
 
+- Rebased on `089f100` (PR #17's merge), no conflict. Full Verification re-run on `806594c`: typecheck pass; test 811/811; plain build pass, no "add to contracts" line; byte check the 7 lines, 314 files; E2E 166/166, 0 skipped, 0 flaky, `cmp` silent; refusals 24 cases, 48/48, tree clean; off-limits diff empty; greps `:0`, `"extinct"` 0; H12 `Blocks: nothing`.
+- PR: https://github.com/kc0588615/critwire/pull/19. Merge commit: `bceb0bf`; its tree = `806594c`'s (0 files differ).
+- Deploy's last line: `deploy critwire: live at https://critwire.com`. Live checkout `bceb0bf`.
+- Smoke: `/v1/range-listings.{json,csv,parquet}` 200, `cmp` silent against the built bytes; `v1/species.json`, `v1/countries.json`, `learn/data/manifest.json` `same` as Baseline; `uncredited []`, 518 rows; `/` 200 with `section#range-listings`; `e2e/release/live.spec.ts` 8/8.
+- Logs: `/srv/critter-ai/agent-state/missions/critwire-native-ranges-build/release-verify.log`, `release-deploy.log`, `release-smoke.log`. Artifacts: `e2e/`, `e2e-release/` in the same folder.
+
+Result: done
+
 ## Decisions
 
 - 2026-11-01: owner's answers, from handoff H7–H11 (`Status: done`, control room), picked up and closed:
@@ -697,10 +705,11 @@ SHOULD-CONSIDER: none
 - 2026-11-01 23:31 UTC: Final code review (Astra, `--code origin/main`): APPROVE_WITH_CHANGES, 1 MUST-FIX (H4 test fails on a zero-conflict snapshot), accepted, S12 added; no SHOULD-CONSIDER. No code.
 - 2026-11-01 23:35 UTC: S12: H4 gives each file a sentinel no committed file holds (`STALE`), `entries` and `conflicts` included. Reproduced first: throwaway patch with both committed files and derive's output `[]` gave "Missing expected rejection" on the old test; new test passes that way and on real files; wrong-name mutation fails it, so it still pins each path. Throwaway reverted. Typecheck pass, test 811/811, plain build pass, no "add to contracts" line, byte check the 7 lines. E2E not run: no `dist/` byte moved.
 - 2026-11-01 23:53 UTC: Final Verification on `084f754`: typecheck pass; test 811/811 (Baseline 754); plain build pass, no "add to contracts" line; byte check the 7 lines, `dist-final.sha256` 314; E2E 166/166 (Baseline 149), 0 skipped, 0 flaky, `cmp` silent; refusals R1–R20, 24 cases, 48/48 PASS both modes, tree clean; off-limits diff empty; greps `:0`, `"extinct"` 0; H12 `Blocks: nothing`. Artifacts `$S/e2e/`, `$S/e2e-s*` deleted. Summary written, `status: done`. Release next (rebases on `089f100`, PR #17's merge, re-runs Verification).
+- 2026-11-02 00:25 UTC: Release: rebased on `089f100`, full Verification re-run on `806594c`, all pass (test 811/811, E2E 166/166, refusals 48/48, 7 byte lines). PR #19 merged (`bceb0bf`), deployed, smoke pass (bytes match, Baseline hashes same, `uncredited []`, `live.spec.ts` 8/8).
 
 ## Summary
 
-**Shipped (release pending, next unit):** `/v1/range-listings.{json,csv,parquet}`, 518 rows on all 76 species, 11 columns, contract frozen in `contracts/v1.json`. Docs section in `site/index.html`, ties in `attribution.json` `notes` and `DATA-LICENSE.md`, `AGENTS.md` updated. Sizes: JSON 189,809 B, CSV 85,684 B, Parquet 12,321 B.
+**Shipped, live at critwire.com:** `/v1/range-listings.{json,csv,parquet}`, 518 rows on all 76 species, 11 columns, contract frozen in `contracts/v1.json`. Docs section in `site/index.html`, ties in `attribution.json` `notes` and `DATA-LICENSE.md`, `AGENTS.md` updated. Sizes: JSON 189,809 B, CSV 85,684 B, Parquet 12,321 B.
 
 **Rows and species per source:**
 
@@ -728,8 +737,8 @@ By origin/presence: `native-or-pre-1500` 364 present, 36 uncertain; `native` 83 
 
 **Reviews:** architecture Fable APPROVE_WITH_CHANGES (1 MUST-FIX, resolved); Astra APPROVE. Final code review Astra APPROVE_WITH_CHANGES: 1 MUST-FIX, fixed (S12), no SHOULD-CONSIDER.
 
-**Verification:** on `084f754`, see Log. Artifact: `/srv/critter-ai/agent-state/missions/critwire-native-ranges-build/e2e/` (Playwright report, traces, `results.json`, `range-listings-{1280,375}.png`, `docs-375.png`, `refusals.log`). Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`, then `pnpm exec tsx e2e/range-listings-refusals.ts`.
+**Verification:** on `806594c` (rebased on `089f100`, same results as `084f754`), see Release. Artifact: `/srv/critter-ai/agent-state/missions/critwire-native-ranges-build/e2e/` (Playwright report, traces, `results.json`, `range-listings-{1280,375}.png`, `docs-375.png`, `refusals.log`). Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`, then `pnpm exec tsx e2e/range-listings-refusals.ts`.
 
-**Release:** see `## Release`.
+**Release:** PR #19 merged (`bceb0bf`), `deploy critwire` done, smoke passed. See `## Release`.
 
 **Handoff items left:** H12 (read the curated rows, `Blocks: nothing`). H3 and H6 predate this mission, still waiting on the owner.
