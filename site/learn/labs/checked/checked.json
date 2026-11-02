@@ -7,7 +7,7 @@
     "python": "3.12.3",
     "requirements": "d5bbe28024cc"
   },
-  "checked": "2026-11-01",
+  "checked": "2026-11-02",
   "blocks": {
     "c1-ex": {
       "key": "fa693b8dcc77310a1178096428f089806f025f102563e5cab001182e666b8e43",
@@ -392,6 +392,10 @@
     "e4-ex": {
       "key": "9fcc2d2b3cce883734d88f85788c4ee0be6b9054a3d4323d0775638bf5311873",
       "result": "f750face8077deed1c9578c303c1d4b02c010f0b3bb7103b44001bb2d643b4bf"
+    },
+    "e4-list-rows": {
+      "key": "c84d77f7f5600b811e2adcb671b23c84269af3c21fddb3a5c69ccd2625ba19dd",
+      "result": "c6cdf92b536f57244aea3318b8541554771ad0a40bb8deea0d0805814ca97bfa"
     },
     "e4-quarantine": {
       "key": "cc6aca3fe51b3b652bca4b510e970e1f0f2ceb1cb0ee63596c05305a7e628751",
@@ -778,7 +782,7 @@
     "e3.py": "089d5963221d4e3fcbdd62ed5ead10c765ff66eee475abfe3c481d577c7598b5",
     "e3.sql": "98323adb8d0c46fd4978e1fee4bbc3183d1aad3e4819f3582d898dbfe6308fba",
     "e4.py": "d69365fcbb24d2d567d90db0829e421fef3439516118fde5867a6ac7a5bc63f2",
-    "e4.sql": "b041c12fce42908b107208f300df84a5a645d8de2883599045268c873092f04e",
+    "e4.sql": "a0a10cfb0180115aba4dd59166ee51818c34c17daeb4d6ec1a8b6268fb247f34",
     "e5.py": "a9c192dbd6d27df7e0942e7931060fd1d7d0f79fad3faec5e136ad14eef30077",
     "g1.sql": "ba65b2690e65b44d5f0f8a9a543a211ca600d07162f05fa44428ba5e6f5b5265",
     "g2.sql": "f189e761a19d79cd4b91ea4eb7ec35b06c0f8f4da826404009e5ac799bb81301",

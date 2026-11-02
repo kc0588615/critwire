@@ -1,4 +1,4 @@
-<p class="lead">Which checks stop a bad load, and which datasets must you credit? Data quality checks written as SQL, each a count that should be 0; a quarantine report that names every refused record; the ways a number breaks a check written <code>&lt; 0</code>; and the credits and derived-dataset registration for two species' records. Everything runs in your own PostgreSQL with PostGIS and the Python environment, on the lab tables and made-up records (<a href="/learn/setup/">the setup page</a>).</p>
+<p class="lead">Which checks stop a bad load, and which datasets must you credit? Data quality checks written as SQL, each a count that should be 0; a quarantine report that names every refused record; the ways a number breaks a check written <code>&lt; 0</code>; a row no filter can catch; and the credits and derived-dataset registration for two species' records. Everything runs in your own PostgreSQL with PostGIS and the Python environment, on the lab tables and made-up records (<a href="/learn/setup/">the setup page</a>).</p>
 
 <h2>Concept</h2>
 <p>Know what you loaded, and who to thank for it.</p>
@@ -31,6 +31,9 @@
 <li><p>Quarantine a batch. Six made-up staged records, each check run on each record, one report row per failure:</p>
 {{block:e4-quarantine}}
 <p>Each made-up record breaks one check except the last, which breaks two and gets two report rows; record 9000000001 passes them all and would load. A test written <code>coordinate_uncertainty_m &lt; 0</code> catches 9000000002 and 9000000006's <code>-Infinity</code>, and passes 9000000003 and 9000000004: <code>NaN</code> and <code>Infinity</code> compare above 0. The report keeps the source's key and the value as delivered, so the fix can go back to the source.</p></li>
+<li><p>A row no filter can catch. Five made-up rows from four made-up lists about one made-up animal, in two made-up places. Each row is kept or dropped by its list's license, then by whether a person gave the list a role:</p>
+{{block:e4-list-rows}}
+<p>Rows 2 and 3 disagree about XB, and both stay: each is its own list's claim, and a load doesn't pick a winner. Row 4 goes for its license: <code>CC BY-NC 4.0</code> bars commercial use, and this load keeps only CC0 1.0 and CC BY 4.0. Row 5 is the hard one. Its license is open and every field is well formed, yet it says the animal came from elsewhere to XA, the place List A says it comes from. No filter on a license or a field's value catches that. Only a person who reads the whole list sees it says this about animals in their home countries, and gives it no role. critwire's <a href="/#range-listings">listings</a> work this way: it reads a dataset only once a person has checked it and given it a role.</p></li>
 <li><p>Who to credit. Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:</p>
 {{block:e4-credits}}</li>
 <li><p>The derived-dataset registration for that subset: the request body, built but never posted.</p>
@@ -39,7 +42,7 @@
 </ol>
 
 <h2>Result</h2>
-<p>Every reject check passes on the sample, and four flags are left for a reviewer: unknown precision, repeats, coarse places, and dates before 1642. A quarantine report names each refused record by its key, with the check and the value, and an uncertainty check written as a range catches negative, <code>NaN</code> and infinite values that <code>&lt; 0</code> lets through. The devil and the jaguar need credits to 29 datasets, and a derived dataset lists all 33 in one DOI.</p>
+<p>Every reject check passes on the sample, and four flags are left for a reviewer: unknown precision, repeats, coarse places, and dates before 1642. A quarantine report names each refused record by its key, with the check and the value, and an uncertainty check written as a range catches negative, <code>NaN</code> and infinite values that <code>&lt; 0</code> lets through. A license filter drops what you may not publish; only a person's check of a whole list drops a row that passes every filter. The devil and the jaguar need credits to 29 datasets, and a derived dataset lists all 33 in one DOI.</p>
 
 <h2>Exercise</h2>
 <p>Turn the row-level reject checks into a gate a load calls before its <code>COMMIT</code>. For each check, count the staged rows breaking it and keep the first key; the load goes ahead only if every count is 0. Use <code>e4-checks</code>' coordinate and year checks and <code>e4-quarantine</code>'s uncertainty check. Run the gate on a <code>TEMP</code> copy of the devil's 2,000 records, then again after inserting two made-up records: one at 0, 0, and one dated 2031 with <code>NaN</code> uncertainty.</p>

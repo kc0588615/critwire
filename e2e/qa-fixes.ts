@@ -121,6 +121,10 @@ export const QA_FIXES: QaFix[] = [
   { q: "RL13", url: "/learn/database-architecture/normalize/", has: "<code>introduced</code> also comes with both (7 rows from 6 sources, and 3)", from: { file: "e2e/__snapshots__/d2-listing-facts.txt", values: ["introduced | present | 7 | 6", "introduced | uncertain | 3 | 1"] } },
   { q: "RL14", url: "/learn/database-architecture/normalize/", has: "<code>native</code> with <code>absent</code>: 6 rows, from one source", from: { file: "e2e/__snapshots__/d2-listing-facts.txt", values: ["native | absent | 6 | 1"] } },
   { q: "RL15", url: "/learn/database-architecture/normalize/", has: "6 mammal rows say <code>native</code> and <code>absent</code> at once", from: { file: "e2e/__snapshots__/d2-listing-facts.txt", values: ["5 rows", "native | absent | 6 | 1"] } },
+  { q: "RL16", url: "/learn/etl/quality-provenance/", has: "Five made-up rows from four made-up lists", from: { file: "site/learn/labs/checked/e4-list-rows.txt", values: ["5 rows", "List A", "List B", "List C", "Catalogue D"] } },
+  { q: "RL17", url: "/learn/etl/quality-provenance/", has: "Rows 2 and 3 disagree about XB, and both stay", from: { file: "site/learn/labs/checked/e4-list-rows.txt", values: ["2 | List A | CC0 1.0 | XB | native | kept", "3 | List B | CC BY 4.0 | XB | introduced | kept"] } },
+  { q: "RL18", url: "/learn/etl/quality-provenance/", has: "Row 4 goes for its license", from: { file: "site/learn/labs/checked/e4-list-rows.txt", values: ["4 | List C | CC BY-NC 4.0 | XB | introduced | dropped: license"] } },
+  { q: "RL19", url: "/learn/etl/quality-provenance/", has: "Row 5 is the hard one", from: { file: "site/learn/labs/checked/e4-list-rows.txt", values: ["5 | Catalogue D | CC BY 4.0 | XA | introduced | dropped: list has no role"] } },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

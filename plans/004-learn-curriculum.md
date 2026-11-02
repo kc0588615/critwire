@@ -9589,7 +9589,47 @@ gbif_id | check_name | value
 
 Each made-up record breaks one check except the last, which breaks two and gets two report rows; record 9000000001 passes them all and would load. A test written `coordinate_uncertainty_m < 0` catches 9000000002 and 9000000006's `-Infinity`, and passes 9000000003 and 9000000004: `NaN` and `Infinity` compare above 0. The report keeps the source's key and the value as delivered, so the fix can go back to the source.
 
-2. Who to credit. Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:
+2. A row no filter can catch. Five made-up rows from four made-up lists about one made-up animal, in two made-up places. Each row is kept or dropped by its list's license, then by whether a person gave the list a role:
+
+```sql
+-- q: e4-list-rows
+-- status: ran
+-- engine: postgis
+-- Made up: one animal, places XA and XB, four lists. A person read each whole list and gave it a role, or none
+WITH lists (list_title, license, has_role) AS (
+  VALUES ('List A', 'CC0 1.0', true),
+         ('List B', 'CC BY 4.0', true),
+         ('List C', 'CC BY-NC 4.0', true),
+         ('Catalogue D', 'CC BY 4.0', false)
+), staged (row_no, list_title, place, origin) AS (
+  VALUES (1, 'List A', 'XA', 'native'),
+         (2, 'List A', 'XB', 'native'),
+         (3, 'List B', 'XB', 'introduced'),
+         (4, 'List C', 'XB', 'introduced'),
+         (5, 'Catalogue D', 'XA', 'introduced')
+)
+SELECT s.row_no, s.list_title, l.license, s.place, s.origin,
+       CASE WHEN l.license NOT IN ('CC0 1.0', 'CC BY 4.0') THEN 'dropped: license'
+            WHEN NOT l.has_role THEN 'dropped: list has no role'
+            ELSE 'kept' END AS decision
+FROM staged AS s
+JOIN lists AS l USING (list_title)
+ORDER BY s.row_no;
+```
+
+```text
+-- result: e4-list-rows · 5 rows · sha256 a4db17261e6f
+row_no | list_title | license | place | origin | decision
+1 | List A | CC0 1.0 | XA | native | kept
+2 | List A | CC0 1.0 | XB | native | kept
+3 | List B | CC BY 4.0 | XB | introduced | kept
+4 | List C | CC BY-NC 4.0 | XB | introduced | dropped: license
+5 | Catalogue D | CC BY 4.0 | XA | introduced | dropped: list has no role
+```
+
+Rows 2 and 3 disagree about XB, and both stay: each is its own list's claim, and a load doesn't pick a winner. Row 4 goes for its license: CC BY-NC 4.0 bars commercial use, and this load keeps only CC0 1.0 and CC BY 4.0. Row 5 is the hard one. Its license is open and every field is well formed, yet it says the animal came from elsewhere to XA, the place List A says it comes from. No filter on a license or a field's value catches that. Only a person who reads the whole list sees it says this about animals in their home countries, and gives it no role. critwire's listings (`/#range-listings`) work this way: it reads a dataset only once a person has checked it and given it a role.
+
+3. Who to credit. Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:
 
 ```sql
 -- q: e4-credits
@@ -9615,7 +9655,7 @@ ICMBio \| Dados de ocorrência de espécies do Sistema de Autor… | Instituto C
 … 28 more rows
 ```
 
-3. The derived-dataset registration for that subset: the request body, built but never posted.
+4. The derived-dataset registration for that subset: the request body, built but never posted.
 
 ```python
 # q: e4-derived
@@ -9657,7 +9697,7 @@ body: 1718 bytes, ready to POST with your GBIF account
 
 The devil and the jaguar have 4,000 records from 33 datasets. 29 datasets supply CC BY 4.0 records (3,992) and must be credited, led by the Jaguar Movement Database (1,948 GPS-collar records), the Tasmanian Natural Values Atlas (1,413) and the Tasmanian Museum and Art Gallery (569). The 4 CC0 datasets (8 records) ask for no credit, and are credited anyway. The registration body lists the same 33 datasets and 4,000 records, with `originalDownloadDOI` set to the download's DOI. These counts are records in a capped sample: the Jaguar Movement Database supplies 1,948 of the jaguar's 2,000 because a GPS collar records the same animal again and again, not because it saw most jaguars. They say whom to credit and for how much of the sample, and nothing about where either animal is common.
 
-**Result:** every reject check passes on the sample, and four flags are left for a reviewer: unknown precision, repeats, coarse places, and dates before 1642. A quarantine report names each refused record by its key, with the check and the value, and an uncertainty check written as a range catches negative, `NaN` and infinite values that `< 0` lets through. The devil and the jaguar need credits to 29 datasets, and a derived dataset lists all 33 in one DOI.
+**Result:** every reject check passes on the sample, and four flags are left for a reviewer: unknown precision, repeats, coarse places, and dates before 1642. A quarantine report names each refused record by its key, with the check and the value, and an uncertainty check written as a range catches negative, `NaN` and infinite values that `< 0` lets through. A license filter drops what you may not publish; only a person's check of a whole list drops a row that passes every filter. The devil and the jaguar need credits to 29 datasets, and a derived dataset lists all 33 in one DOI.
 
 **Exercise:** turn the row-level reject checks into a gate a load calls before its `COMMIT`. For each check, count the staged rows breaking it and keep the first key; the load goes ahead only if every count is 0. Use `e4-checks`' coordinate and year checks and `e4-quarantine`'s uncertainty check. Run the gate on a `TEMP` copy of the devil's 2,000 records, then again after inserting two made-up records: one at 0, 0, and one dated 2031 with `NaN` uncertainty.
 

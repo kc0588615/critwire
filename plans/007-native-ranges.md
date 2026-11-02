@@ -503,7 +503,7 @@ Recommended: **no Learn change in the first build**, then a small separate missi
 | **s1 Bias** | Answers its own question, "What can records say about where an animal lives, and what can't they?": records against native listings, per species. Spike, mammals: 275 of 364 native rows have open records (0.7555), and 94 record countries sit on no listing, each one a question to ask | Browser | Three blocks (the numbers, per animal, the one mammal conflict), prose, results |
 | **f3 Joins** | An anti join: listed native countries with no open record (89 of those 364), next to "Which have no records at all?" | Browser | One lesson block (an exercise hides its result), one exercise |
 | **d1/d2** | A long table against a list in a cell; a composite key; origin and presence as two facts | Browser | One block |
-| **e4 Provenance** | A license and quality case from what the spike met, on made-up rows: 44 of the 88 datasets met are CC BY-NC, a catalogue marks animals introduced in their home countries, a row to drop by dataset | PostGIS, inline rows | One block |
+| **e4 Provenance** | A license and quality case from what the spike met, on made-up rows: a list dropped for CC BY-NC, a catalogue marks animals introduced in their home countries, a row to drop by dataset | PostGIS, inline rows | One block |
 | **g3 Spatial joins** | An open version of the appendix on records against a range (`site/learn/modules/g3.html:43`, today IUCN-download-only): records per outline against listed countries | PostGIS: a 17th lab table, so loader, `LAB_TABLES`, `lab.mmd`, `checked/` | Largest; defer |
 | **c1 Feed** | A flag on each cell's country (listed or not) | Feed schema and results change | Defer |
 
