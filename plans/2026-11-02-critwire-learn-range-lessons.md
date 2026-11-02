@@ -456,7 +456,7 @@ Written on `9612822`. Read **Architecture** as revised first: block texts, guard
   - Verified: the common checks; hashes `157fdfaf5ca5`, `4b230741b745`, `9557e3eb4326`; same three specs, `E2E_ARTIFACTS=$S/e2e-s4`.
   - Proves: the brief's comparison on real data, with its source and its conflict on the page.
 
-- [ ] S5. **d2: origin and presence as two facts.** Small: one block.
+- [x] S5. **d2: origin and presence as two facts.** Small: one block.
   - Block: `d2-listing-facts`, in the Worked example, after `d2-provenance`'s paragraph. Prose: `native` with `absent` is why these are two columns. d1 stays out (Q4).
   - Files: `plans/004-learn-curriculum.md` (`#### d2 · normalize`), `site/learn/sql/d2-listing-facts.sql`, its snapshot, `site/learn/modules/d2.html`, `e2e/learn-browser.spec.ts` (`seen`), `e2e/qa-fixes.ts` (364, 36, 7, 6, 3), `e2e/learn-labs.spec.ts` (`READERS` becomes `["d2", "f3", "s1"]`, final).
   - Verified: the common checks; hash `2ab668eb6f13`; same three specs, `E2E_ARTIFACTS=$S/e2e-s5`.
@@ -622,6 +622,7 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - S3: `f3-ex-listed` sits after `f3-not-in`, so `f3-ex`, its answer note and the `NOT IN` trap stay together. f3's lead gains "and one published file" (the blocks no longer read only the Schema page's tables); its Result gains one sentence with the 89.
 - S3: 007's copy rule cites `AGENTS.md`'s Learn rules, not a line number (S3's `:69`): S2 and S3 edit that file, so a number goes stale.
 - S4: 007's s1 row said one block; Q2 has three (the numbers, per animal, the conflict, so a source's disagreement is shown), so 007 now says three. Prose says MDD's rows are all native or introduced before 1500: of MDD's 400 rows, 364 present and 36 uncertain, all that origin (checked on `data/range-listings.json`).
+- S5: d2's lead says "published files" (it now reads two). Prose also says neither column fixes the other, and names the source of the 6 `native` + `absent` rows (Central Asia checklist, checked on `data/range-listings.json`); per the contract it says nothing about why or since when. Its Result gains one sentence.
 - S1: Q1's "`dist/learn/data/` stays 96,026,558 B" holds for the manifest's own `bytes` (95,877,990, unmoved: it counts `files` only). The build's logged total, which counts `manifest.json` and `index.html`, is 96,026,726: +168 B from the pin and the copy edit.
 
 ## Log
@@ -636,5 +637,6 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - 2026-11-02 02:02 UTC: S2: guard `listing-blocks.ts` in the build, 0 listing blocks yet. F1-F12 seen failing on a stub (11 of 12; F5 can't fail on a stub's empty errors, and later caught the regex bug), then all pass. typecheck pass, test 823/823 (811 + 12), plain build pass with no `learn:check`, port check 538 files equal, byte check exactly the 3 expected lines. No E2E, per the step.
 - 2026-11-02 02:18 UTC: S3: f3 reads the listings (`f3-listed-no-records`, `f3-ex-listed`), copy line on the page, `AGENTS.md` copy rule, copy gate E5 seen failing then passing. Hashes `d0d87c462f63`, `b70a76ec0dab` as planned. typecheck pass, test 823/823, plain build pass (2 listing blocks), port check 542 files equal, byte check exactly the 4 expected lines, three specs 83/83 (`$S/e2e-s3`).
 - 2026-11-02 02:34 UTC: S4: s1 compares records with listings (`s1-listed`, `s1-listed-species`, `s1-listed-conflicts`), copy line on the page, `READERS` adds s1. Hashes `157fdfaf5ca5`, `4b230741b745`, `9557e3eb4326` as planned. typecheck pass, test 823/823, plain build pass (5 listing blocks), port check 548 files equal, byte check exactly the 5 expected lines, three specs 83/83 (`$S/e2e-s4`).
+- 2026-11-02 02:49 UTC: S5: d2 reads the listings (`d2-listing-facts`), copy line on the page, `READERS` final `["d2", "f3", "s1"]`. Hash `2ab668eb6f13` as planned. typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 550 files equal, byte check exactly the 6 expected lines, three specs 83/83 (`$S/e2e-s5`).
 
 ## Summary

@@ -2639,6 +2639,34 @@ ids.ncbi | Wikidata | CC0 1.0 | 2026-10-20
 
 The taxonomy and its own id are from the Catalogue of Life, the other outside ids from Wikidata and GBIF, the country list from GBIF's occurrence search. `ids.iucn` is critwire's own: critwire stores only the animal's IUCN id, never the Red List's data, whose terms don't allow republishing it.
 
+The same question applies to a claim. `/v1/range-listings` holds what named sources list: each row is one source's claim about one animal in one country. Every mammal in critwire has rows from the Mammal Diversity Database (MDD), the American Society of Mammalogists' open list of mammal species; [Licenses](/#licenses) gives its license and where its data came from. A row says two things about the animal in that country: `origin`, how the source says it came to be there, and `presence`, whether the source says it's there. Are those one fact or two? This file is read like `species.parquet`, by name; here are the mammals' rows counted by both:
+
+On this page, native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.
+
+```sql
+-- q: d2-listing-facts
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT l.origin, l.presence, count(*) AS listings, count(DISTINCT l.sourceKey) AS sources
+FROM read_parquet('range-listings.parquet') AS l
+JOIN species_taxonomy AS t ON t.species_id = l.speciesId
+WHERE t.class = 'Mammalia'
+GROUP BY l.origin, l.presence
+ORDER BY listings DESC, l.origin, l.presence;
+```
+
+```text
+-- result: d2-listing-facts · 5 rows · sha256 2ab668eb6f13
+origin | presence | listings | sources
+native-or-pre-1500 | present | 364 | 1
+native-or-pre-1500 | uncertain | 36 | 1
+introduced | present | 7 | 6
+native | absent | 6 | 1
+introduced | uncertain | 3 | 1
+```
+
+Two facts, because neither fixes the other. `native-or-pre-1500`, MDD's value for native or introduced before 1500, comes with `present` (364 rows) and with `uncertain` (36); `introduced` also comes with both (7 rows from 6 sources, and 3). `present` comes with two origins, so `presence → origin` doesn't hold either. The plainest case is `native` with `absent`: 6 rows, from one source, a checklist of Central Asia's mammals. Each is that source's claim that the animal is native to the country and absent from it, and says nothing about why or since when. One `status` column would have to choose between those words, or hold a made-up value for every pair, and every question about one fact would have to pick it apart. Each row here is a named source's claim: no row means critwire holds no open listing, and a listed country with no record shows nothing either way.
+
 **Lab:** Is a license a fact about a record or about its dataset? GBIF gives both: every dataset declares a license, and every record carries one. If `dataset_key → license` held, the license would belong in `datasets` (3NF), stored 400 times instead of 40,395.
 1. Test the rule on the records: does any dataset have records under two licenses?
 
@@ -2758,7 +2786,7 @@ datasets_in_flat | datasets_in_table
 316 | 400
 ```
 
-**Result:** The nested record became tables along its dependencies: the country list into rows (1NF), the country's name into `countries` (2NF), the family into `taxa` and the source's license into `sources` (3NF), with the published file repeating them for readers, rebuilt each time. The license question has a two-part answer. In the sample, no dataset has records under two licenses, but the full download has one (iNaturalist), and one museum's records carry a stricter license than its dataset declares. So the record's license is a fact about the record and stays on `occurrences`; `datasets.license` is the dataset's own declaration, a different fact. The flat table showed what normalizing prevents: 40,395 copies of 400 titles, one dataset with two titles after a partial fix, and 84 datasets lost with their last records (316 left of 400). And a record count per dataset is a query, not a column: stored, it would be wrong after the next load.
+**Result:** The nested record became tables along its dependencies: the country list into rows (1NF), the country's name into `countries` (2NF), the family into `taxa` and the source's license into `sources` (3NF), with the published file repeating them for readers, rebuilt each time. The license question has a two-part answer. In the sample, no dataset has records under two licenses, but the full download has one (iNaturalist), and one museum's records carry a stricter license than its dataset declares. So the record's license is a fact about the record and stays on `occurrences`; `datasets.license` is the dataset's own declaration, a different fact. The flat table showed what normalizing prevents: 40,395 copies of 400 titles, one dataset with two titles after a partial fix, and 84 datasets lost with their last records (316 left of 400). And a record count per dataset is a query, not a column: stored, it would be wrong after the next load. A listing's `origin` and `presence` are two facts as well, so two columns: 6 mammal rows say `native` and `absent` at once.
 
 **Exercise:** Normalize `records_flat` (lab step 3, before the anomalies) into 3NF: `r_species (species_id, common_name)`, `r_datasets (dataset_key, title, publisher)` and `r_records (id, species_id, dataset_key, license)`, each with its primary key, and `r_records`' foreign keys to the other two. Fill them from `records_flat`, then show the split is lossless: count each table's rows, and the rows that joining the three back loses or adds compared with `records_flat` (both should be 0).
 

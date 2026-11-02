@@ -1,0 +1,7 @@
+-- result: d2-listing-facts · 5 rows · sha256 2ab668eb6f13
+origin | presence | listings | sources
+native-or-pre-1500 | present | 364 | 1
+native-or-pre-1500 | uncertain | 36 | 1
+introduced | present | 7 | 6
+native | absent | 6 | 1
+introduced | uncertain | 3 | 1
