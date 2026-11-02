@@ -471,7 +471,7 @@ Written on `9612822`. Read **Architecture** as revised first: block texts, guard
   - Verified: the common checks; once committed, the two result checks under Verification (`git diff --name-status`, `checked.json`); full `E2E_ARTIFACTS=$S/e2e-s6 pnpm e2e`, because `checked.json`'s new date moves `.checked` on all 28 lab pages (the byte check normalizes that date).
   - Proves: 189 results byte-stable; the new block's result on the page equals what PostGIS gave (E4).
 
-- [ ] S7. **Refusals and the curated recipe, on real files.**
+- [x] S7. **Refusals and the curated recipe, on real files.**
   - `e2e/range-listings-refusals.ts` (Target design 6): `RESTORED` adds `site/learn/sql`, `e2e/__snapshots__`; header gains the second shape; a case flag lifts the db-load failure (`:198`); another lets `--draft` pass (R29); after the last case, `pnpm build`, then the hash check (`:208`). `AGENTS.md`'s harness line: its new "Interrupted" list.
   - Each message is pinned with the doctored block's id:
 
@@ -625,6 +625,7 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - S5: d2's lead says "published files" (it now reads two). Prose also says neither column fixes the other, and names the source of the 6 `native` + `absent` rows (Central Asia checklist, checked on `data/range-listings.json`); per the contract it says nothing about why or since when. Its Result gains one sentence.
 - S1: Q1's "`dist/learn/data/` stays 96,026,558 B" holds for the manifest's own `bytes` (95,877,990, unmoved: it counts `files` only). The build's logged total, which counts `manifest.json` and `index.html`, is 96,026,726: +168 B from the pin and the copy edit.
 - S6: plain `learn:check`, not Q6's `--update`: 004 had seeded the one new result, so any of the other 189 moving would fail the run; a whole run still writes `checked.json`. `e4.html` holds neither word: row 5 is worded "came from elsewhere to XA, the place List A says it comes from". Lead and Result each gain one clause. 007's row loses "44 of the 88".
+- S7: curated proof compared against this step's own hash list (`$S/dist-s7.sha256`), since `dist-final.sha256` is written only at Verification. `[]` accepted, so Open risks' fallback wasn't needed. R26 also trips the mammal pass in both modes (2 faults under `--draft`): with no `ORDER BY`, the wrapped query's row order moves. Its pinned message still names the order fault.
 
 ## Log
 
@@ -640,5 +641,6 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - 2026-11-02 02:34 UTC: S4: s1 compares records with listings (`s1-listed`, `s1-listed-species`, `s1-listed-conflicts`), copy line on the page, `READERS` adds s1. Hashes `157fdfaf5ca5`, `4b230741b745`, `9557e3eb4326` as planned. typecheck pass, test 823/823, plain build pass (5 listing blocks), port check 548 files equal, byte check exactly the 5 expected lines, three specs 83/83 (`$S/e2e-s4`).
 - 2026-11-02 02:49 UTC: S5: d2 reads the listings (`d2-listing-facts`), copy line on the page, `READERS` final `["d2", "f3", "s1"]`. Hash `2ab668eb6f13` as planned. typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 550 files equal, byte check exactly the 6 expected lines, three specs 83/83 (`$S/e2e-s5`).
 - 2026-11-02 03:18 UTC: S6: e4 `e4-list-rows` (5 rows, hash `a4db17261e6f`), whole `learn:check` ok, 189 results unmoved (`checked.json` diff: `blocks.e4-list-rows`, `downloads.e4.sql`, date; 14 added files). typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 552 files equal, byte check exactly the 8 expected lines, E2E 168/168 (`$S/e2e-s6`).
+- 2026-11-02 03:27 UTC: S7: harness adds R21-R29 (real block files, both modes); 33 cases, 0 failed, tree clean, dist/ unchanged (`$S/refusals.log`). Curated proof: `[]` derives and builds with no `learn:check`; exactly 3 `data/` files and the 6 expected `dist/` files moved; restored byte-identical. typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 552 files equal, byte check exactly the 8 expected lines. No E2E, per the step.
 
 ## Summary
