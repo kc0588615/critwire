@@ -628,6 +628,13 @@ SHOULD-CONSIDER:
 
 ## Release
 
+- Merge commit: `095e8a3` (PR #20, https://github.com/kc0588615/critwire/pull/20).
+- Deploy's last line: `deploy critwire: live at https://critwire.com`. Live copy at `095e8a3`; `dist/` equals `/srv/apps/critwire/.live` (`diff -rq` silent).
+- Smoke: nine lines of `200`; `/v1/range-listings.parquet` sha256 `082c5020f0f0…` equals the manifest's pin; `e2e/release/live.spec.ts` 9/9, the new listing test included (f3, s1, d2 blocks equal their snapshots, e4's rows equal their recorded result).
+- Logs: `/srv/critter-ai/agent-state/missions/critwire-learn-range-lessons/release-deploy.log`, `release-smoke.log`, `release-verify.log`; artifact `e2e-release/` beside them.
+
+Result: done
+
 ## Decisions
 
 - S1: also edited `plans/004-learn-curriculum.md`'s manifest `inputs` line and `data.ts`'s `inputs` comment. Both said `v1` holds only the files the lab tables are built from, which the pin makes false; Finding 6 missed them.
@@ -665,10 +672,11 @@ SHOULD-CONSIDER:
 - 2026-11-02 04:30 UTC: Final Verification on `81cfe90`: typecheck pass, test 823/823, port check 552 equal, plain build pass (6 listing blocks), `learn:check` ok twice (`checked.json` unchanged), byte check exactly 8 lines, 14 added result files, E2E 168/168 (`$S/e2e-final`), refusals 33 cases 0 failed, curated proof exactly 3 `data/` + 6 `dist/` files, restored byte-identical, scope commands empty. Summary written, status done; release next.
 - 2026-11-02 04:54 UTC: `pnpm test:db` 140/140, added to Verification since S1 and S9 changed `dist-fixture.ts` and `projection.ts`; on `7c222b9`, code as `81cfe90`.
 - 2026-11-02 06:02 UTC: Release: no rebase needed (`origin/main` `bceb0bf` is an ancestor). Full Verification re-run on `6f84300`: typecheck pass, test 823/823, port check 552 equal, plain build pass (6 listing blocks, 96,026,726 B), `learn:check` ok twice (25 `.sql`, 11 `.py`, `checked.json` unchanged), byte check 8 lines, 14 added result files, E2E 168/168 (`$S/e2e-final` replaced), refusals 33/0, curated proof 3 + 6 files, restored byte-identical, scope empty, `test:db` 140/140. Log: `$S/release-verify.log`.
+- 2026-11-02 05:59 UTC: Release: PR #20 merged (`095e8a3`), deployed, smoke pass (9 lines of 200, parquet hash equals pin, `live.spec.ts` 9/9, `$S/e2e-release`).
 
 ## Summary
 
-Three modules and d2 now use `/v1/range-listings`; e4 teaches the same lesson on made-up rows. Not yet released at the time of writing: see **Release**.
+Three modules and d2 now use `/v1/range-listings`; e4 teaches the same lesson on made-up rows. Live on critwire.com: PR #20, merge `095e8a3`, smoke passed; see **Release**.
 
 **Per module** (7 new blocks; 189 existing results unmoved):
 - **f3:** `f3-listed-no-records`, 89 pairs MDD lists as present with no open record, from the Aardvark in Burundi. Exercise `f3-ex-listed`: countries with open Tiger records and no listing, 4. "MDD lists 89 animal and country pairs with no open record, which settles nothing about either list."
