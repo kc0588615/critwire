@@ -8,14 +8,17 @@
 // checked/c1-feed.json, valid against its served schema, says records not range, and agrees with c1-feed's recorded
 // summary (L5 plan T8), and carries its license, critwire's attribution, the sample's citation and only sample datasets'
 // credits (feedAttributionErrors against the served data manifest and datasets.csv); c1's page links both. The setup page links the checks'
-// download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5). By
+// download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5). The copy rule
+// (AGENTS.md; plan 2026-11-02-critwire-learn-range-lessons, Target design 5) is checked on the sources, so a source's
+// title in a result cell isn't taken for copy. By
 // Download.kind (L4 plan §10): a .sql holds its page's PostGIS blocks, a .py its Python blocks (untested ones behind
 // `# `), each linked from its block; an .ipynb is served as assembled, its code cells the .py's cells in order (an
 // untested block a Markdown cell, never code); a download naming s4_cells or s4_neighbours runs s4-cells right after
 // pg-session or py-connect; the versions line names Python and requirements.txt on a page with a Python block; every
 // download link on a page returns 200.
 import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
+import { listingBlocks } from "../scripts/build/learn/listing-blocks.ts";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
 import { codeOnly } from "../scripts/build/learn/sql.ts";
 import { assembleDownloads, pageDownloads, type Download } from "../scripts/learn/assemble.ts";
@@ -273,4 +276,34 @@ test("/learn/labs/requirements.txt is site/learn/labs/requirements.txt", async (
   const res = await request.get("/learn/labs/requirements.txt");
   expect(res.status()).toBe(200);
   expect(await res.text()).toBe(await readFile(repoPath("site/learn/labs/requirements.txt"), "utf8"));
+});
+
+// The pages with a block reading /v1/range-listings; each holds COPY_LINE, and only they may use the words.
+const READERS = ["f3"];
+const COPY_LINE = `<p>On this page, native, introduced and range words describe only <code>/v1/range-listings</code> rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.</p>`;
+const LISTING_WORDS = /\b(native|introduced)\b/i;
+/** The one block outside READERS that may use the words: e4's made-up rows. */
+const MADE_UP_ROWS = "e4-list-rows";
+
+test("the copy rule: the pages reading range-listings are exactly READERS and each holds the line; native and introduced appear nowhere else in Learn's sources", async () => {
+  const { pages } = await course();
+  const { blocks, errors } = listingBlocks(pages);
+  expect(errors).toEqual([]);
+  expect([...new Set(blocks.map((b) => b.page))].sort()).toEqual(READERS);
+  for (const id of READERS) expect(await readFile(repoPath(`site/learn/modules/${id}.html`), "utf8"), id).toContain(COPY_LINE);
+
+  const fragments = [
+    ...(await readdir(repoPath("site/learn/modules"))).filter((n) => !READERS.includes(n.replace(/\.html$/, ""))).map((n) => `site/learn/modules/${n}`),
+    ...(await readdir(repoPath("site/learn/pages"))).map((n) => `site/learn/pages/${n}`),
+    "site/learn/data/index.html",
+    "site/learn/layout.html",
+    "site/learn/curriculum.json",
+  ];
+  const found: string[] = [];
+  for (const f of fragments) if (LISTING_WORDS.test(await readFile(repoPath(f), "utf8"))) found.push(f);
+  for (const p of pages) {
+    if (READERS.includes(p.page.id)) continue;
+    for (const b of p.blocks) if (b.id !== MADE_UP_ROWS && LISTING_WORDS.test(b.text)) found.push(`block ${b.id}`);
+  }
+  expect(found).toEqual([]);
 });

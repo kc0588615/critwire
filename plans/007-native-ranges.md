@@ -501,13 +501,13 @@ Recommended: **no Learn change in the first build**, then a small separate missi
 | Module | What it gains | Path | Cost |
 |---|---|---|---|
 | **s1 Bias** | Answers its own question, "What can records say about where an animal lives, and what can't they?": records against native listings, per species. Spike, mammals: 275 of 364 native rows have open records (0.7555), and 94 record countries sit on no listing, each one a question to ask | Browser | One block, prose, results |
-| **f3 Joins** | An anti join: listed native countries with no open record (89 of those 364), next to "Which have no records at all?" | Browser | One exercise |
+| **f3 Joins** | An anti join: listed native countries with no open record (89 of those 364), next to "Which have no records at all?" | Browser | One lesson block (an exercise hides its result), one exercise |
 | **d1/d2** | A long table against a list in a cell; a composite key; origin and presence as two facts | Browser | One block |
 | **e4 Provenance** | A license and quality case from what the spike met, on made-up rows: 44 of the 88 datasets met are CC BY-NC, a catalogue marks animals introduced in their home countries, a row to drop by dataset | PostGIS, inline rows | One block |
 | **g3 Spatial joins** | An open version of the appendix on records against a range (`site/learn/modules/g3.html:43`, today IUCN-download-only): records per outline against listed countries | PostGIS: a 17th lab table, so loader, `LAB_TABLES`, `lab.mmd`, `checked/` | Largest; defer |
 | **c1 Feed** | A flag on each cell's country (listed or not) | Feed schema and results change | Defer |
 
-**Copy rule.** "Records, never range" (`AGENTS.md:68`) stays for records. A page reading this file needs one added line: *native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.* That's O4. `site/learn/modules/s1.html:19`, `p4.html:7`, `c1.html:35`, `site/index.html:140` and `DATA-LICENSE.md` are all true and stay true for records; each needs a sentence only when its page first reads the file.
+**Copy rule.** "Records, never range" (`AGENTS.md`, Learn rules) stays for records. A page reading this file needs one added line: *native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.* That's O4. `site/learn/modules/s1.html:19`, `p4.html:7`, `c1.html:35`, `site/index.html:140` and `DATA-LICENSE.md` are all true and stay true for records; each needs a sentence only when its page first reads the file.
 
 ## Owner's choices
 

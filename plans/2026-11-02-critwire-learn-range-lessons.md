@@ -442,7 +442,7 @@ Written on `9612822`. Read **Architecture** as revised first: block texts, guard
   - Verified: F1–F12 pass; the common checks; byte check as S1, so no E2E.
   - Proves: every refusal, on synthetic blocks over real published files; a build with 0 listing blocks is unchanged. S7 repeats the refusals through the real CLI.
 
-- [ ] S3. **f3 and the copy gate.** First real reader, so the whole chain runs once.
+- [x] S3. **f3 and the copy gate.** First real reader, so the whole chain runs once.
   - E5 first, in `e2e/learn-labs.spec.ts` (Target design 5), with `READERS = ["f3"]`; S4 and S5 grow it.
   - Blocks: `f3-listed-no-records` (Lab step 1, same `<li>`, after `f3-no-countries`), `f3-ex-listed` (`{{exercise:…}}` under Exercise; the prose says how to read the file). Follow the browser-block order above; `f3-ex-listed`'s snapshot shows once its answer is right.
   - Files: `plans/004-learn-curriculum.md` (`#### f3 · join`), `site/learn/sql/{f3-listed-no-records,f3-ex-listed}.sql`, their `e2e/__snapshots__/*.txt`, `site/learn/modules/f3.html`, `e2e/learn-browser.spec.ts` (first id in the first `seen`, second in the exercise `seen`; `WRONG["f3-ex-listed"]`: the answer without `l.speciesId = sc.species_id`, `hint: "Your result has 0 rows; the answer has 4."`), `e2e/qa-fixes.ts` (`89 rows`; 4 countries if quoted), `AGENTS.md` copy rule (Q3), `plans/007-native-ranges.md` (f3 gains a lesson block; `AGENTS.md:68` is `:69`).
@@ -619,6 +619,8 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - S1: also edited `plans/004-learn-curriculum.md`'s manifest `inputs` line and `data.ts`'s `inputs` comment. Both said `v1` holds only the files the lab tables are built from, which the pin makes false; Finding 6 missed them.
 - S2: `assertListingBlocks(out, blocks, { recorded, draft })`: `recorded` is a map, as `writeStar`'s, so its tests need no file; `readSnapshots` in the same module fills it for `scripts/build.ts`.
 - S2: Target design 2's reader regex corrected: with `\s*` outside the lookahead, it backtracked past the space and refused `read_parquet( 'species.parquet' )`. Now `\((?!\s*'…'\s*[,)])`. F5's own spaced case found it; no course block is spelled that way.
+- S3: `f3-ex-listed` sits after `f3-not-in`, so `f3-ex`, its answer note and the `NOT IN` trap stay together. f3's lead gains "and one published file" (the blocks no longer read only the Schema page's tables); its Result gains one sentence with the 89.
+- S3: 007's copy rule cites `AGENTS.md`'s Learn rules, not a line number (S3's `:69`): S2 and S3 edit that file, so a number goes stale.
 - S1: Q1's "`dist/learn/data/` stays 96,026,558 B" holds for the manifest's own `bytes` (95,877,990, unmoved: it counts `files` only). The build's logged total, which counts `manifest.json` and `index.html`, is 96,026,726: +168 B from the pin and the copy edit.
 
 ## Log
@@ -631,5 +633,6 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - 2026-11-02 01:30 UTC: Steps: planner wrote 8 steps (limit 12), Verification, Failure modes (guard F1-F12); named paths checked; no code touched.
 - 2026-11-02 01:47 UTC: S1: `range-listings.parquet` fetched, pinned, registered by name on every page; E1 seen failing, then passing. typecheck pass, test 811/811, plain build pass with no `learn:check`, port check 538 files equal, byte check exactly the 3 expected lines, E2E 167/167 (`$S/e2e-s1`).
 - 2026-11-02 02:02 UTC: S2: guard `listing-blocks.ts` in the build, 0 listing blocks yet. F1-F12 seen failing on a stub (11 of 12; F5 can't fail on a stub's empty errors, and later caught the regex bug), then all pass. typecheck pass, test 823/823 (811 + 12), plain build pass with no `learn:check`, port check 538 files equal, byte check exactly the 3 expected lines. No E2E, per the step.
+- 2026-11-02 02:24 UTC: S3: f3 reads the listings (`f3-listed-no-records`, `f3-ex-listed`), copy line on the page, `AGENTS.md` copy rule, copy gate E5 seen failing then passing. Hashes `d0d87c462f63`, `b70a76ec0dab` as planned. typecheck pass, test 823/823, plain build pass (2 listing blocks), port check 542 files equal, byte check exactly the 4 expected lines, three specs 83/83 (`$S/e2e-s3`).
 
 ## Summary

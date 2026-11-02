@@ -1,0 +1,8 @@
+-- result: f3-listed-no-records · 89 rows · sha256 d0d87c462f63
+animal | country | origin | source
+Aardvark | Burundi | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Cameroon | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Central African Republic | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Chad | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Djibouti | native-or-pre-1500 | Mammal Diversity Database
+… 84 more rows

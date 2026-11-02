@@ -311,7 +311,7 @@ test("every browser block of the course pages equals its snapshot, and cards fol
   }
   // f3-brazil-list is the release smoke's block (cards, as its `-- show: cards` says).
   expect(seen).toEqual(
-    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d2-list", "d2-sources", "d2-update-anomaly", "d2-delete-anomaly", "d2-ex-two-titles", "d6-export", "s1-basis", "s1-dominance"]),
+    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-listed-no-records", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d2-list", "d2-sources", "d2-update-anomaly", "d2-delete-anomaly", "d2-ex-two-titles", "d6-export", "s1-basis", "s1-dominance"]),
   );
   expect(offOrigin).toEqual([]);
   await context.close();
@@ -430,6 +430,18 @@ SELECT count(*) AS fact_rows, sum(records) AS records, sum(records) = (SELECT co
        sum(records) FILTER (WHERE decade = -1) AS unknown_decade FROM fact_species_decade;`,
     hint: "Some rows differ from the answer.",
   },
+  // The match on the country alone: every country has some animal's listing.
+  "f3-ex-listed": {
+    sql: `SELECT c.name AS country
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+JOIN countries AS c ON c.code = sc.country_code
+WHERE s.common_name = 'Tiger'
+  AND NOT EXISTS (SELECT 1 FROM read_parquet('range-listings.parquet') AS l
+                  WHERE l.country = sc.country_code)
+ORDER BY c.name`,
+    hint: "Your result has 0 rows; the answer has 4.",
+  },
 };
 
 test("every exercise and skip check rejects a fixed wrong answer and accepts its own (result = snapshot); a skip check marks its module done", async ({ browser }) => {
@@ -470,7 +482,7 @@ test("every exercise and skip check rejects a fixed wrong answer and accepts its
       seen.push(b.id);
     }
   }
-  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f4-skip", "f4-ex", "d1-ex", "d2-ex", "d6-ex", "s1-ex"]));
+  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f3-ex-listed", "f4-skip", "f4-ex", "d1-ex", "d2-ex", "d6-ex", "s1-ex"]));
   expect(offOrigin).toEqual([]);
   await context.close();
 });

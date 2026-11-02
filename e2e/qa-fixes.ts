@@ -108,6 +108,9 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q81", url: "/learn/etl/idempotent/", has: "adds a CHECK on the license", not: "licence" },
   { q: "RL1", url: "/learn/setup/", has: "The page also fetches <code>/v1/range-listings.parquet</code>, which builds no table: a few lesson blocks read that file in place." },
   { q: "RL2", url: "/learn/data/", has: "critwire's species, countries and range-listings files under", not: "critwire's species and countries files" },
+  { q: "RL3", url: "/learn/foundations/join/", has: "These 89 rows start with the Aardvark in Burundi", from: { file: "e2e/__snapshots__/f3-listed-no-records.txt", values: ["89 rows", "Aardvark | Burundi | native-or-pre-1500 | Mammal Diversity Database"] } },
+  { q: "RL4", url: "/learn/foundations/join/", has: "MDD lists 89 animal and country pairs with no open record", from: { file: "e2e/__snapshots__/f3-listed-no-records.txt", values: ["89 rows"] } },
+  { q: "RL5", url: "/learn/foundations/join/", has: "<p>Four countries. Each is a question to ask", from: { file: "e2e/__snapshots__/f3-ex-listed.txt", values: ["4 rows"] } },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

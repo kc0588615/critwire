@@ -1553,6 +1553,36 @@ id | common_name | range_status
 47 | Ili Pika | no-open-records
 ```
 
+   A different kind of list shows another gap. `/v1/range-listings` holds what named sources list: each row is one source's claim about one animal in one country. Every mammal in critwire has rows from the Mammal Diversity Database (MDD), the American Society of Mammalogists' open list of mammal species; [Licenses](/#licenses) gives its license and where its data came from. No lab table holds this file, so the block reads it where it's published, with `read_parquet('range-listings.parquet')`. An animal and a country together make the key, so this anti join matches on two columns: the countries where MDD lists an animal as present, with no row in `species_countries`.
+
+   On this page, native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.
+
+```sql
+-- q: f3-listed-no-records
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT s.common_name AS animal, c.name AS country, l.origin, l.source
+FROM read_parquet('range-listings.parquet') AS l
+JOIN species AS s ON s.id = l.speciesId
+JOIN countries AS c ON c.code = l.country
+LEFT JOIN species_countries AS sc ON sc.species_id = l.speciesId AND sc.country_code = l.country
+WHERE l.sourceKey = 'mdd' AND l.presence = 'present' AND sc.species_id IS NULL
+ORDER BY s.common_name, s.id, c.name, l.origin;
+```
+
+```text
+-- result: f3-listed-no-records · 89 rows · sha256 d0d87c462f63
+animal | country | origin | source
+Aardvark | Burundi | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Cameroon | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Central African Republic | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Chad | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Djibouti | native-or-pre-1500 | Mammal Diversity Database
+… 84 more rows
+```
+
+   These 89 rows start with the Aardvark in Burundi: MDD lists it there as native or introduced before 1500, and no open record passes critwire's country rule. The two lists answer different questions, so neither is wrong. A listing is a source's claim and a record is someone's observation; a listed country with no record shows nothing either way, since the animal may be gone or nobody may have shared a record. Likewise, no row in this file means critwire holds no open listing for that pair, not that the animal is absent.
+
 2. Where the condition goes. Records since 2020 in each South American country, zeros kept: the year test is part of the match, so it goes in `ON`.
 
 ```sql
@@ -1688,7 +1718,7 @@ west | south | records | species
 … 5 more rows
 ```
 
-**Result:** Brazil has 12 animals in critwire's list and 14 in the sample; the two extra ones each rest on one stray record that critwire's rule leaves out. Five animals have no record in the sample, four of them for reasons `range_status` gives and one because of a dataset's license. A condition on the right table in `WHERE` turns a left join into an inner one (14 countries become 9), and joining two "many" tables at once turned 2,000 records into 40,000 rows. A degree box is cheap and works anywhere, but it is not an area (a 10° box near the poles is much smaller than one at the equator) and one outlier stretches it: GIS in SQL (g1, g3) does this properly with geometries.
+**Result:** Brazil has 12 animals in critwire's list and 14 in the sample; the two extra ones each rest on one stray record that critwire's rule leaves out. Five animals have no record in the sample, four of them for reasons `range_status` gives and one because of a dataset's license. A condition on the right table in `WHERE` turns a left join into an inner one (14 countries become 9), and joining two "many" tables at once turned 2,000 records into 40,000 rows. MDD lists 89 animal and country pairs with no open record, which settles nothing about either list. A degree box is cheap and works anywhere, but it is not an area (a 10° box near the poles is much smaller than one at the equator) and one outlier stretches it: GIS in SQL (g1, g3) does this properly with geometries.
 
 **Exercise:** Which countries in Africa have no record in the sample? Show `code` and `name`, by name. Write it with `NOT EXISTS`.
 
@@ -1728,6 +1758,35 @@ SELECT 'BR' NOT IN ('AR', NULL) AS not_in, 'BR' IN ('BR', NULL) AS is_in;
 not_in | is_in
 NULL | true
 ```
+
+The other direction, across the two lists. Which countries have open records of the Tiger in `species_countries` but no row from any source in the listings file? Show the country's name as `country`, by name. Read the file with `read_parquet('range-listings.parquet')`; its `speciesId` and `country` are the two columns to match, in a `NOT EXISTS`.
+
+**Answer:**
+
+```sql
+-- q: f3-ex-listed
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT c.name AS country
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+JOIN countries AS c ON c.code = sc.country_code
+WHERE s.common_name = 'Tiger'
+  AND NOT EXISTS (SELECT 1 FROM read_parquet('range-listings.parquet') AS l
+                  WHERE l.speciesId = sc.species_id AND l.country = sc.country_code)
+ORDER BY c.name;
+```
+
+```text
+-- result: f3-ex-listed · 4 rows · sha256 b70a76ec0dab
+country
+Brazil
+Germany
+South Africa
+United States of America
+```
+
+Four countries. Each is a question to ask, not a finding: a captive animal and a misplaced record look the same here, and no row means critwire holds no open listing, not that no source anywhere lists the Tiger there.
 
 **Check:** `result, any row order`. The skip exercise is checked the same way.
 

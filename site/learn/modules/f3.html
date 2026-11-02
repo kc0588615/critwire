@@ -1,4 +1,4 @@
-<p class="lead">Answer questions that need several tables at once: inner, left and anti joins, many-to-many through a junction table, and a first look at coordinates in plain SQL. Everything runs in this browser, on the tables <a href="/learn/schema/">the Schema page</a> describes.</p>
+<p class="lead">Answer questions that need several tables at once: inner, left and anti joins, many-to-many through a junction table, and a first look at coordinates in plain SQL. Everything runs in this browser, on the tables <a href="/learn/schema/">the Schema page</a> describes and one published file.</p>
 
 <h2>Already know this?</h2>
 <p>For every country in South America, show <code>code</code>, <code>name</code>, how many species have records there in the sample and how many records, countries with none included (as 0), by name. Solve it and the module is marked done.</p>
@@ -28,7 +28,11 @@
 <li><p>Which animals have no records in the sample at all? An anti join: keep the species whose left join found nothing.</p>
 {{block:f3-no-records}}
 <p>The three without a GBIF id are the ones <a href="/learn/foundations/select/">Select and filter (f1)</a> found: critwire hasn't settled which GBIF taxon they are, so nothing was downloaded for them. The Ili Pika has no open record anywhere. The Yangtze Giant Softshell Turtle is different: critwire lists countries for it, but its only open record comes from a dataset whose own license is CC BY-NC, and the sample keeps a record only when both the record's and its dataset's licenses are open (<a href="/learn/data/">the lab data page</a>). The same anti join on <code>species_countries</code> finds the other four, but not the turtle:</p>
-{{block:f3-no-countries}}</li>
+{{block:f3-no-countries}}
+<p>A different kind of list shows another gap. <code>/v1/range-listings</code> holds what named sources list: each row is one source's claim about one animal in one country. Every mammal in critwire has rows from the Mammal Diversity Database (MDD), the American Society of Mammalogists' open list of mammal species; <a href="/#licenses">Licenses</a> gives its license and where its data came from. No lab table holds this file, so the block reads it where it's published, with <code>read_parquet('range-listings.parquet')</code>. An animal and a country together make the key, so this anti join matches on two columns: the countries where MDD lists an animal as present, with no row in <code>species_countries</code>.</p>
+<p>On this page, native, introduced and range words describe only <code>/v1/range-listings</code> rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.</p>
+{{block:f3-listed-no-records}}
+<p>These 89 rows start with the Aardvark in Burundi: MDD lists it there as native or introduced before 1500, and no open record passes critwire's country rule. The two lists answer different questions, so neither is wrong. A listing is a source's claim and a record is someone's observation; a listed country with no record shows nothing either way, since the animal may be gone or nobody may have shared a record. Likewise, no row in this file means critwire holds no open listing for that pair, not that the animal is absent.</p></li>
 <li><p>Where the condition goes. Records since 2020 in each South American country, zeros kept: the year test is part of the match, so it goes in <code>ON</code>.</p>
 {{block:f3-on}}
 <p>Move <code>o.year &gt;= 2020</code> to <code>WHERE</code> and the countries with no recent record vanish: their <code>o.year</code> is <code>NULL</code>, the test is unknown, and <code>WHERE</code> drops them. The left join has quietly become an inner join.</p>
@@ -44,7 +48,7 @@
 </ol>
 
 <h2>Result</h2>
-<p>Brazil has 12 animals in critwire's list and 14 in the sample; the two extra ones each rest on one stray record that critwire's rule leaves out. Five animals have no record in the sample, four of them for reasons <code>range_status</code> gives and one because of a dataset's license. A condition on the right table in <code>WHERE</code> turns a left join into an inner one (14 countries become 9), and joining two "many" tables at once turned 2,000 records into 40,000 rows. A degree box is cheap and works anywhere, but it is not an area (a 10° box near the poles is much smaller than one at the equator) and one outlier stretches it: the GIS in SQL modules (<a href="/learn/gis-in-sql/crs/">Coordinate reference systems, g1</a>, and <a href="/learn/gis-in-sql/spatial-join/">Spatial joins, g3</a>) do this properly with geometries.</p>
+<p>Brazil has 12 animals in critwire's list and 14 in the sample; the two extra ones each rest on one stray record that critwire's rule leaves out. Five animals have no record in the sample, four of them for reasons <code>range_status</code> gives and one because of a dataset's license. A condition on the right table in <code>WHERE</code> turns a left join into an inner one (14 countries become 9), and joining two "many" tables at once turned 2,000 records into 40,000 rows. MDD lists 89 animal and country pairs with no open record, which settles nothing about either list. A degree box is cheap and works anywhere, but it is not an area (a 10° box near the poles is much smaller than one at the equator) and one outlier stretches it: the GIS in SQL modules (<a href="/learn/gis-in-sql/crs/">Coordinate reference systems, g1</a>, and <a href="/learn/gis-in-sql/spatial-join/">Spatial joins, g3</a>) do this properly with geometries.</p>
 
 <h2>Exercise</h2>
 <p>Which countries in Africa have no record in the sample? Show <code>code</code> and <code>name</code>, by name. Write it with <code>NOT EXISTS</code>.</p>
@@ -54,6 +58,11 @@
 </details>
 <p>The <code>NOT IN</code> trap, in one line: whether <code>'BR'</code> is in a list holding <code>NULL</code> can't be ruled out, so <code>NOT IN</code> gives unknown, while a match still makes <code>IN</code> true.</p>
 {{block:f3-not-in}}
+<p>The other direction, across the two lists. Which countries have open records of the Tiger in <code>species_countries</code> but no row from any source in the listings file? Show the country's name as <code>country</code>, by name. Read the file with <code>read_parquet('range-listings.parquet')</code>; its <code>speciesId</code> and <code>country</code> are the two columns to match, in a <code>NOT EXISTS</code>.</p>
+{{exercise:f3-ex-listed}}
+<details><summary>About the answer</summary>
+<p>Four countries. Each is a question to ask, not a finding: a captive animal and a misplaced record look the same here, and no row means critwire holds no open listing, not that no source anywhere lists the Tiger there.</p>
+</details>
 
 <h2>Check</h2>
 <p>Your rows must equal the answer's, column by column, in any row order. "Already know this?" is checked the same way. Check runs the answer on the tables as loaded, so if you changed them in the playground, Reset database first.</p>
