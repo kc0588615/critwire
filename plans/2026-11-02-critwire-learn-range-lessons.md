@@ -489,7 +489,7 @@ Written on `9612822`. Read **Architecture** as revised first: block texts, guard
   - Verified: commit first (the harness refuses a dirty tree), then `pnpm build && pnpm exec tsx e2e/range-listings-refusals.ts 2>&1 | tee $S/refusals.log`: last line `33 cases, 0 failed; tree clean, dist/ unchanged`. Then the curated proof under Verification, once. If an unrelated check refuses `[]`, follow Architecture's Open risks and record it. Typecheck; byte check as S6. The plan's Log goes in a second commit.
   - Proves: the guard through the real CLI in both modes; a curated correction moves no lesson and needs no `learn:check`.
 
-- [ ] S8. **Live smoke, rehearsed locally.**
+- [x] S8. **Live smoke, rehearsed locally.**
   - `e2e/release/live.spec.ts`: one new test beside `:61`, one header line. For f3 (`f3-listed-no-records`), s1 (`s1-listed`) and d2 (`d2-listing-facts`): the page answers 200, the block runs, its result equals its snapshot. For e4: 200, and `#q-e4-list-rows pre.recorded` equals `checked/e4-list-rows.txt`.
   - Dry run, on the plain build:
     ```
@@ -642,5 +642,6 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - 2026-11-02 02:49 UTC: S5: d2 reads the listings (`d2-listing-facts`), copy line on the page, `READERS` final `["d2", "f3", "s1"]`. Hash `2ab668eb6f13` as planned. typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 550 files equal, byte check exactly the 6 expected lines, three specs 83/83 (`$S/e2e-s5`).
 - 2026-11-02 03:18 UTC: S6: e4 `e4-list-rows` (5 rows, hash `a4db17261e6f`), whole `learn:check` ok, 189 results unmoved (`checked.json` diff: `blocks.e4-list-rows`, `downloads.e4.sql`, date; 14 added files). typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 552 files equal, byte check exactly the 8 expected lines, E2E 168/168 (`$S/e2e-s6`).
 - 2026-11-02 03:27 UTC: S7: harness adds R21-R29 (real block files, both modes); 33 cases, 0 failed, tree clean, dist/ unchanged (`$S/refusals.log`). Curated proof: `[]` derives and builds with no `learn:check`; exactly 3 `data/` files and the 6 expected `dist/` files moved; restored byte-identical. typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 552 files equal, byte check exactly the 8 expected lines. No E2E, per the step.
+- 2026-11-02 03:40 UTC: S8: release smoke adds f3, s1, d2 listing blocks + e4's recorded rows; dry run on plain build against local Caddy 9/9 (`$S/e2e-s8`, `$S/s8-e2e.log`), `RL` rows included, nothing left on 3100/3101. typecheck pass, test 823/823, plain build pass, port check 552 files equal, byte check exactly the 8 expected lines.
 
 ## Summary
