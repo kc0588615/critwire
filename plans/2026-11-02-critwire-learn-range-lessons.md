@@ -507,6 +507,12 @@ Written on `9612822`. Read **Architecture** as revised first: block texts, guard
 - Disk: S1, S6 and the final run each write about 840 MB, and the release re-verifies. Hold to the deletion rule above.
 - `AGENTS.md` line numbers shift as S2 and S3 edit it: match by text.
 
+- [ ] S9. **The guard runs in a browser's tables and files only** (Astra's code review, MUST-FIX 1). `assertListingBlocks` uses `withLabTables`: 16 tables, and `file_search_path` over all of `v1/` and `learn/data/`. The browser has `setup.sql`'s 8 tables and 5 registered files (`engine.ts` `DATA_FILES`). So F7 misses both forms, reproduced on this branch's `dist/`, each passing the guard: `… JOIN country_shapes AS c …` and `… JOIN read_parquet('country_shapes.parquet') AS c …`. Fixing only the tables would leave the second.
+  - First, seen failing: add both to F7 in `scripts/build/learn/listing-blocks.test.ts`, refused in both modes with `/doesn't run/`. Also `read_csv('biomes.csv', header = true)`.
+  - Fix: one list of the browser's files. Export `DATA_FILES`' names and paths from `site/learn/src/assets.ts` (already shared by bundle and build); `engine.ts` keeps its pins over that list. The guard runs `setup.sql` with `file_search_path` on a temp folder holding only those 5 names (symlinks to `out`'s files), removed afterwards, nothing written under `dist/` (F12). Split the setup-and-search-path part out of `withLabTables`, so both share it; the lab tables' behavior doesn't change.
+  - Verified: the common checks, byte check lines as "S6 on" (the app's new hash is normalized), plain build names 6 listing blocks and no "lab … is stale"; `learn-browser` and `learn-labs` specs pass, `E2E_ARTIFACTS=$S/e2e-s9`. `projection.ts` isn't in the checker's closure; if a lab goes stale, revert and find out why.
+  - Proves: a block the guard passes runs on a learner's page, without waiting for E2E.
+
 ## Verification
 
 **E2E scenarios** (Playwright, headless Chromium, local Caddy copy of the live block; `pnpm e2e` runs all):
@@ -612,6 +618,14 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 
 ## Code review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. `scripts/build/learn/listing-blocks.ts:134`: `withLabTables` includes eight tables unavailable in the browser. Reproduced: a mammal-scoped listing query joining `country_shapes` passes the plain guard but fails against the browser schema with “Table … does not exist.” This violates planned refusal F7. Run the guard against the actual browser tables and registered files; add this regression case.
+
+SHOULD-CONSIDER:
+- Extend the existing tampered-file E2E check to `range-listings.parquet`, verifying its new manifest pin.
+
 ## Release
 
 ## Decisions
@@ -626,6 +640,7 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - S1: Q1's "`dist/learn/data/` stays 96,026,558 B" holds for the manifest's own `bytes` (95,877,990, unmoved: it counts `files` only). The build's logged total, which counts `manifest.json` and `index.html`, is 96,026,726: +168 B from the pin and the copy edit.
 - S6: plain `learn:check`, not Q6's `--update`: 004 had seeded the one new result, so any of the other 189 moving would fail the run; a whole run still writes `checked.json`. `e4.html` holds neither word: row 5 is worded "came from elsewhere to XA, the place List A says it comes from". Lead and Result each gain one clause. 007's row loses "44 of the 88".
 - S7: curated proof compared against this step's own hash list (`$S/dist-s7.sha256`), since `dist-final.sha256` is written only at Verification. `[]` accepted, so Open risks' fallback wasn't needed. R26 also trips the mammal pass in both modes (2 faults under `--draft`): with no `ORDER BY`, the wrapped query's row order moves. Its pinned message still names the order fault.
+- Code review: MUST-FIX 1 accepted and reproduced, S9. It's wider than Astra's report: a `read_parquet` of an unregistered file also passes. SHOULD-CONSIDER for the Summary: extend the tampered-file E2E check (`e2e/learn-browser.spec.ts:68`) to `range-listings.parquet`, to prove its new manifest pin.
 
 ## Log
 
@@ -643,5 +658,6 @@ The guard alone is tested in isolation: at S2 no listing block exists to push th
 - 2026-11-02 03:18 UTC: S6: e4 `e4-list-rows` (5 rows, hash `a4db17261e6f`), whole `learn:check` ok, 189 results unmoved (`checked.json` diff: `blocks.e4-list-rows`, `downloads.e4.sql`, date; 14 added files). typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 552 files equal, byte check exactly the 8 expected lines, E2E 168/168 (`$S/e2e-s6`).
 - 2026-11-02 03:27 UTC: S7: harness adds R21-R29 (real block files, both modes); 33 cases, 0 failed, tree clean, dist/ unchanged (`$S/refusals.log`). Curated proof: `[]` derives and builds with no `learn:check`; exactly 3 `data/` files and the 6 expected `dist/` files moved; restored byte-identical. typecheck pass, test 823/823, plain build pass (6 listing blocks), port check 552 files equal, byte check exactly the 8 expected lines. No E2E, per the step.
 - 2026-11-02 03:33 UTC: S8: release smoke adds f3, s1, d2 listing blocks + e4's recorded rows; dry run on plain build against local Caddy 9/9 (`$S/e2e-s8`, `$S/s8-e2e.log`), `RL` rows included, nothing left on 3100/3101. typecheck pass, test 823/823, plain build pass, port check 552 files equal, byte check exactly the 8 expected lines.
+- 2026-11-02 03:37 UTC: Astra code review: APPROVE_WITH_CHANGES, 1 MUST-FIX (guard's tables wider than a browser's); reproduced in 2 forms on `dist/`, added as S9; 1 SHOULD-CONSIDER kept for the Summary. No code touched.
 
 ## Summary
