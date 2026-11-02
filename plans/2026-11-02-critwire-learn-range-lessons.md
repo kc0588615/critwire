@@ -66,7 +66,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -216,6 +216,25 @@ Each link in the chain has a gate:
 
 ## Architecture review (Fable)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+Checked against the code: findings 1–6 hold. `scripts/learn/freshness.ts:96-97` hashes `manifest.files` only, so pinning the file in `inputs.v1` (`scripts/build/learn/data.ts:80,114`) moves no lab key; `withLabTables` puts `v1/` on `file_search_path` (`scripts/build/learn/projection.ts:77`), so Node resolves `range-listings.parquet` by the name the engine registers (`site/learn/src/engine.ts:236`); curated rows on mammals are refused (`scripts/derive/range-curated.ts:30`); `data/raw/gbif-checklists/snapshot.json` carries `license` for the 18 role datasets only, so e4's "44 of 88" is unsourceable; `assemble.ts:122,178` put PostGIS blocks in `.sql` and Python in `.py`, so a new e4 PostGIS block moves `e4.sql` only. Every number in Q2 recomputed from Baseline `dist/`: 364/275/89, 379/94, tiger's 4 (BR, DE, US, ZA), one mammal conflict (black rhino ZA: GRIIS introduced, MDD native-or-pre-1500); MDD lists the black rhino in KE, so 007's example sentence is true. Runtimes: browser via `DATA_FILES` (registered buffer, sha-pinned), PostGIS e4 inline `VALUES` (no file), no Python block; all covered. 9 steps ≤ 12; `/v1` isn't under the `learn/data/` cap (`data.ts:95`). Listings stay claims by named source with the conflict's both rows shown (Q2 `s1-listed-conflicts`); copy change scoped to d2, f3, s1 as O4 asks.
+
+MUST-FIX:
+1. **Deterministic row order on every multi-row listing block.** `renderResult` (`scripts/learn/result.ts:26-28`) hashes every row in order, and the guard (Target design 2) fails a plain build on any difference between Node DuckDB (multi-threaded) and WASM (one thread). Q2 gives an `ORDER BY` only to `s1-listed-species` (plan :127); `f3-listed-no-records` (89 rows), `f3-ex-listed`, `s1-listed-conflicts` and `d2-listing-facts` (:124-129) have none, and an anti join's output order isn't defined. State a total `ORDER BY` (unique tiebreaker) for each, and have the guard refuse a listing block returning more than one row without a trailing `ORDER BY`, as the no-list-cell rule already does for rendering.
+2. **Copy gate's third clause is ambiguous and, read literally, breaks the lesson** (Target design 5, :196: "matches no other fragment … except `e4`"). s1's and f3's own prose must say "listed as native" (Q2 rows, Q3), not only the added line. Write it as: `\b(native|introduced)\b` may appear only in the pages `listingBlocks` names (d2, f3, s1) and in e4; every other fragment under `site/learn/modules`, `pages`, `data/index.html`, `layout.html` has 0 matches. Say the gate scans the HTML sources, not rendered pages.
+
+MISSED:
+1. **Both gates key on one spelling.** `listingBlocks` matches `read_parquet('range-listings.parquet')` (:186) and the copy gate takes its page list from it (:194). A block written `FROM 'range-listings.parquet'` or with double quotes reads the file unguarded and its page escapes the copy rule. Have `listingBlocks` refuse any browser block whose text contains `range-listings` in another form.
+2. **Finding 6's replacement copy must not call it a file setup.sql reads.** `setup.html:16`, `004:475`, `engine.ts:4,24,88` all say "the four files setup.sql reads"; the listings file is registered for lesson blocks only and `setup.sql` stays byte-identical (Target design 1). "Five files setup.sql reads" would be false; word it as four tables' files plus one file lesson blocks read in place.
+
+SHOULD-CONSIDER:
+1. Run the guard inside `writeStar`'s `withLabTables` session (`star.ts:126`) instead of a fourth table build per `pnpm build`; same policy, same `draft` switch, ~2 s saved.
+2. Q6's `AGENTS.md:100` text: also say `learn/data/index.html` doesn't move on a curated correction (`page.ts:59` renders only the sample's rows, not `inputs.v1`), since Q1's hash-list proof names it as differing this mission for the copy edit only.
+3. s1's prose for `record_countries` 379 / `on_no_listing` 94: say "on no listing from any source", since GRIIS and the Central Asia checklist rows on mammals count as listings there (tiger KZ/TJ/UZ, cheetah, addax, devil).
+4. e4's made-up catalogue: give it no title resembling a real GBIF dataset, and keep "introduced" there as a field value in a `VALUES` row, not in e4's prose, so the `AGENTS.md:69` carve-out stays as narrow as written.
+5. The `[]` curated proof removes the spiny softshell conflict row from `range-conflicts.json` too; list that file among the expected diffs so the proof's "only Q6's files differ" check doesn't read as a failure.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -234,5 +253,6 @@ Each link in the chain has a gate:
 
 - 2026-11-02 00:43 UTC: Baseline: typecheck pass, test 811/811, build pass, E2E 166/166; dist equals live; listings live.
 - 2026-11-02 00:55 UTC: Architecture written: browser blocks read `/v1/range-listings.parquet` by name, 7 new blocks (f3, s1, d2, e4), new build guard, copy gate; candidate queries ran on Baseline `dist/`, nothing built yet.
+- 2026-11-02 01:00 UTC: Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (total ORDER BY on listing blocks + guard; copy gate clause), for Revision; Q2 numbers recomputed by reviewer from Baseline `dist/`; no code touched.
 
 ## Summary
