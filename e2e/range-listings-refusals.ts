@@ -1,12 +1,15 @@
 // The brief's "plain build refuses" list, each made to happen once, on real files through the real CLI, in both modes:
-// pnpm exec tsx e2e/range-listings-refusals.ts   (after pnpm build, on a clean tree; R1–R20 of the mission plan's Verification.)
-// Not a spec, so pnpm e2e doesn't run it: it edits the tree. Interrupted: git checkout -- data contracts.
+// pnpm exec tsx e2e/range-listings-refusals.ts   (after pnpm build, on a clean tree; R1–R20 of plan 007's mission's Verification, R21–R29 of the range lessons'.)
+// Not a spec, so pnpm e2e doesn't run it: it edits the tree. Interrupted: git checkout -- data contracts site/learn/sql e2e/__snapshots__, then pnpm build.
+//
+// Two shapes of case. Most refuse before the db load, in both modes. The listing-block guard's (`guard`, below) run on the
+// built site, so they refuse after dist/ is written: the last pnpm build rewrites it, and the hash check covers that.
 //
 // Ways this harness could lie, each closed below:
 // 1. A case passes on some other refusal: the message is pinned with the doctored row's own names.
 // 2. A doctor changes nothing (a row or name gone), so the case proves nothing: the file must be dirty after it, lookups throw.
-// 3. A refusal comes after a write: the db load's line fails the case, and dist/'s hashes must end unchanged.
-// 4. --draft lifts a refusal: every case runs in both modes.
+// 3. A refusal comes after a write: the db load's line fails the case unless it's a guard case, and dist/'s hashes must end unchanged.
+// 4. --draft lifts a refusal: every case runs in both modes; only `draftWarns` may pass there, and it must print the warning.
 // 5. A doctored file survives into the next case or the tree: restored in finally, git status checked after each case.
 // 6. It overwrites someone's work: refuses a dirty tree before the first case.
 import { spawnSync } from "node:child_process";
@@ -25,7 +28,9 @@ const CURATED = "data/review/range-curated.json";
 const CONTRACT = "contracts/v1.json";
 const LISTINGS = "data/range-listings.json";
 const CONFLICTS = "data/review/range-conflicts.json";
-const RESTORED = ["data", "contracts"];
+const SQL = "site/learn/sql";
+const SNAPSHOTS = "e2e/__snapshots__";
+const RESTORED = ["data", "contracts", SQL, SNAPSHOTS];
 
 const readText = (file: string) => readFile(join(root, file), "utf8");
 const readData = async <T>(file: string) => JSON.parse(await readText(file)) as T;
@@ -81,6 +86,14 @@ const curatedRow = (over: Record<string, unknown> = {}) => ({
 });
 const addCurated = (...rows: unknown[]) => edit<unknown[]>(CURATED, (file) => { file.push(...rows); });
 const appendByte = async (file: string) => writeFile(join(root, file), `${await readText(file)}\n`);
+// A block file's or a snapshot's text, changed in one place; lookups throw, so a case can't doctor a line that's gone.
+async function replaceOnce(file: string, from: string, to: string): Promise<void> {
+  const text = await readText(file);
+  if (text.split(from).length !== 2) throw new Error(`${file}: wanted exactly one ${JSON.stringify(from)}`);
+  await writeFile(join(root, file), text.replace(from, () => to));
+}
+const LISTINGS_READER = "read_parquet('range-listings.parquet')";
+const ANOTHER_FORM = (id: string) => `q ${id}: names another form of range-listings`;
 
 interface Case {
   id: string;
@@ -88,6 +101,10 @@ interface Case {
   doctor: () => Promise<void>;
   // pnpm derive runs on the doctored file first (R8: the snapshot passes derive; only the citation's check is left).
   derive?: boolean;
+  // The listing-block guard refuses it, on the built site: after the db load, which the case then allows.
+  guard?: boolean;
+  // --draft passes and prints `want`; a plain build refuses with it.
+  draftWarns?: boolean;
   want: string[];
 }
 
@@ -162,6 +179,51 @@ const CASES: Case[] = [
     }),
     want: ["/v1/range-listings notWritten: removed from the writer", "needs /v2"],
   },
+  {
+    id: "R21", file: `${SQL}/f3-listed-no-records.sql`,
+    doctor: () => replaceOnce(`${SQL}/f3-listed-no-records.sql`, LISTINGS_READER, "'range-listings.parquet'"),
+    want: [ANOTHER_FORM("f3-listed-no-records")],
+  },
+  {
+    id: "R22", file: `${SQL}/e4-checks.sql`,
+    doctor: () => replaceOnce(`${SQL}/e4-checks.sql`, "-- engine: postgis\n", "-- engine: postgis\n-- see range-listings.parquet\n"),
+    want: [ANOTHER_FORM("e4-checks")],
+  },
+  {
+    id: "R23", file: `${SQL}/e1-checksum.py`,
+    doctor: () => replaceOnce(`${SQL}/e1-checksum.py`, "import json\n", "# see range-listings.parquet\nimport json\n"),
+    want: [ANOTHER_FORM("e1-checksum")],
+  },
+  {
+    id: "R24", file: `${SQL}/d2-list.sql`,
+    doctor: () => replaceOnce(`${SQL}/d2-list.sql`, "read_parquet('species.parquet')", "read_parquet('spec*.parquet')"),
+    want: ["q d2-list: can reach a file without its name"],
+  },
+  {
+    id: "R25", file: `${SQL}/s1-ex.sql`,
+    doctor: () => replaceOnce(`${SQL}/s1-ex.sql`, "-- status: ran\n", "-- status: ran\n-- after: s1-listed\n"),
+    want: ["q s1-ex: runs after s1-listed, a listing block"],
+  },
+  {
+    id: "R26", file: `${SQL}/f3-listed-no-records.sql`, guard: true,
+    doctor: () => replaceOnce(`${SQL}/f3-listed-no-records.sql`, "\nORDER BY s.common_name, s.id, c.name, l.origin;", ";"),
+    want: ["q f3-listed-no-records: returns 89 rows and has no ORDER BY of its own"],
+  },
+  {
+    id: "R27", file: `${SQL}/d2-listing-facts.sql`, guard: true,
+    doctor: () => replaceOnce(`${SQL}/d2-listing-facts.sql`, "WHERE t.class = 'Mammalia'\n", ""),
+    want: ["q d2-listing-facts: reads non-mammal rows; a curated correction would move it"],
+  },
+  {
+    id: "R28", file: `${SQL}/s1-listed.sql`, guard: true,
+    doctor: () => replaceOnce(`${SQL}/s1-listed.sql`, "SELECT source,\n", "SELECT source, [1] AS a_list,\n"),
+    want: ["q s1-listed: cell type of a_list is INTEGER[]"],
+  },
+  {
+    id: "R29", file: `${SNAPSHOTS}/s1-listed.txt`, guard: true, draftWarns: true,
+    doctor: () => replaceOnce(`${SNAPSHOTS}/s1-listed.txt`, "| 364 |", "| 365 |"),
+    want: ["q s1-listed: result differs from its snapshot", "- Mammal Diversity Database | 365 |", "+ Mammal Diversity Database | 364 |"],
+  },
 ];
 
 const MODES = [{ mode: "plain", args: [] as string[] }, { mode: "draft", args: ["--draft"] }];
@@ -181,7 +243,7 @@ const report = (ok: boolean, id: string, mode: string, line: string) => {
   console.log(`${ok ? "PASS" : "FAIL"} ${id} ${mode} ${line}`);
 };
 
-for (const { id, file, doctor, derive, want } of CASES) {
+for (const { id, file, doctor, derive, guard, draftWarns, want } of CASES) {
   try {
     await doctor();
     if (!treeStatus().includes(file)) throw new Error(`${id}: the doctor changed nothing in ${file}`);
@@ -194,8 +256,9 @@ for (const { id, file, doctor, derive, want } of CASES) {
       const output = `${stdout}${stderr}`;
       const missing = want.filter((w) => !output.includes(w));
       const line = errorLine(output);
-      if (status === 0) report(false, id, mode, "the build passed");
-      else if (/^loaded \d+ species$/m.test(output)) report(false, id, mode, `refused after the db load: ${line}`);
+      if (draftWarns && mode === "draft") report(status === 0 && !missing.length, id, mode, status !== 0 ? `refused: ${line}` : missing.length ? `passed, wanted ${JSON.stringify(missing)}` : "warned, passed");
+      else if (status === 0) report(false, id, mode, "the build passed");
+      else if (!guard && /^loaded \d+ species$/m.test(output)) report(false, id, mode, `refused after the db load: ${line}`);
       else if (missing.length) report(false, id, mode, `wanted ${JSON.stringify(missing)}, got: ${line}`);
       else report(true, id, mode, line);
     }
@@ -205,6 +268,8 @@ for (const { id, file, doctor, derive, want } of CASES) {
   if (treeStatus() !== "") throw new Error(`${id} left the tree dirty:\n${treeStatus()}`);
 }
 
+const rebuilt = spawnSync("pnpm", ["-s", "build"], { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+if (rebuilt.status !== 0) throw new Error(`the last pnpm build failed on the restored tree:\n${rebuilt.stdout}${rebuilt.stderr}`);
 if (await distHash() !== distBefore) { failed += 1; console.log("FAIL dist/ hashes changed"); }
 console.log(`${CASES.length} cases, ${failed} failed; tree clean, dist/ ${failed ? "see above" : "unchanged"}`);
 process.exit(failed ? 1 : 0);

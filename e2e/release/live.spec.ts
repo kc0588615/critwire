@@ -3,7 +3,8 @@
 // f3's first browser block shows its recorded result; and (L4) the origin's s4.py, run in .venv-learn after the origin's
 // loader, prints s4's recorded lesson outputs; and (L5 T8) each star file hashes as the served star manifest says, and
 // c1's served feed is valid against its served schema and credits as the served data manifest and datasets.csv say;
-// and each fix of e2e/qa-fixes.ts shows on the origin.
+// and each fix of e2e/qa-fixes.ts shows on the origin; and f3's, s1's and d2's listing blocks (read /v1/range-listings)
+// run and equal their snapshots, and e4's made-up list rows show their recorded result.
 // dist/ must be the build of the released commit.
 // Run: RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts
 import { expect, test } from "@playwright/test";
@@ -23,7 +24,7 @@ import { learnObjects } from "../../scripts/learn/leaks.ts";
 import { childEnv, LAB_ROLE, labTarget, pgConnect, psqlArgs } from "../../scripts/learn/pg.ts";
 import { pythonApp, pythonEnv, pythonFailure, runPython } from "../../scripts/learn/python.ts";
 import { VENV_PYTHON } from "../../scripts/venv.ts";
-import { distPath, feedSchemaErrors, firstBrowserBlock, openDuckDB, rendered, repoPath, runBlock, servedFeedAttribution, sha256, waitReady } from "../helpers.ts";
+import { coursePages, distPath, feedSchemaErrors, firstBrowserBlock, openDuckDB, rendered, repoPath, runBlock, servedFeedAttribution, sha256, waitReady } from "../helpers.ts";
 import { qaFixErrors } from "../qa-fixes.ts";
 
 // Every file under dist/, as its URL path: an index.html as its folder.
@@ -64,6 +65,20 @@ test("f3's first browser block shows its recorded result", async ({ page }) => {
   await waitReady(page);
   await runBlock(page.locator(`#q-${id}`));
   expect(await rendered(page, id)).toMatchSnapshot(`${id}.txt`);
+});
+
+test("f3's, s1's and d2's listing blocks run and equal their snapshots; e4's list rows show their recorded result", async ({ page }) => {
+  test.setTimeout(180_000);
+  const urls = new Map((await coursePages()).map((c) => [c.page.page.id, c.url]));
+  for (const [moduleId, id] of [["f3", "f3-listed-no-records"], ["s1", "s1-listed"], ["d2", "d2-listing-facts"]] as const) {
+    expect((await page.goto(urls.get(moduleId)!))?.status(), moduleId).toBe(200);
+    await waitReady(page);
+    await runBlock(page.locator(`#q-${id}`));
+    expect(await rendered(page, id)).toMatchSnapshot(`${id}.txt`);
+  }
+  expect((await page.goto(urls.get("e4")!))?.status(), "e4").toBe(200);
+  expect(await page.locator("#q-e4-list-rows pre.recorded").textContent())
+    .toBe((await readFile(repoPath(`${CHECKED_DIR}/e4-list-rows.txt`), "utf8")).replace(/\n+$/, ""));
 });
 
 test("each /learn/data/star/ file hashes as the served star manifest says", async ({ request }) => {

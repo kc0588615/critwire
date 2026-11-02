@@ -1,0 +1,7 @@
+-- result: e4-list-rows · 5 rows · sha256 a4db17261e6f
+row_no | list_title | license | place | origin | decision
+1 | List A | CC0 1.0 | XA | native | kept
+2 | List A | CC0 1.0 | XB | native | kept
+3 | List B | CC BY 4.0 | XB | introduced | kept
+4 | List C | CC BY-NC 4.0 | XB | introduced | dropped: license
+5 | Catalogue D | CC BY 4.0 | XA | introduced | dropped: list has no role

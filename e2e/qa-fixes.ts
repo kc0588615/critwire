@@ -1,7 +1,7 @@
 // One row per prose or external-URL fix of the Learn QA pass (plans/006-learn-qa.md): the served page holds `has` and not
 // `not`, in its HTML as written, so a link's URL counts and a sentence is matched between its tags. `from`: the recorded
 // result (repo path) a number came from, checked on dist/ only by learn-walk.spec.ts. Run on dist/ and, by
-// release/live.spec.ts, on the origin.
+// release/live.spec.ts, on the origin. RL rows: the Learn range lessons (plans/2026-11-02-critwire-learn-range-lessons.md).
 import type { APIRequestContext } from "@playwright/test";
 
 export interface QaFix {
@@ -106,6 +106,25 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q55", url: "/learn/labs/s4.sql", has: "A `-- boot` block commits, so what it creates stays." },
   { q: "Q62", url: "/learn/etl/quality-provenance/", has: "# the GBIF download the records came from", not: "came from (§4.2)" },
   { q: "Q81", url: "/learn/etl/idempotent/", has: "adds a CHECK on the license", not: "licence" },
+  { q: "RL1", url: "/learn/setup/", has: "The page also fetches <code>/v1/range-listings.parquet</code>, which builds no table: a few lesson blocks read that file in place." },
+  { q: "RL2", url: "/learn/data/", has: "critwire's species, countries and range-listings files under", not: "critwire's species and countries files" },
+  { q: "RL3", url: "/learn/foundations/join/", has: "These 89 rows start with the Aardvark in Burundi", from: { file: "e2e/__snapshots__/f3-listed-no-records.txt", values: ["89 rows", "Aardvark | Burundi | native-or-pre-1500 | Mammal Diversity Database"] } },
+  { q: "RL4", url: "/learn/foundations/join/", has: "MDD lists 89 animal and country pairs with no open record", from: { file: "e2e/__snapshots__/f3-listed-no-records.txt", values: ["89 rows"] } },
+  { q: "RL5", url: "/learn/foundations/join/", has: "<p>Four countries. Each is a question to ask", from: { file: "e2e/__snapshots__/f3-ex-listed.txt", values: ["4 rows"] } },
+  { q: "RL6", url: "/learn/spatial-statistics/bias/", has: "MDD lists these animals as present in 364 animal and country pairs: 275 of them (75.5 %) have open records and 89 have none.", from: { file: "e2e/__snapshots__/s1-listed.txt", values: ["Mammal Diversity Database | 364 | 275 | 75.5 | 89 | 379 | 94"] } },
+  { q: "RL7", url: "/learn/spatial-statistics/bias/", has: "the mammals have open records in 379 animal and country pairs, and 94 of those are on no listing from any source.", from: { file: "e2e/__snapshots__/s1-listed.txt", values: ["Mammal Diversity Database | 364 | 275 | 75.5 | 89 | 379 | 94"] } },
+  { q: "RL8", url: "/learn/spatial-statistics/bias/", has: "These 50 rows start with the Aardvark: MDD lists it in 42 countries, 19 with open records and 23 without.", from: { file: "e2e/__snapshots__/s1-listed-species.txt", values: ["50 rows", "Aardvark | Mammal Diversity Database | 42 | 19 | 23"] } },
+  { q: "RL9", url: "/learn/spatial-statistics/bias/", has: "The African Savanna Elephant has 10 of 34 without, and the Giant Pangolin 10 of 17.", from: { file: "e2e/__snapshots__/s1-listed-species.txt", values: ["African Savanna Elephant | Mammal Diversity Database | 34 | 24 | 10", "Giant Pangolin | Mammal Diversity Database | 17 | 7 | 10"] } },
+  { q: "RL10", url: "/learn/spatial-statistics/bias/", has: "For the Black Rhinoceros in South Africa, South Africa's list in the Global Register of Introduced and Invasive Species says introduced, and MDD says native or introduced before 1500.", from: { file: "e2e/__snapshots__/s1-listed-conflicts.txt", values: ["2 rows", "Black Rhinoceros | South Africa | introduced | present | Global Register of Introduced and Invasive Species - South A", "Black Rhinoceros | South Africa | native-or-pre-1500 | present | Mammal Diversity Database"] } },
+  { q: "RL11", url: "/learn/spatial-statistics/bias/", has: "of MDD's 364 rows marked present for the mammals, 275 (75.5 %) have open records and 89 have none, and 94 of the mammals' 379 animal and country pairs with open records are on no listing from any source.", from: { file: "e2e/__snapshots__/s1-listed.txt", values: ["Mammal Diversity Database | 364 | 275 | 75.5 | 89 | 379 | 94"] } },
+  { q: "RL12", url: "/learn/database-architecture/normalize/", has: "<code>native-or-pre-1500</code>, MDD's value for native or introduced before 1500, comes with <code>present</code> (364 rows) and with <code>uncertain</code> (36)", from: { file: "e2e/__snapshots__/d2-listing-facts.txt", values: ["native-or-pre-1500 | present | 364 | 1", "native-or-pre-1500 | uncertain | 36 | 1"] } },
+  { q: "RL13", url: "/learn/database-architecture/normalize/", has: "<code>introduced</code> also comes with both (7 rows from 6 sources, and 3)", from: { file: "e2e/__snapshots__/d2-listing-facts.txt", values: ["introduced | present | 7 | 6", "introduced | uncertain | 3 | 1"] } },
+  { q: "RL14", url: "/learn/database-architecture/normalize/", has: "<code>native</code> with <code>absent</code>: 6 rows, from one source", from: { file: "e2e/__snapshots__/d2-listing-facts.txt", values: ["native | absent | 6 | 1"] } },
+  { q: "RL15", url: "/learn/database-architecture/normalize/", has: "6 mammal rows say <code>native</code> and <code>absent</code> at once", from: { file: "e2e/__snapshots__/d2-listing-facts.txt", values: ["5 rows", "native | absent | 6 | 1"] } },
+  { q: "RL16", url: "/learn/etl/quality-provenance/", has: "Five made-up rows from four made-up lists", from: { file: "site/learn/labs/checked/e4-list-rows.txt", values: ["5 rows", "List A", "List B", "List C", "Catalogue D"] } },
+  { q: "RL17", url: "/learn/etl/quality-provenance/", has: "Rows 2 and 3 disagree about XB, and both stay", from: { file: "site/learn/labs/checked/e4-list-rows.txt", values: ["2 | List A | CC0 1.0 | XB | native | kept", "3 | List B | CC BY 4.0 | XB | introduced | kept"] } },
+  { q: "RL18", url: "/learn/etl/quality-provenance/", has: "Row 4 goes for its license", from: { file: "site/learn/labs/checked/e4-list-rows.txt", values: ["4 | List C | CC BY-NC 4.0 | XB | introduced | dropped: license"] } },
+  { q: "RL19", url: "/learn/etl/quality-provenance/", has: "Row 5 is the hard one", from: { file: "site/learn/labs/checked/e4-list-rows.txt", values: ["5 | Catalogue D | CC BY 4.0 | XA | introduced | dropped: list has no role"] } },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

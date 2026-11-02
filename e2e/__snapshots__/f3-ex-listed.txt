@@ -1,0 +1,6 @@
+-- result: f3-ex-listed · 4 rows · sha256 b70a76ec0dab
+country
+Brazil
+Germany
+South Africa
+United States of America

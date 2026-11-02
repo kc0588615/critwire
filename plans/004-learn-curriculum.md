@@ -472,7 +472,7 @@ Four tools, each set up once. Every lab names the tool it runs on (§2). The fil
 
 ### 3.1 Browser
 
-Nothing to install: a current desktop browser opens a module page and its SQL runs there. The engine is 002 §1's, unchanged: DuckDB-WASM's `eh` bundle in a worker, served by critwire itself with its `parquet` extension, results capped at 10 000 rows, Reset and Stop by restarting the worker. The page builds its database from four files, `/v1/species.parquet`, `/v1/countries.parquet`, `/learn/data/datasets.csv` and `/learn/data/occurrences.parquet` (§0's `setup`; about 3.2 s on a desktop, §A.1), so every learner starts from the same tables and a reload starts fresh.
+Nothing to install: a current desktop browser opens a module page and its SQL runs there. The engine is 002 §1's, unchanged: DuckDB-WASM's `eh` bundle in a worker, served by critwire itself with its `parquet` extension, results capped at 10 000 rows, Reset and Stop by restarting the worker. The page builds its database from four files, `/v1/species.parquet`, `/v1/countries.parquet`, `/learn/data/datasets.csv` and `/learn/data/occurrences.parquet` (§0's `setup`; about 3.2 s on a desktop, §A.1), so every learner starts from the same tables and a reload starts fresh. The page also fetches `/v1/range-listings.parquet`, which builds no table: a few lesson blocks read that file in place.
 
 **Light spatial in plain SQL.** The browser has no `ST_` functions: DuckDB's `spatial` extension isn't served (23.6 MB per DuckDB version; §10 item 3). The foundations still use coordinates as numbers: a bounding box is `longitude BETWEEN … AND latitude BETWEEN …`, `floor(longitude / 10)` and `floor(latitude / 10)` bin records into 10° boxes, and the haversine formula gives a great-circle distance. Anything with shapes (outlines, projections, spatial joins and indexes) is PostGIS's.
 
@@ -948,7 +948,7 @@ With hex geometry the loader was 29,598,105 bytes, and the same projection came 
 
 `/v1/attribution.json` stays about the species files, plus 002 §6's Natural Earth entry. The lab files are credited in **`/learn/data/manifest.json`**, keys in this order and no clock, so the same files give the same bytes (L1, `scripts/build/learn/data.ts`):
 - `cap` (120,000,000) and `bytes`, the files' total;
-- `inputs`: `v1`, the bytes and sha256 of `/v1/species.parquet` and `/v1/countries.parquet`, the two `/v1` files the lab tables are built from (a lab that finds other hashes is reading newer `/v1` files than these were tested with); `sample`, `sample.csv`'s path, sha256 and rows, the file the sample's derived-dataset deposit holds (= `contributions.json`);
+- `inputs`: `v1`, the bytes and sha256 of `/v1/species.parquet` and `/v1/countries.parquet`, the two `/v1` files the lab tables are built from, and of `/v1/range-listings.parquet`, which a few browser blocks read in place (a lab that finds other hashes is reading newer `/v1` files than these were tested with); `sample`, `sample.csv`'s path, sha256 and rows, the file the sample's derived-dataset deposit holds (= `contributions.json`);
 - `dois`: `download` (the GBIF download's) and `sample` (the sample's derived dataset; null in a draft build);
 - `files`: per file (all but `manifest.json` and `index.html`), its `columns` and `rows` (Parquet and CSV), `tables` for the loader (each lab table's rows, the counts its final check enforces), `bytes`, `sha256` and `sources[]` (`name`, `license`, `licenseUrl` from `scripts/build/sources.ts` `licenseUrl()`, `citation`, `url`, `doi` where there is one; the sample's source adds `datasets` and `derivedDataset` {`doi`, `citation`, `url`}).
 
@@ -1553,6 +1553,36 @@ id | common_name | range_status
 47 | Ili Pika | no-open-records
 ```
 
+   A different kind of list shows another gap. `/v1/range-listings` holds what named sources list: each row is one source's claim about one animal in one country. Every mammal in critwire has rows from the Mammal Diversity Database (MDD), the American Society of Mammalogists' open list of mammal species; [Licenses](/#licenses) gives its license and where its data came from. No lab table holds this file, so the block reads it where it's published, with `read_parquet('range-listings.parquet')`. An animal and a country together make the key, so this anti join matches on two columns: the countries where MDD lists an animal as present, with no row in `species_countries`.
+
+   On this page, native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.
+
+```sql
+-- q: f3-listed-no-records
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT s.common_name AS animal, c.name AS country, l.origin, l.source
+FROM read_parquet('range-listings.parquet') AS l
+JOIN species AS s ON s.id = l.speciesId
+JOIN countries AS c ON c.code = l.country
+LEFT JOIN species_countries AS sc ON sc.species_id = l.speciesId AND sc.country_code = l.country
+WHERE l.sourceKey = 'mdd' AND l.presence = 'present' AND sc.species_id IS NULL
+ORDER BY s.common_name, s.id, c.name, l.origin;
+```
+
+```text
+-- result: f3-listed-no-records · 89 rows · sha256 d0d87c462f63
+animal | country | origin | source
+Aardvark | Burundi | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Cameroon | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Central African Republic | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Chad | native-or-pre-1500 | Mammal Diversity Database
+Aardvark | Djibouti | native-or-pre-1500 | Mammal Diversity Database
+… 84 more rows
+```
+
+   These 89 rows start with the Aardvark in Burundi: MDD lists it there as native or introduced before 1500, and no open record passes critwire's country rule. The two lists answer different questions, so neither is wrong. A listing is a source's claim and a record is someone's observation; a listed country with no record shows nothing either way, since the animal may be gone or nobody may have shared a record. Likewise, no row in this file means critwire holds no open listing for that pair, not that the animal is absent.
+
 2. Where the condition goes. Records since 2020 in each South American country, zeros kept: the year test is part of the match, so it goes in `ON`.
 
 ```sql
@@ -1688,7 +1718,7 @@ west | south | records | species
 … 5 more rows
 ```
 
-**Result:** Brazil has 12 animals in critwire's list and 14 in the sample; the two extra ones each rest on one stray record that critwire's rule leaves out. Five animals have no record in the sample, four of them for reasons `range_status` gives and one because of a dataset's license. A condition on the right table in `WHERE` turns a left join into an inner one (14 countries become 9), and joining two "many" tables at once turned 2,000 records into 40,000 rows. A degree box is cheap and works anywhere, but it is not an area (a 10° box near the poles is much smaller than one at the equator) and one outlier stretches it: GIS in SQL (g1, g3) does this properly with geometries.
+**Result:** Brazil has 12 animals in critwire's list and 14 in the sample; the two extra ones each rest on one stray record that critwire's rule leaves out. Five animals have no record in the sample, four of them for reasons `range_status` gives and one because of a dataset's license. A condition on the right table in `WHERE` turns a left join into an inner one (14 countries become 9), and joining two "many" tables at once turned 2,000 records into 40,000 rows. MDD lists 89 animal and country pairs with no open record, which settles nothing about either list. A degree box is cheap and works anywhere, but it is not an area (a 10° box near the poles is much smaller than one at the equator) and one outlier stretches it: GIS in SQL (g1, g3) does this properly with geometries.
 
 **Exercise:** Which countries in Africa have no record in the sample? Show `code` and `name`, by name. Write it with `NOT EXISTS`.
 
@@ -1728,6 +1758,35 @@ SELECT 'BR' NOT IN ('AR', NULL) AS not_in, 'BR' IN ('BR', NULL) AS is_in;
 not_in | is_in
 NULL | true
 ```
+
+The other direction, across the two lists. Which countries have open records of the Tiger in `species_countries` but no row from any source in the listings file? Show the country's name as `country`, by name. Read the file with `read_parquet('range-listings.parquet')`; its `speciesId` and `country` are the two columns to match, in a `NOT EXISTS`.
+
+**Answer:**
+
+```sql
+-- q: f3-ex-listed
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT c.name AS country
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+JOIN countries AS c ON c.code = sc.country_code
+WHERE s.common_name = 'Tiger'
+  AND NOT EXISTS (SELECT 1 FROM read_parquet('range-listings.parquet') AS l
+                  WHERE l.speciesId = sc.species_id AND l.country = sc.country_code)
+ORDER BY c.name;
+```
+
+```text
+-- result: f3-ex-listed · 4 rows · sha256 b70a76ec0dab
+country
+Brazil
+Germany
+South Africa
+United States of America
+```
+
+Four countries. Each is a question to ask, not a finding: a captive animal and a misplaced record look the same here, and no row means critwire holds no open listing, not that no source anywhere lists the Tiger there.
 
 **Check:** `result, any row order`. The skip exercise is checked the same way.
 
@@ -2580,6 +2639,34 @@ ids.ncbi | Wikidata | CC0 1.0 | 2026-10-20
 
 The taxonomy and its own id are from the Catalogue of Life, the other outside ids from Wikidata and GBIF, the country list from GBIF's occurrence search. `ids.iucn` is critwire's own: critwire stores only the animal's IUCN id, never the Red List's data, whose terms don't allow republishing it.
 
+The same question applies to a claim. `/v1/range-listings` holds what named sources list: each row is one source's claim about one animal in one country. Every mammal in critwire has rows from the Mammal Diversity Database (MDD), the American Society of Mammalogists' open list of mammal species; [Licenses](/#licenses) gives its license and where its data came from. A row says two things about the animal in that country: `origin`, how the source says it came to be there, and `presence`, whether the source says it's there. Are those one fact or two? This file is read like `species.parquet`, by name; here are the mammals' rows counted by both:
+
+On this page, native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.
+
+```sql
+-- q: d2-listing-facts
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT l.origin, l.presence, count(*) AS listings, count(DISTINCT l.sourceKey) AS sources
+FROM read_parquet('range-listings.parquet') AS l
+JOIN species_taxonomy AS t ON t.species_id = l.speciesId
+WHERE t.class = 'Mammalia'
+GROUP BY l.origin, l.presence
+ORDER BY listings DESC, l.origin, l.presence;
+```
+
+```text
+-- result: d2-listing-facts · 5 rows · sha256 2ab668eb6f13
+origin | presence | listings | sources
+native-or-pre-1500 | present | 364 | 1
+native-or-pre-1500 | uncertain | 36 | 1
+introduced | present | 7 | 6
+native | absent | 6 | 1
+introduced | uncertain | 3 | 1
+```
+
+Two facts, because neither fixes the other. `native-or-pre-1500`, MDD's value for native or introduced before 1500, comes with `present` (364 rows) and with `uncertain` (36); `introduced` also comes with both (7 rows from 6 sources, and 3). `present` comes with two origins, so `presence → origin` doesn't hold either. The plainest case is `native` with `absent`: 6 rows, from one source, a checklist of Central Asia's mammals. Each is that source's claim that the animal is native to the country and absent from it, and says nothing about why or since when. One `status` column would have to choose between those words, or hold a made-up value for every pair, and every question about one fact would have to pick it apart. Each row here is a named source's claim: no row means critwire holds no open listing, and a listed country with no record shows nothing either way.
+
 **Lab:** Is a license a fact about a record or about its dataset? GBIF gives both: every dataset declares a license, and every record carries one. If `dataset_key → license` held, the license would belong in `datasets` (3NF), stored 400 times instead of 40,395.
 1. Test the rule on the records: does any dataset have records under two licenses?
 
@@ -2699,7 +2786,7 @@ datasets_in_flat | datasets_in_table
 316 | 400
 ```
 
-**Result:** The nested record became tables along its dependencies: the country list into rows (1NF), the country's name into `countries` (2NF), the family into `taxa` and the source's license into `sources` (3NF), with the published file repeating them for readers, rebuilt each time. The license question has a two-part answer. In the sample, no dataset has records under two licenses, but the full download has one (iNaturalist), and one museum's records carry a stricter license than its dataset declares. So the record's license is a fact about the record and stays on `occurrences`; `datasets.license` is the dataset's own declaration, a different fact. The flat table showed what normalizing prevents: 40,395 copies of 400 titles, one dataset with two titles after a partial fix, and 84 datasets lost with their last records (316 left of 400). And a record count per dataset is a query, not a column: stored, it would be wrong after the next load.
+**Result:** The nested record became tables along its dependencies: the country list into rows (1NF), the country's name into `countries` (2NF), the family into `taxa` and the source's license into `sources` (3NF), with the published file repeating them for readers, rebuilt each time. The license question has a two-part answer. In the sample, no dataset has records under two licenses, but the full download has one (iNaturalist), and one museum's records carry a stricter license than its dataset declares. So the record's license is a fact about the record and stays on `occurrences`; `datasets.license` is the dataset's own declaration, a different fact. The flat table showed what normalizing prevents: 40,395 copies of 400 titles, one dataset with two titles after a partial fix, and 84 datasets lost with their last records (316 left of 400). And a record count per dataset is a query, not a column: stored, it would be wrong after the next load. A listing's `origin` and `presence` are two facts as well, so two columns: 6 mammal rows say `native` and `absent` at once.
 
 **Exercise:** Normalize `records_flat` (lab step 3, before the anomalies) into 3NF: `r_species (species_id, common_name)`, `r_datasets (dataset_key, title, publisher)` and `r_records (id, species_id, dataset_key, license)`, each with its primary key, and `r_records`' foreign keys to the other two. Fill them from `records_flat`, then show the split is lossless: count each table's rows, and the rows that joining the three back loses or adds compared with `records_flat` (both should be 0).
 
@@ -6714,7 +6801,111 @@ Museums Victoria provider for OZCAM | PRESERVED_SPECIMEN | 5 | 0.3 | NULL | NULL
 
 The devil's 2,000 records are 70.7 % the Tasmanian Natural Values Atlas (1,367 `OBSERVATION` and 46 `OCCURRENCE`) and 27.9 % material samples, such as tissue, at the Tasmanian Museum and Art Gallery (558 `MATERIAL_SAMPLE`, 2000 to 2023); the other 9 rows are museum specimens and one observation. The atlas's first year, 1599, comes before the first European sighting of Tasmania (1642): a date to check before trusting a time series (Quality and provenance, e4). 20 of the 28 museum specimens have no year at all.
 
-**Result:** Human observations are 43.5 % of the sample's 40,395 records, preserved specimens 26.2 % and machine observations 20.8 %, from only 22 species. Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more. The jaguar's 97.4 % is one GPS-collar dataset: 1,948 records at 1,948 points in 5 countries between 2001 and 2016, against 52 records from 24 other datasets. The devil's records are 70.7 % one atlas and 27.9 % one museum's material samples. So s2–s5 measure where the atlas and the museum's field teams recorded devils, and say so; the honest sentence is always about records.
+4. What the records can't say on their own is where a source expects the animal. For that there's a different kind of list. `/v1/range-listings` holds what named sources list: each row is one source's claim about one animal in one country. Every mammal in critwire has rows from the Mammal Diversity Database (MDD), the American Society of Mammalogists' open list of mammal species; [Licenses](/#licenses) gives its license and where its data came from. MDD's rows here all say native or introduced before 1500. No lab table holds this file, so this step runs in the browser and reads it where it's published, with `read_parquet('range-listings.parquet')`. For the mammals, MDD's rows marked present against `species_countries`, in both directions: `listed` asks how many of those rows have open records, and `recorded` asks how many countries with open records have no row from any source.
+
+   On this page, native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.
+
+```sql
+-- q: s1-listed
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+WITH listed AS (
+  SELECT l.source, sc.species_id IS NOT NULL AS has_records
+  FROM read_parquet('range-listings.parquet') AS l
+  LEFT JOIN species_countries AS sc ON sc.species_id = l.speciesId AND sc.country_code = l.country
+  WHERE l.sourceKey = 'mdd' AND l.presence = 'present'
+), recorded AS (
+  SELECT NOT EXISTS (SELECT 1 FROM read_parquet('range-listings.parquet') AS l
+                     WHERE l.speciesId = sc.species_id AND l.country = sc.country_code) AS on_no_listing
+  FROM species_countries AS sc
+  JOIN species_taxonomy AS t ON t.species_id = sc.species_id
+  WHERE t.class = 'Mammalia'
+)
+SELECT source,
+       count(*) AS listed,
+       count(*) FILTER (WHERE has_records) AS with_records,
+       round(100.0 * count(*) FILTER (WHERE has_records) / count(*), 1) AS pct,
+       count(*) FILTER (WHERE NOT has_records) AS no_records,
+       (SELECT count(*) FROM recorded) AS record_countries,
+       (SELECT count(*) FROM recorded WHERE on_no_listing) AS on_no_listing
+FROM listed
+GROUP BY source;
+```
+
+```text
+-- result: s1-listed · 1 row · sha256 157fdfaf5ca5
+source | listed | with_records | pct | no_records | record_countries | on_no_listing
+Mammal Diversity Database | 364 | 275 | 75.5 | 89 | 379 | 94
+```
+
+   MDD lists these animals as present in 364 animal and country pairs: 275 of them (75.5 %) have open records and 89 have none. A listed country with no record shows nothing either way: the animal may be gone, or nobody may have shared a record. The other way round, the mammals have open records in 379 animal and country pairs, and 94 of those are on no listing from any source. Each of the 94 is a question to ask, not a finding: a captive animal and a misplaced record look the same here, and no row means critwire holds no open listing, not that no source anywhere lists the animal there.
+
+   The same split per animal, the largest gaps first:
+
+```sql
+-- q: s1-listed-species
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT s.common_name AS animal, l.source, count(*) AS listed,
+       count(sc.species_id) AS with_records,
+       count(*) - count(sc.species_id) AS no_records
+FROM read_parquet('range-listings.parquet') AS l
+JOIN species AS s ON s.id = l.speciesId
+LEFT JOIN species_countries AS sc ON sc.species_id = l.speciesId AND sc.country_code = l.country
+WHERE l.sourceKey = 'mdd' AND l.presence = 'present'
+GROUP BY s.id, s.common_name, l.source
+ORDER BY no_records DESC, listed DESC, s.id;
+```
+
+```text
+-- result: s1-listed-species · 50 rows · sha256 4b230741b745
+animal | source | listed | with_records | no_records
+Aardvark | Mammal Diversity Database | 42 | 19 | 23
+African Savanna Elephant | Mammal Diversity Database | 34 | 24 | 10
+Giant Pangolin | Mammal Diversity Database | 17 | 7 | 10
+Cheetah | Mammal Diversity Database | 21 | 13 | 8
+African Wild Dog | Mammal Diversity Database | 19 | 11 | 8
+… 45 more rows
+```
+
+   These 50 rows start with the Aardvark: MDD lists it in 42 countries, 19 with open records and 23 without. The African Savanna Elephant has 10 of 34 without, and the Giant Pangolin 10 of 17. A gap says where open records were shared, and nothing about whether the animal is still there.
+
+   Sources can also disagree. A conflict is a claim against its opposite, for one animal and country, on rows with no narrower `area`: native against introduced, or present against absent. Among the mammals, one place qualifies, and the block shows both its rows:
+
+```sql
+-- q: s1-listed-conflicts
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+WITH mammal_rows AS (
+  SELECT l.*
+  FROM read_parquet('range-listings.parquet') AS l
+  JOIN species_taxonomy AS t ON t.species_id = l.speciesId
+  WHERE t.class = 'Mammalia' AND l.area IS NULL
+), conflicts AS (
+  SELECT speciesId, country
+  FROM mammal_rows
+  GROUP BY speciesId, country
+  HAVING (count(*) FILTER (origin LIKE 'native%') > 0 AND count(*) FILTER (origin = 'introduced') > 0)
+      OR (count(*) FILTER (presence = 'present') > 0 AND count(*) FILTER (presence = 'absent') > 0)
+)
+SELECT s.common_name AS animal, c.name AS country, m.origin, m.presence, m.source, m.url
+FROM mammal_rows AS m
+JOIN conflicts USING (speciesId, country)
+JOIN species AS s ON s.id = m.speciesId
+JOIN countries AS c ON c.code = m.country
+ORDER BY s.id, m.country, m.origin, m.presence, m.sourceKey;
+```
+
+```text
+-- result: s1-listed-conflicts · 2 rows · sha256 9557e3eb4326
+animal | country | origin | presence | source | url
+Black Rhinoceros | South Africa | introduced | present | Global Register of Introduced and Invasive Species - South A… | https://www.gbif.org/species/134848921
+Black Rhinoceros | South Africa | native-or-pre-1500 | present | Mammal Diversity Database | https://www.mammaldiversity.org/taxon/1006113
+```
+
+   For the Black Rhinoceros in South Africa, South Africa's list in the Global Register of Introduced and Invasive Species says introduced, and MDD says native or introduced before 1500. Each row is a named source's claim with its own link; both stay in the file, and this lesson doesn't pick one. This block reads mammals only, so the axolotl's conflict in Germany isn't here; [the query under Range listings](/#range-listings) lists every animal's.
+
+**Result:** Human observations are 43.5 % of the sample's 40,395 records, preserved specimens 26.2 % and machine observations 20.8 %, from only 22 species. Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more. The jaguar's 97.4 % is one GPS-collar dataset: 1,948 records at 1,948 points in 5 countries between 2001 and 2016, against 52 records from 24 other datasets. The devil's records are 70.7 % one atlas and 27.9 % one museum's material samples. So s2–s5 measure where the atlas and the museum's field teams recorded devils, and say so; the honest sentence is always about records. Listings are a different kind of claim, by a named source: of MDD's 364 rows marked present for the mammals, 275 (75.5 %) have open records and 89 have none, and 94 of the mammals' 379 animal and country pairs with open records are on no listing from any source.
 
 **Exercise:** Datasets aren't the only thing that piles up: so do years. For each species with at least 100 records, find the year with the most records (the earliest one on a tie), how many records it holds, and its share of all the species' records. Records with no year count in the total but can't be a busiest year. Run it in the browser. Which species have half or more of their records in one year, and why?
 
@@ -9398,7 +9589,47 @@ gbif_id | check_name | value
 
 Each made-up record breaks one check except the last, which breaks two and gets two report rows; record 9000000001 passes them all and would load. A test written `coordinate_uncertainty_m < 0` catches 9000000002 and 9000000006's `-Infinity`, and passes 9000000003 and 9000000004: `NaN` and `Infinity` compare above 0. The report keeps the source's key and the value as delivered, so the fix can go back to the source.
 
-2. Who to credit. Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:
+2. A row no filter can catch. Five made-up rows from four made-up lists about one made-up animal, in two made-up places. Each row is kept or dropped by its list's license, then by whether a person gave the list a role:
+
+```sql
+-- q: e4-list-rows
+-- status: ran
+-- engine: postgis
+-- Made up: one animal, places XA and XB, four lists. A person read each whole list and gave it a role, or none
+WITH lists (list_title, license, has_role) AS (
+  VALUES ('List A', 'CC0 1.0', true),
+         ('List B', 'CC BY 4.0', true),
+         ('List C', 'CC BY-NC 4.0', true),
+         ('Catalogue D', 'CC BY 4.0', false)
+), staged (row_no, list_title, place, origin) AS (
+  VALUES (1, 'List A', 'XA', 'native'),
+         (2, 'List A', 'XB', 'native'),
+         (3, 'List B', 'XB', 'introduced'),
+         (4, 'List C', 'XB', 'introduced'),
+         (5, 'Catalogue D', 'XA', 'introduced')
+)
+SELECT s.row_no, s.list_title, l.license, s.place, s.origin,
+       CASE WHEN l.license NOT IN ('CC0 1.0', 'CC BY 4.0') THEN 'dropped: license'
+            WHEN NOT l.has_role THEN 'dropped: list has no role'
+            ELSE 'kept' END AS decision
+FROM staged AS s
+JOIN lists AS l USING (list_title)
+ORDER BY s.row_no;
+```
+
+```text
+-- result: e4-list-rows · 5 rows · sha256 a4db17261e6f
+row_no | list_title | license | place | origin | decision
+1 | List A | CC0 1.0 | XA | native | kept
+2 | List A | CC0 1.0 | XB | native | kept
+3 | List B | CC BY 4.0 | XB | introduced | kept
+4 | List C | CC BY-NC 4.0 | XB | introduced | dropped: license
+5 | Catalogue D | CC BY 4.0 | XA | introduced | dropped: list has no role
+```
+
+Rows 2 and 3 disagree about XB, and both stay: each is its own list's claim, and a load doesn't pick a winner. Row 4 goes for its license: CC BY-NC 4.0 bars commercial use, and this load keeps only CC0 1.0 and CC BY 4.0. Row 5 is the hard one. Its license is open and every field is well formed, yet it says the animal came from elsewhere to XA, the place List A says it comes from. No filter on a license or a field's value catches that. Only a person who reads the whole list sees it says this about animals in their home countries, and gives it no role. critwire's listings (`/#range-listings`) work this way: it reads a dataset only once a person has checked it and given it a role.
+
+3. Who to credit. Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:
 
 ```sql
 -- q: e4-credits
@@ -9424,7 +9655,7 @@ ICMBio \| Dados de ocorrência de espécies do Sistema de Autor… | Instituto C
 … 28 more rows
 ```
 
-3. The derived-dataset registration for that subset: the request body, built but never posted.
+4. The derived-dataset registration for that subset: the request body, built but never posted.
 
 ```python
 # q: e4-derived
@@ -9466,7 +9697,7 @@ body: 1718 bytes, ready to POST with your GBIF account
 
 The devil and the jaguar have 4,000 records from 33 datasets. 29 datasets supply CC BY 4.0 records (3,992) and must be credited, led by the Jaguar Movement Database (1,948 GPS-collar records), the Tasmanian Natural Values Atlas (1,413) and the Tasmanian Museum and Art Gallery (569). The 4 CC0 datasets (8 records) ask for no credit, and are credited anyway. The registration body lists the same 33 datasets and 4,000 records, with `originalDownloadDOI` set to the download's DOI. These counts are records in a capped sample: the Jaguar Movement Database supplies 1,948 of the jaguar's 2,000 because a GPS collar records the same animal again and again, not because it saw most jaguars. They say whom to credit and for how much of the sample, and nothing about where either animal is common.
 
-**Result:** every reject check passes on the sample, and four flags are left for a reviewer: unknown precision, repeats, coarse places, and dates before 1642. A quarantine report names each refused record by its key, with the check and the value, and an uncertainty check written as a range catches negative, `NaN` and infinite values that `< 0` lets through. The devil and the jaguar need credits to 29 datasets, and a derived dataset lists all 33 in one DOI.
+**Result:** every reject check passes on the sample, and four flags are left for a reviewer: unknown precision, repeats, coarse places, and dates before 1642. A quarantine report names each refused record by its key, with the check and the value, and an uncertainty check written as a range catches negative, `NaN` and infinite values that `< 0` lets through. A license filter drops what you may not publish; only a person's check of a whole list drops a row that passes every filter. The devil and the jaguar need credits to 29 datasets, and a derived dataset lists all 33 in one DOI.
 
 **Exercise:** turn the row-level reject checks into a gate a load calls before its `COMMIT`. For each check, count the staged rows breaking it and keep the first key; the load goes ahead only if every count is 0. Use `e4-checks`' coordinate and year checks and `e4-quarantine`'s uncertainty check. Run the gate on a `TEMP` copy of the devil's 2,000 records, then again after inserting two made-up records: one at 0, 0, and one dated 2031 with `NaN` uncertainty.
 

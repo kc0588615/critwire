@@ -1,5 +1,5 @@
 // Learn's browser engine (plan D11, D13 learn-browser; S11–S13, S15): boot, the origin fence, SC2's hash check, the
-// row cap, Reset and Stop, on the playground; then the playground's refusals, the changed generation, its table list
+// row cap, Reset and Stop, the listings file by name, on the playground; then the playground's refusals, the changed generation, its table list
 // and Download CSV, the test hook, cards and "N rows changed"; then every browser block of the course pages against its
 // snapshot, every exercise and "Already know this?" check against its answer and a fixed wrong one (a passed skip check
 // marks its module done); one engine (one worker) across three pages; the changed generation across pages, and a
@@ -122,6 +122,23 @@ test("Reset restores the tables; Stop ends a runaway query; the next query runs"
   await expect(result(page).locator(".result-summary")).toHaveText("Stopped. The database was restarted.");
   await run(page, "SELECT 1 AS one");
   expect(await cells(page)).toEqual([["1"]]);
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("range-listings.parquet reads by name, and still does after Reset", async ({ browser }) => {
+  const { rows } = JSON.parse(await readFile(repoPath("data/range-listings.json"), "utf8")) as { rows: unknown[] };
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(PLAYGROUND);
+  await waitReady(page);
+  const LISTINGS = "SELECT count(*) AS n FROM read_parquet('range-listings.parquet')";
+  await run(page, LISTINGS);
+  expect(await cells(page)).toEqual([[String(rows.length)]]);
+  await page.getByRole("button", { name: "Reset database" }).click();
+  await waitReady(page);
+  await run(page, LISTINGS);
+  expect(await cells(page)).toEqual([[String(rows.length)]]);
   expect(offOrigin).toEqual([]);
   await context.close();
 });
@@ -294,7 +311,7 @@ test("every browser block of the course pages equals its snapshot, and cards fol
   }
   // f3-brazil-list is the release smoke's block (cards, as its `-- show: cards` says).
   expect(seen).toEqual(
-    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d2-list", "d2-sources", "d2-update-anomaly", "d2-delete-anomaly", "d2-ex-two-titles", "d6-export", "s1-basis", "s1-dominance"]),
+    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-listed-no-records", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d2-list", "d2-sources", "d2-listing-facts", "d2-update-anomaly", "d2-delete-anomaly", "d2-ex-two-titles", "d6-export", "s1-basis", "s1-dominance", "s1-listed", "s1-listed-species", "s1-listed-conflicts"]),
   );
   expect(offOrigin).toEqual([]);
   await context.close();
@@ -413,6 +430,18 @@ SELECT count(*) AS fact_rows, sum(records) AS records, sum(records) = (SELECT co
        sum(records) FILTER (WHERE decade = -1) AS unknown_decade FROM fact_species_decade;`,
     hint: "Some rows differ from the answer.",
   },
+  // The match on the country alone: every country has some animal's listing.
+  "f3-ex-listed": {
+    sql: `SELECT c.name AS country
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+JOIN countries AS c ON c.code = sc.country_code
+WHERE s.common_name = 'Tiger'
+  AND NOT EXISTS (SELECT 1 FROM read_parquet('range-listings.parquet') AS l
+                  WHERE l.country = sc.country_code)
+ORDER BY c.name`,
+    hint: "Your result has 0 rows; the answer has 4.",
+  },
 };
 
 test("every exercise and skip check rejects a fixed wrong answer and accepts its own (result = snapshot); a skip check marks its module done", async ({ browser }) => {
@@ -453,7 +482,7 @@ test("every exercise and skip check rejects a fixed wrong answer and accepts its
       seen.push(b.id);
     }
   }
-  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f4-skip", "f4-ex", "d1-ex", "d2-ex", "d6-ex", "s1-ex"]));
+  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f3-ex-listed", "f4-skip", "f4-ex", "d1-ex", "d2-ex", "d6-ex", "s1-ex"]));
   expect(offOrigin).toEqual([]);
   await context.close();
 });

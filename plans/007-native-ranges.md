@@ -496,18 +496,18 @@ The wording names no source, so an O1 no leaves nothing false or dangling: `nati
 
 ## Learn tie-in
 
-Recommended: **no Learn change in the first build**, then a small separate mission, whose native-row lessons (s1, f3) need O1 or O3 (a). Each addition follows the 004-and-site-together rule. A browser block needs one entry in `V1_INPUTS` (`scripts/build/learn/data.ts:80`) and in `DATA_FILES` (`site/learn/src/engine.ts:25`), which changes `manifest.json`, but no loader table.
+Recommended: **no Learn change in the first build**, then a small separate mission, whose native-row lessons (s1, f3) need O1 or O3 (a). Each addition follows the 004-and-site-together rule. A browser block needs one entry in `V1_INPUTS` (`scripts/build/learn/data.ts:80`) and in `DATA_FILES` (`site/learn/src/engine.ts:25`), which changes `manifest.json`, but no loader table. No lab key sees that file, so a build guard (`scripts/build/learn/listing-blocks.ts`) runs each block reading it against its snapshot: mammal rows only, so a curated correction moves no lesson. Plan `2026-11-02-critwire-learn-range-lessons`.
 
 | Module | What it gains | Path | Cost |
 |---|---|---|---|
-| **s1 Bias** | Answers its own question, "What can records say about where an animal lives, and what can't they?": records against native listings, per species. Spike, mammals: 275 of 364 native rows have open records (0.7555), and 94 record countries sit on no listing, each one a question to ask | Browser | One block, prose, results |
-| **f3 Joins** | An anti join: listed native countries with no open record (89 of those 364), next to "Which have no records at all?" | Browser | One exercise |
+| **s1 Bias** | Answers its own question, "What can records say about where an animal lives, and what can't they?": records against native listings, per species. Spike, mammals: 275 of 364 native rows have open records (0.7555), and 94 record countries sit on no listing, each one a question to ask | Browser | Three blocks (the numbers, per animal, the one mammal conflict), prose, results |
+| **f3 Joins** | An anti join: listed native countries with no open record (89 of those 364), next to "Which have no records at all?" | Browser | One lesson block (an exercise hides its result), one exercise |
 | **d1/d2** | A long table against a list in a cell; a composite key; origin and presence as two facts | Browser | One block |
-| **e4 Provenance** | A license and quality case from what the spike met, on made-up rows: 44 of the 88 datasets met are CC BY-NC, a catalogue marks animals introduced in their home countries, a row to drop by dataset | PostGIS, inline rows | One block |
+| **e4 Provenance** | A license and quality case from what the spike met, on made-up rows: a list dropped for CC BY-NC, a catalogue marks animals introduced in their home countries, a row to drop by dataset | PostGIS, inline rows | One block |
 | **g3 Spatial joins** | An open version of the appendix on records against a range (`site/learn/modules/g3.html:43`, today IUCN-download-only): records per outline against listed countries | PostGIS: a 17th lab table, so loader, `LAB_TABLES`, `lab.mmd`, `checked/` | Largest; defer |
 | **c1 Feed** | A flag on each cell's country (listed or not) | Feed schema and results change | Defer |
 
-**Copy rule.** "Records, never range" (`AGENTS.md:68`) stays for records. A page reading this file needs one added line: *native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.* That's O4. `site/learn/modules/s1.html:19`, `p4.html:7`, `c1.html:35`, `site/index.html:140` and `DATA-LICENSE.md` are all true and stay true for records; each needs a sentence only when its page first reads the file.
+**Copy rule.** "Records, never range" (`AGENTS.md`, Learn rules) stays for records. A page reading this file needs one added line: *native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.* That's O4. `site/learn/modules/s1.html:19`, `p4.html:7`, `c1.html:35`, `site/index.html:140` and `DATA-LICENSE.md` are all true and stay true for records; each needs a sentence only when its page first reads the file.
 
 ## Owner's choices
 

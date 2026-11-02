@@ -1,0 +1,8 @@
+-- result: s1-listed-species · 50 rows · sha256 4b230741b745
+animal | source | listed | with_records | no_records
+Aardvark | Mammal Diversity Database | 42 | 19 | 23
+African Savanna Elephant | Mammal Diversity Database | 34 | 24 | 10
+Giant Pangolin | Mammal Diversity Database | 17 | 7 | 10
+Cheetah | Mammal Diversity Database | 21 | 13 | 8
+African Wild Dog | Mammal Diversity Database | 19 | 11 | 8
+… 45 more rows

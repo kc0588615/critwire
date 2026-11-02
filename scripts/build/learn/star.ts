@@ -75,7 +75,7 @@ export function inputErrors(pages: readonly CoursePage[]): string[] {
 }
 
 /** A Node DuckDB result as the recorded results hold it: decimals, dates and other DuckDB values as their text. */
-const asResult = (r: DuckDBResultReader): Result => ({
+export const asResult = (r: DuckDBResultReader): Result => ({
   columns: r.columnNames(),
   rows: r.getRows().map((row) => row.map((v) => (v !== null && typeof v === "object" ? String(v) : v))),
 });
