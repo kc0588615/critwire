@@ -2,7 +2,7 @@
 mission: critwire-learn-range-lessons
 project: critwire
 branch: agent/critwire-learn-range-lessons
-status: active
+status: done
 started: 2026-11-02 00:26 UTC
 ---
 
@@ -662,5 +662,43 @@ SHOULD-CONSIDER:
 - 2026-11-02 03:33 UTC: S8: release smoke adds f3, s1, d2 listing blocks + e4's recorded rows; dry run on plain build against local Caddy 9/9 (`$S/e2e-s8`, `$S/s8-e2e.log`), `RL` rows included, nothing left on 3100/3101. typecheck pass, test 823/823, plain build pass, port check 552 files equal, byte check exactly the 8 expected lines.
 - 2026-11-02 03:37 UTC: Astra code review: APPROVE_WITH_CHANGES, 1 MUST-FIX (guard's tables wider than a browser's); reproduced in 2 forms on `dist/`, added as S9; 1 SHOULD-CONSIDER kept for the Summary. No code touched.
 - 2026-11-02 03:50 UTC: S9: guard runs in a browser's tables and 5 files only (`withBrowserTables`, one `DATA_FILES` in `assets.ts`); F7's new cases seen failing, then passing; absolute paths refused too. typecheck pass, test 823/823, plain build pass (6 listing blocks, no stale lab), port check 552 files equal, byte check exactly the 8 expected lines, two specs 32/32 (`$S/e2e-s9`).
+- 2026-11-02 04:30 UTC: Final Verification on `81cfe90`: typecheck pass, test 823/823, port check 552 equal, plain build pass (6 listing blocks), `learn:check` ok twice (`checked.json` unchanged), byte check exactly 8 lines, 14 added result files, E2E 168/168 (`$S/e2e-final`), refusals 33 cases 0 failed, curated proof exactly 3 `data/` + 6 `dist/` files, restored byte-identical, scope commands empty. Summary written, status done; release next.
 
 ## Summary
+
+Three modules and d2 now use `/v1/range-listings`; e4 teaches the same lesson on made-up rows. Not yet released at the time of writing: see **Release**.
+
+**Per module** (7 new blocks; 189 existing results unmoved):
+- **f3:** `f3-listed-no-records`, 89 pairs MDD lists as present with no open record, from the Aardvark in Burundi. Exercise `f3-ex-listed`: countries with open Tiger records and no listing, 4. "MDD lists 89 animal and country pairs with no open record, which settles nothing about either list."
+- **s1:** `s1-listed`: of MDD's 364 present rows, 275 (75.5 %) have open records, 89 none; 94 of 379 pairs with open records are on no listing from any source. `s1-listed-species`: per animal, 50 rows, from the Aardvark (42 listed: 19 with records, 23 without). `s1-listed-conflicts`: the Black Rhinoceros in South Africa, both claims with source and link; the lesson doesn't pick one.
+- **d2:** `d2-listing-facts` (added, fit the size limit): `origin` and `presence` as two facts. "The plainest case is `native` with `absent`: 6 rows, from one source."
+- **e4:** `e4-list-rows`, PostGIS, 5 made-up rows from 4 made-up lists. **It doesn't read the file:** its rows are made up, and O4 changes wording only on reader pages, so it has no added line and `e4.html` holds neither "native" nor "introduced". "A license filter drops what you may not publish; only a person's check of a whole list drops a row that passes every filter."
+- **d1 stayed out:** it would need the same aside for a composite key f3's join already teaches. g3 and c1 stay deferred.
+- **Setup page:** "The page also fetches `/v1/range-listings.parquet`, which builds no table: a few lesson blocks read that file in place." **Data page:** "critwire's species, countries and range-listings files under". Every page's boot now fetches and pins a fifth file.
+
+**The line as published** (f3, s1, d2):
+> On this page, native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.
+
+**`AGENTS.md`'s copy rule:** "Copy: records, never range; no mission names on public pages; link only pages that exist (planned modules unlinked). A page with a block reading `/v1/range-listings` (d2, f3, s1) adds, in the change that makes it read the file (owner O4, plan 007): "native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range." Elsewhere those words stay off Learn's pages, except inside e4's made-up rows (`e4-list-rows`). `e2e/learn-labs.spec.ts` checks this on the sources."
+
+**New guard:** `scripts/build/learn/listing-blocks.ts`. A block reaches the file only as `read_parquet('range-listings.parquet')`, in one read-only, ran browser statement, mammal rows only, with a total order. The build runs it over a browser's 8 tables and 5 files. So a curated correction moves no lesson and needs no `learn:check`, proved by emptying `range-curated.json`.
+
+**Verification** on `81cfe90`, all as the plan says it must show:
+- typecheck pass; test 823/823; `learn:port --check all` 552 files equal; plain build pass, 6 listing blocks, `dist/learn/data/` 96,026,726 B.
+- `learn:check` ok twice; `checked.json` unchanged; 25 `.sql` and 11 `.py` downloads.
+- E2E 168/168, 0 skipped, 0 flaky; `dist/` unchanged by the run.
+- Refusals: 33 cases, 0 failed. Curated proof: exactly 3 `data/` and 6 `dist/` files moved; restored byte-identical.
+- Byte check: 8 lines, none under `v1/`. Results: 14 added files, only `checked.json` modified (`blocks.e4-list-rows`, `downloads.e4.sql`, plus its date). Each new prose number has an `RL` row, or is the copy line's 1500, a license version or a block id.
+
+**Artifact:** `/srv/critter-ai/agent-state/missions/critwire-learn-range-lessons/e2e-final/` (`playwright-report/`, `test-results/`, `results.json`, `refusals.log`), with `final-*.log`, `curated-*.log` and `dist-final.sha256` beside it. Reproduce: `pnpm install --frozen-lockfile && pnpm learn:venv && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+**Reviews:**
+- Fable: APPROVE_WITH_CHANGES, 2 MUST-FIX, resolved in Revision.
+- Astra (architecture): APPROVE_WITH_CHANGES, 2 MUST-FIX, resolved in Revision.
+- Astra (code): APPROVE_WITH_CHANGES, 1 MUST-FIX, fixed in S9.
+
+**For the owner to consider (Astra's SHOULD-CONSIDER, not done):** extend the tampered-file E2E check (`e2e/learn-browser.spec.ts:68`) to `range-listings.parquet`, to prove its new manifest pin.
+
+**Not run:** `pnpm test:db`: not in the Definition of done, and no code it covers changed.
+
+**Handoff:** H3, H6, H12 still wait on the owner; none blocks this mission.
