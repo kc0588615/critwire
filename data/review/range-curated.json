@@ -1,0 +1,690 @@
+[
+  {
+    "speciesId": 1,
+    "country": "CA",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Emydoidea/blandingii",
+    "sourceTerm": "Southern Ontario, southwest Quebec, pockets in Nova Scotia"
+  },
+  {
+    "speciesId": 1,
+    "country": "US",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Emydoidea/blandingii",
+    "sourceTerm": "Great Lakes states, scattered spots in the northeast"
+  },
+  {
+    "speciesId": 2,
+    "country": "CA",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Apalone/spinifera",
+    "sourceTerm": "Southern Ontario and Quebec"
+  },
+  {
+    "speciesId": 2,
+    "country": "MX",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Apalone/spinifera",
+    "sourceTerm": "Northern states south to Guerrero, plus Baja California"
+  },
+  {
+    "speciesId": 2,
+    "country": "US",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Apalone/spinifera",
+    "sourceTerm": "Vermont and New Jersey west to Arizona and Montana"
+  },
+  {
+    "speciesId": 3,
+    "country": "AR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250708200836/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhinodermatidae/Rhinoderma/Rhinoderma-darwinii",
+    "sourceTerm": "Lanín and Nahuel Huapi national parks"
+  },
+  {
+    "speciesId": 3,
+    "country": "CL",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250708200836/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhinodermatidae/Rhinoderma/Rhinoderma-darwinii",
+    "sourceTerm": "Andes to coast, Concepción to Aysén provinces"
+  },
+  {
+    "speciesId": 4,
+    "country": "CN",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Platysternon/megacephalum",
+    "sourceTerm": "Southern provinces, Hainan included"
+  },
+  {
+    "speciesId": 4,
+    "country": "HK",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Platysternon/megacephalum",
+    "sourceTerm": "Named under China in its subspecies list"
+  },
+  {
+    "speciesId": 4,
+    "country": "KH",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Platysternon/megacephalum",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 4,
+    "country": "LA",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Platysternon/megacephalum",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 4,
+    "country": "MM",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Platysternon/megacephalum",
+    "sourceTerm": "Southern Burma"
+  },
+  {
+    "speciesId": 4,
+    "country": "TH",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Platysternon/megacephalum",
+    "sourceTerm": "Northern part"
+  },
+  {
+    "speciesId": 4,
+    "country": "VN",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Platysternon/megacephalum",
+    "sourceTerm": "Northern part"
+  },
+  {
+    "speciesId": 5,
+    "country": "BN",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Part of its Borneo range"
+  },
+  {
+    "speciesId": 5,
+    "country": "ID",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Sumatra and Kalimantan"
+  },
+  {
+    "speciesId": 5,
+    "country": "MM",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Tanintharyi, beside Thailand's peninsula"
+  },
+  {
+    "speciesId": 5,
+    "country": "MY",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Malay Peninsula, Sabah and Sarawak"
+  },
+  {
+    "speciesId": 5,
+    "country": "TH",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251005164442/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Rhacophoridae/Rhacophorinae/Rhacophorus/Rhacophorus-nigropalmatus",
+    "sourceTerm": "Peninsula: Ranong, Pattani, Narathiwat, Yala"
+  },
+  {
+    "speciesId": 6,
+    "country": "CO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Chocó north to Antioquia, Sucre and Bolívar"
+  },
+  {
+    "speciesId": 6,
+    "country": "CR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Caribbean lowlands; Pacific lowlands in the south"
+  },
+  {
+    "speciesId": 6,
+    "country": "HN",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Caribbean lowlands in the northeast"
+  },
+  {
+    "speciesId": 6,
+    "country": "NI",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Caribbean lowlands in the east"
+  },
+  {
+    "speciesId": 6,
+    "country": "PA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815222626/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Phyllomedusidae/Agalychnis/Agalychnis-callidryas",
+    "sourceTerm": "Caribbean side to the centre; Pacific side in the east"
+  },
+  {
+    "speciesId": 7,
+    "country": "AO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Cabinda and Serra do Uíge in the north"
+  },
+  {
+    "speciesId": 7,
+    "country": "CD",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Mayombe Hills"
+  },
+  {
+    "speciesId": 7,
+    "country": "CG",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Western part"
+  },
+  {
+    "speciesId": 7,
+    "country": "CM",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "West and southwest"
+  },
+  {
+    "speciesId": 7,
+    "country": "GA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Inside its Nigeria-to-Congo band"
+  },
+  {
+    "speciesId": 7,
+    "country": "GQ",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Inside its Nigeria-to-Congo band"
+  },
+  {
+    "speciesId": 7,
+    "country": "NG",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250804184213/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Arthroleptidae/Astylosterninae/Astylosternus/Astylosternus-robustus",
+    "sourceTerm": "Osomba Hills in the southeast"
+  },
+  {
+    "speciesId": 8,
+    "country": "CA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251012233103/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Ascaphidae/Ascaphus/Ascaphus-truei",
+    "sourceTerm": "Southwest British Columbia"
+  },
+  {
+    "speciesId": 8,
+    "country": "US",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20251012233103/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Ascaphidae/Ascaphus/Ascaphus-truei",
+    "sourceTerm": "Washington and Oregon's west sides, California's northwest"
+  },
+  {
+    "speciesId": 9,
+    "country": "BR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261021104826/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Dendrobates/Dendrobates-tinctorius",
+    "sourceTerm": "Next to the Guianas"
+  },
+  {
+    "speciesId": 9,
+    "country": "GF",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261021104826/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Dendrobates/Dendrobates-tinctorius",
+    "sourceTerm": "Forest at low elevation"
+  },
+  {
+    "speciesId": 9,
+    "country": "GY",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261021104826/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Dendrobates/Dendrobates-tinctorius",
+    "sourceTerm": "Forest at low elevation"
+  },
+  {
+    "speciesId": 9,
+    "country": "SR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261021104826/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Dendrobates/Dendrobates-tinctorius",
+    "sourceTerm": "Forest at low elevation"
+  },
+  {
+    "speciesId": 10,
+    "country": "BO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Amazon basin"
+  },
+  {
+    "speciesId": 10,
+    "country": "BR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Amazon basin"
+  },
+  {
+    "speciesId": 10,
+    "country": "CO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named, with no narrower place"
+  },
+  {
+    "speciesId": 10,
+    "country": "EC",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named, with no narrower place"
+  },
+  {
+    "speciesId": 10,
+    "country": "GF",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named as one of the Guianas"
+  },
+  {
+    "speciesId": 10,
+    "country": "GY",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named as one of the Guianas"
+  },
+  {
+    "speciesId": 10,
+    "country": "PE",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named, with no narrower place"
+  },
+  {
+    "speciesId": 10,
+    "country": "SR",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named as one of the Guianas"
+  },
+  {
+    "speciesId": 10,
+    "country": "TT",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Trinidad"
+  },
+  {
+    "speciesId": 10,
+    "country": "VE",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260210193354/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Pipidae/Pipinae/Pipa/Pipa-pipa",
+    "sourceTerm": "Named, with no narrower place"
+  },
+  {
+    "speciesId": 11,
+    "country": "CM",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815152806/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Conrauidae/Conraua/Conraua-goliath",
+    "sourceTerm": "Southwest, around Nkongsamba"
+  },
+  {
+    "speciesId": 11,
+    "country": "GA",
+    "area": null,
+    "presence": "uncertain",
+    "url": "https://web.archive.org/web/20260815152806/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Conrauidae/Conraua/Conraua-goliath",
+    "sourceTerm": "A possible southern extension"
+  },
+  {
+    "speciesId": 11,
+    "country": "GQ",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260815152806/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Conrauidae/Conraua/Conraua-goliath",
+    "sourceTerm": "Mainland, as far as Monte Alen"
+  },
+  {
+    "speciesId": 12,
+    "country": "ID",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Heosemys/spinosa",
+    "sourceTerm": "Sumatra, Borneo, Natuna islands"
+  },
+  {
+    "speciesId": 12,
+    "country": "MM",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Heosemys/spinosa",
+    "sourceTerm": "Tenasserim"
+  },
+  {
+    "speciesId": 12,
+    "country": "MY",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Heosemys/spinosa",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 12,
+    "country": "PH",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Heosemys/spinosa",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 12,
+    "country": "SG",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Heosemys/spinosa",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 12,
+    "country": "TH",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Heosemys/spinosa",
+    "sourceTerm": "Southern part"
+  },
+  {
+    "speciesId": 13,
+    "country": "MG",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250805080801/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Microhylidae/Dyscophinae/Dyscophus/Dyscophus-antongilii",
+    "sourceTerm": "Northeast coast, including Antongil Bay"
+  },
+  {
+    "speciesId": 14,
+    "country": "NA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261005081946/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Brevicipitidae/Breviceps/Breviceps-macrops",
+    "sourceTerm": "Far southwest, up to Lüderitz"
+  },
+  {
+    "speciesId": 14,
+    "country": "ZA",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261005081946/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Brevicipitidae/Breviceps/Breviceps-macrops",
+    "sourceTerm": "Far west, around Kleinsee"
+  },
+  {
+    "speciesId": 15,
+    "country": "KE",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Malacochersus/tornieri",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 15,
+    "country": "MW",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Malacochersus/tornieri",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 15,
+    "country": "TZ",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Malacochersus/tornieri",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 15,
+    "country": "ZM",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Malacochersus/tornieri",
+    "sourceTerm": "Named on a 2006 report"
+  },
+  {
+    "speciesId": 16,
+    "country": "IN",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261001162231/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Nasikabatrachidae/Nasikabatrachus/Nasikabatrachus-sahyadrensis",
+    "sourceTerm": "Kerala and Tamil Nadu, in the Western Ghats"
+  },
+  {
+    "speciesId": 17,
+    "country": "AU",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Carettochelys/insculpta",
+    "sourceTerm": "Northern Territory: Daly, Victoria, Alligator drainages"
+  },
+  {
+    "speciesId": 17,
+    "country": "PG",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Carettochelys/insculpta",
+    "sourceTerm": "Southern rivers, the Fly and Strickland among them"
+  },
+  {
+    "speciesId": 18,
+    "country": "CN",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Rafetus/swinhoei",
+    "sourceTerm": "Yunnan in the south"
+  },
+  {
+    "speciesId": 18,
+    "country": "VN",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Rafetus/swinhoei",
+    "sourceTerm": "Named; the north for the vietnamensis form"
+  },
+  {
+    "speciesId": 19,
+    "country": "EC",
+    "area": null,
+    "presence": "absent",
+    "url": "https://reptile-database.reptarium.cz/Chelonoidis/niger",
+    "sourceTerm": "Floreana, Galápagos; page calls this tortoise extinct"
+  },
+  {
+    "speciesId": 20,
+    "country": "CF",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Listed along the Sahara's southern edge"
+  },
+  {
+    "speciesId": 20,
+    "country": "CM",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 20,
+    "country": "ER",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 20,
+    "country": "ET",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 20,
+    "country": "ML",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 20,
+    "country": "MR",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Southern part"
+  },
+  {
+    "speciesId": 20,
+    "country": "NE",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 20,
+    "country": "SD",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 20,
+    "country": "SN",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 20,
+    "country": "SS",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 20,
+    "country": "TD",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Centrochelys/sulcata",
+    "sourceTerm": "Named with no narrower place"
+  },
+  {
+    "speciesId": 21,
+    "country": "MG",
+    "area": null,
+    "presence": "present",
+    "url": "https://reptile-database.reptarium.cz/Astrochelys/radiata",
+    "sourceTerm": "Endemic; far south, Mandrare to Menarandra rivers"
+  },
+  {
+    "speciesId": 22,
+    "country": "EC",
+    "area": null,
+    "presence": "absent",
+    "url": "https://reptile-database.reptarium.cz/Chelonoidis/niger",
+    "sourceTerm": "Pinta Island, Galápagos; last known animal has died"
+  },
+  {
+    "speciesId": 62,
+    "country": "CN",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20260202194629/https://amphibiansoftheworld.amnh.org/Amphibia/Caudata/Cryptobranchidae/Andrias/Andrias-davidianus",
+    "sourceTerm": "Upland streams, Qinghai and Gansu south to Yunnan"
+  },
+  {
+    "speciesId": 74,
+    "country": "MX",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20261006013131/https://amphibiansoftheworld.amnh.org/Amphibia/Caudata/Ambystomatidae/Ambystoma/Ambystoma-mexicanum",
+    "sourceTerm": "Valley of Mexico lakes; today only Xochimilco's southern remnant"
+  },
+  {
+    "speciesId": 75,
+    "country": "US",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250811055612/https://amphibiansoftheworld.amnh.org/Amphibia/Caudata/Cryptobranchidae/Cryptobranchus/Cryptobranchus-alleganiensis",
+    "sourceTerm": "New York to Alabama and Illinois; separate Ozark populations"
+  },
+  {
+    "speciesId": 76,
+    "country": "CO",
+    "area": null,
+    "presence": "present",
+    "url": "https://web.archive.org/web/20250917181054/https://amphibiansoftheworld.amnh.org/Amphibia/Anura/Dendrobatoidea/Dendrobatidae/Dendrobatinae/Phyllobates/Phyllobates-terribilis",
+    "sourceTerm": "Cauca, reaching Valle del Cauca, at 100–200 m"
+  }
+]

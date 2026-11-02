@@ -1,0 +1,48 @@
+[
+  {
+    "speciesId": 66,
+    "scientificName": "Diceros bicornis",
+    "field": "range-listings",
+    "kind": "range-conflict",
+    "severity": "review",
+    "country": "ZA",
+    "values": {
+      "claims": [
+        {
+          "sourceKey": "3cabcf37-db13-4dc1-9bf3-e6f3fbfbbe23",
+          "origin": "introduced",
+          "presence": "present"
+        },
+        {
+          "sourceKey": "mdd",
+          "origin": "native-or-pre-1500",
+          "presence": "present"
+        }
+      ]
+    },
+    "reason": "Sources disagree on Diceros bicornis in ZA; every row ships, none is fixed."
+  },
+  {
+    "speciesId": 74,
+    "scientificName": "Ambystoma mexicanum",
+    "field": "range-listings",
+    "kind": "range-conflict",
+    "severity": "review",
+    "country": "DE",
+    "values": {
+      "claims": [
+        {
+          "sourceKey": "39f36f10-559b-427f-8c86-2d28afff68ca",
+          "origin": "introduced",
+          "presence": "absent"
+        },
+        {
+          "sourceKey": "2a281675-c184-4d54-a47e-5d3a7ec6653f",
+          "origin": "introduced",
+          "presence": "present"
+        }
+      ]
+    },
+    "reason": "Sources disagree on Ambystoma mexicanum in DE; every row ships, none is fixed."
+  }
+]

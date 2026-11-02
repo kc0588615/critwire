@@ -5,13 +5,13 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { ARTIFACTS, ORIGIN, records, repoPath } from "./helpers.ts";
 
-const SECTIONS = ["about", "files", "fields", "countries", "licenses", "credits", "cite"];
+const SECTIONS = ["about", "files", "fields", "countries", "range-listings", "licenses", "credits", "cite"];
 const REGISTRATION = repoPath("data/gbif-derived-dataset/registration.json");
 // External links are checked against this list, not fetched (gbif.org returns 403 to bots).
 const HOSTS = new Set([
   "github.com", "doi.org", "creativecommons.org", "commons.wikimedia.org", "www.catalogueoflife.org", "www.gbif.org",
   "www.wikidata.org", "www.iucnredlist.org", "www.inaturalist.org", "www.ncbi.nlm.nih.gov", "duckdb.org",
-  "play.critterconnect.org", "www.naturalearthdata.com",
+  "play.critterconnect.org", "www.naturalearthdata.com", "www.mammaldiversity.org",
 ]);
 
 // Every key path in the records, e.g. "taxonomy.class" or "sources[].doi".
@@ -53,6 +53,41 @@ test("the countries files: listed, every column described, the NA note, credited
   await expect(credit).toContainText("Made with Natural Earth");
 });
 
+test("the range-listings files: listed, every column and value described, the conflict query, no row isn't absence", async ({ page }, info) => {
+  const contract = JSON.parse(await readFile(repoPath("contracts/v1.json"), "utf8")) as { rangeListings: Record<string, { values?: string[] }> };
+  for (const file of ["range-listings.json", "range-listings.csv", "range-listings.parquet"]) {
+    await expect(page.locator(`#files a[href="/v1/${file}"]`)).toBeVisible();
+  }
+  const section = page.locator("section#range-listings");
+  expect(await section.locator("dl > dt code").allTextContents()).toEqual(Object.keys(contract.rangeListings));
+  for (const column of Object.values(contract.rangeListings)) {
+    for (const value of column.values ?? []) await expect(section.locator("dd").getByText(value, { exact: true }).first()).toBeVisible();
+  }
+  await expect(section).toContainText("no row means critwire holds no open listing, never that the animal isn't there");
+  await expect(section).toContainText("critwire's reading of the reference in url");
+  await expect(section.locator('pre > code[data-query="range-conflicts"]')).toBeVisible();
+  await expect(section.locator('pre > code[data-query="range-agreement"][data-example="sql"]')).toBeVisible();
+
+  const notNative = page.locator("#fields dt", { hasText: "range.countriesWithOpenRecords" }).locator("xpath=following-sibling::dd[1]");
+  await expect(notNative).toContainText("not the animal's native range");
+  await expect(notNative.locator('a[href="#range-listings"]')).toBeVisible();
+
+  for (const width of [375, 1280]) {
+    await page.setViewportSize({ width, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${width} px`).toBeLessThanOrEqual(width);
+    const path = `${ARTIFACTS}/range-listings-${width}.png`;
+    await section.screenshot({ path });
+    await info.attach(`range-listings-${width}`, { path, contentType: "image/png" });
+  }
+});
+
+test("the licenses state each IUCN tie the range listings carry", async ({ page }) => {
+  const licenses = page.locator("#licenses");
+  for (const tie of ["Mammal Diversity Database", "Invasive Species Specialist Group", "Checklist of the mammals of Central Asia"]) await expect(licenses).toContainText(tie);
+  const terms = await readFile(repoPath("DATA-LICENSE.md"), "utf8");
+  for (const tie of ["Mammal Diversity Database", "Invasive Species Specialist Group", "Checklist of the mammals of Central Asia", "/v1/range-listings"]) expect(terms, tie).toContain(tie);
+});
+
 test("the credits cite the GBIF derived-dataset DOI", async ({ page }) => {
   test.skip(!existsSync(REGISTRATION), "no GBIF registration yet (H1)");
   const { doi, relatedDatasets } = JSON.parse(await readFile(REGISTRATION, "utf8"));
@@ -60,6 +95,17 @@ test("the credits cite the GBIF derived-dataset DOI", async ({ page }) => {
   await expect(credits.locator(`a[href="https://doi.org/${doi}"]`)).toBeVisible();
   await expect(credits).toContainText(`${Object.keys(relatedDatasets).length} datasets`);
   await expect(credits.locator('a[href="/v1/attribution.json"]').first()).toBeVisible();
+});
+
+test("the credits count the range listings' sources in rows, and list every checklist with its DOI", async ({ page }) => {
+  const { sources, rows } = JSON.parse(await readFile(repoPath("data/range-listings.json"), "utf8"));
+  const credit = (name: string) => page.locator("#credits dt", { hasText: name }).locator("xpath=following-sibling::dd[1]");
+  const checklistRows = sources.gbifChecklists.datasets.reduce((n: number, d: { rows: number }) => n + d.rows, 0);
+  await expect(credit("GBIF checklists")).toContainText(`Used for ${checklistRows} rows`);
+  await expect(credit("Mammal Diversity Database")).toContainText(`Used for ${rows.filter((r: { sourceKey: string }) => r.sourceKey === "mdd").length} rows`);
+  await expect(credit("critwire curated")).toContainText(`Used for ${rows.filter((r: { sourceKey: string }) => r.sourceKey === "curated").length} rows`);
+  await expect(page.locator("#credits summary", { hasText: "checklists shared through GBIF" })).toContainText(String(sources.gbifChecklists.datasets.length));
+  for (const d of sources.gbifChecklists.datasets) await expect(page.locator(`#credits li a[href="https://doi.org/${d.doi}"]`)).toHaveCount(1);
 });
 
 test("fits a 375 px phone screen", async ({ page }, info) => {

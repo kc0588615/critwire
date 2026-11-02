@@ -25,6 +25,7 @@ import { assertLabsFresh, readLearnInputs, writeLearn } from "./build/learn/site
 import { writeStar } from "./build/learn/star.ts";
 import { readRecorded } from "./learn/freshness.ts";
 import { childFile } from "./build/paths.ts";
+import { writeRangeListings } from "./build/range-listings.ts";
 import { writeTables } from "./build/tables.ts";
 
 const out = new URL("../dist/", import.meta.url);
@@ -35,12 +36,12 @@ for (const arg of args) if (arg !== "--draft") throw new Error(`unknown argument
 loadEnv();
 const url = requireEnv("DATABASE_URL");
 const draft = args.includes("--draft");
-const { species, registration, countries, learn, labFiles, labCredits, labBytes } = await readBuildInputs({ draft });
+const { species, registration, countries, rangeListings, learn, labFiles, labCredits, labBytes } = await readBuildInputs({ draft });
 const learnInputs = await readLearnInputs({ draft });
 const { curriculum, pages, erds, star } = learnInputs;
 console.log(`learn curriculum: ${curriculum.tracks.length} tracks, ${curriculum.modules.length} modules (${curriculum.modules.filter((m) => m.state === "built").length} built)`);
 console.log(`learn pages: ${pages.length} (${pages.reduce((n, p) => n + p.blocks.length, 0)} blocks)`);
-const attribution = buildAttribution(species, registration, countries);
+const attribution = buildAttribution(species, registration, countries, rangeListings);
 const docs = renderDocs(await readFile(docsTemplate, "utf8"), await readFile(styleSheet, "utf8"), attribution, species);
 await loadDatabase(url, species);
 console.log(`loaded ${species.length} species`);
@@ -56,6 +57,7 @@ for (const s of species) {
 }
 await writeTables(speciesFile, v1);
 await writeCountries(countries.rows, v1);
+await writeRangeListings(rangeListings.rows, v1);
 await writeFile(new URL("attribution.json", v1), formatJson(attribution));
 await writeFile(new URL("index.html", out), docs);
 await writeLearnData(new URL("learn/data/", out), { learn, files: labFiles });

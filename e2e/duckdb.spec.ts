@@ -56,6 +56,6 @@ test("every docs example runs, and the curl examples cover every /v1 file", asyn
     return /^\d+$/.test(m[1]) ? "species/{id}.json" : "species/{slug}.json";
   }));
   expect([...kinds].sort()).toEqual(
-    ["attribution.json", "countries.csv", "countries.json", "countries.parquet", "species.csv", "species.json", "species.parquet",
-      "species/{id}.json", "species/{slug}.json"]);
+    ["attribution.json", "countries.csv", "countries.json", "countries.parquet", "range-listings.csv", "range-listings.json", "range-listings.parquet",
+      "species.csv", "species.json", "species.parquet", "species/{id}.json", "species/{slug}.json"]);
 });

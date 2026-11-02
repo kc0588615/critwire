@@ -1,5 +1,5 @@
 // The /v1 contract (L3 plan §7.1): contracts/v1.json, hand-written, is the normative definition of every /v1 field and
-// CSV column; the writers (columns.ts, countries.ts) and the data are checked against it, never the other way round.
+// CSV column; the writers (columns.ts, countries.ts, range-listings.ts) and the data are checked against it, never the other way round.
 // Pure. Entries are add-only: a removal, a retype, a CSV reorder or an unreviewed definition edit needs /v2.
 // Declared nullability (`null`) is a promise, never inferred from the data; only a declared non-null field holding a
 // null (or absent) fails. A null or absent parent hides its members; list elements are never null.
@@ -21,12 +21,14 @@ export interface ContractEntry {
   checklistKey?: string;
   sha: string;
 }
-// species: keyed by dotted path (sources[].release.key); countries: by column. speciesCsv, countriesCsv: column order.
+// species: keyed by dotted path (sources[].release.key); countries, rangeListings: by column. *Csv: column order.
 export interface V1Contract {
   species: Record<string, ContractEntry>;
   countries: Record<string, ContractEntry>;
+  rangeListings: Record<string, ContractEntry>;
   speciesCsv: string[];
   countriesCsv: string[];
+  rangeListingsCsv: string[];
 }
 // The writers' shapes and the data about to be published. The countries CSV is every country column, in order.
 export interface V1Inputs {
@@ -35,6 +37,9 @@ export interface V1Inputs {
   countryColumns: Readonly<Record<string, string>>;
   species: readonly unknown[];
   countries: readonly unknown[];
+  rangeListingColumns: Columns;
+  rangeListingCsv: readonly string[];
+  rangeListings: readonly unknown[];
 }
 export interface V1Check { problems: string[]; additions: string[] }
 
@@ -194,5 +199,10 @@ export function checkV1Contract(contract: V1Contract, inputs: V1Inputs): V1Check
     rowName: (r) => String((r as { code: unknown }).code), noun: "row", cited: false,
   }, check);
   checkCsv("/v1/countries.csv", contract.countriesCsv, Object.keys(inputs.countryColumns), check);
+  checkTable({
+    label: "/v1/range-listings", entries: contract.rangeListings, writer: columnPaths(inputs.rangeListingColumns), rows: inputs.rangeListings,
+    rowName: (r) => { const { speciesId, country } = r as { speciesId: unknown; country: unknown }; return `${speciesId} ${country}`; }, noun: "row", cited: false,
+  }, check);
+  checkCsv("/v1/range-listings.csv", contract.rangeListingsCsv, inputs.rangeListingCsv, check);
   return check;
 }

@@ -18,10 +18,11 @@
 // F2: the occurrences URL isn't gbifOccurrenceUrl(taxon key of the match) (a filter changed, or another taxon).
 // F3: the datasets URL isn't gbifDatasetsUrl(taxon key, 0) (the facet query changed).
 // F4: the checklist record isn't the pinned backbone.
+// Plan F1(14), checklistKeys: id = taxonKey gives two keys; a null survives; both null isn't [].
 // F5: occurrences (or datasets) present for a non-SPECIES match, or missing for a SPECIES one.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assertGbifFresh, deriveGbif, gbifBackboneLicense } from "./gbif.ts";
+import { assertGbifFresh, checklistKeys, deriveGbif, gbifBackboneLicense } from "./gbif.ts";
 import { BACKBONE_KEY, gbifDatasetsUrl, gbifMatchUrl, gbifOccurrenceUrl } from "../ingest/gbif.ts";
 import { assertOpenLicenses, type GbifMatchResponse, type GbifOccurrenceResponse, type GbifSnapshot, type GbifUsage } from "../raw.ts";
 import type { Mismatch } from "../species.ts";
@@ -184,4 +185,12 @@ test("F5 occurrences or datasets present ⇔ a SPECIES match, else → stale", (
   const extra = freshGbif();
   extra.species[GENUS].occurrences = { url: gbifOccurrenceUrl(333), response: { count: 0, facets: [] } };
   assert.throws(() => assertGbifFresh(extra, FRESH_BASE), gbifStale(GENUS, "occurrences present ≠ SPECIES match"));
+});
+
+test("F1(14) checklistKeys: the unique non-null id and taxon key, id first", () => {
+  assert.deepEqual(checklistKeys({ id: 5, taxonKey: 5 }), [5]);
+  assert.deepEqual(checklistKeys({ id: 5, taxonKey: 6 }), [5, 6]);
+  assert.deepEqual(checklistKeys({ id: 5, taxonKey: null }), [5]);
+  assert.deepEqual(checklistKeys({ id: null, taxonKey: 6 }), [6]);
+  assert.deepEqual(checklistKeys({ id: null, taxonKey: null }), []);
 });

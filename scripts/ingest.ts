@@ -1,12 +1,16 @@
 // Usage: pnpm ingest <source> [args]. Each source fetches everything first and writes only after every request
 // succeeded (the old files stay on failure). Request log goes to stderr.
-// Snapshot sources write data/raw/<source>/snapshot.json; wikidata, col and gbif read base.json for the species.
+// Snapshot sources write data/raw/<source>/snapshot.json; wikidata, col, gbif and mdd read base.json for the species.
 // shapes writes data/learn/'s shape files and shapes.json (scripts/ingest/shapes.ts; needs pnpm learn:venv).
 // habitat [--downloads <dir>] writes data/learn/'s habitat files and habitat.json (scripts/ingest/habitat.ts; needs pnpm learn:venv).
 // gbif-sample [--download <key> | --new] writes data/raw/gbif-sample/ (scripts/ingest/gbif-sample.ts).
+// gbif-checklists takes its keys from derive's in-memory core, so a stale listing never blocks its own re-ingest.
+import { deriveCore, readCoreInputs } from "./derive/pipeline.ts";
 import { fetchCol } from "./ingest/col.ts";
 import { fetchGbif } from "./ingest/gbif.ts";
+import { fetchGbifChecklists } from "./ingest/gbif-checklists.ts";
 import { runGbifSample } from "./ingest/gbif-sample.ts";
+import { fetchMdd } from "./ingest/mdd.ts";
 import { fetchNaturalEarth } from "./ingest/naturalearth.ts";
 import { ingestHabitat } from "./ingest/habitat.ts";
 import { ingestShapes } from "./ingest/shapes.ts";
@@ -49,6 +53,8 @@ const sources: Record<string, (args: string[]) => Promise<void>> = {
   shapes: noArgs(ingestShapes),
   habitat: ingestHabitat,
   "gbif-sample": runGbifSample,
+  "gbif-checklists": noArgs(snapshot("gbif-checklists", async () => fetchGbifChecklists(deriveCore(await readCoreInputs()).checklistKeys))),
+  mdd: noArgs(snapshot("mdd", withBase((base) => fetchMdd(base)))),
 };
 
 const [source, ...args] = process.argv.slice(2);

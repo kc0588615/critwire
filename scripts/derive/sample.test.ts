@@ -14,7 +14,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import type { CountriesFile } from "./naturalearth.ts";
-import { deriveAll, deriveCore, readDeriveInputs } from "./pipeline.ts";
+import { deriveAll, deriveCore, readCoreInputs, readDeriveInputs } from "./pipeline.ts";
 import type { Registration } from "../gbif/derived-dataset.ts";
 import { downloadRequest } from "../learn/download.ts";
 import { SAMPLE_COLUMNS, type SampleDatasets, type SampleDownload } from "../learn/sample-files.ts";
@@ -149,4 +149,15 @@ test("SD5 with a stale sample deriveAll throws (so pnpm derive writes nothing); 
   assert.throws(() => deriveAll({ ...real, learn }), stale);
   const stalled = { ...real, learn };
   assert.equal(deriveCore(stalled).records.length, 76);
+});
+
+test("F5 a stale or absent listing snapshot stops deriveAll, never deriveCore or readCoreInputs", async () => {
+  const real = await readDeriveInputs();
+  const listings = { ...real.listings, gbifChecklists: { ...real.listings.gbifChecklists, allowlist: {} } };
+  const stalled = { ...real, listings };
+  assert.throws(() => deriveAll(stalled), /data\/raw\/gbif-checklists is stale \(allowlist\): run pnpm ingest gbif-checklists/);
+  assert.equal(deriveCore(stalled).records.length, 76);
+  const { listings: _absent, ...core } = real;
+  assert.equal(deriveCore(core).records.length, 76);
+  assert.equal("listings" in await readCoreInputs(), false);
 });

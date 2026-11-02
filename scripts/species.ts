@@ -56,7 +56,7 @@ export type RangeStatus = "ok" | "no-open-records" | "identity-unsettled";
 export type Severity = "blocking" | "review" | "info";
 export type MismatchKind =
   | "not-found" | "multi-value" | "identity" | "iucn-id" | "synonym-info" | "status-info" | "taxonomy-info"
-  | "country-captive-suspect" | "country-borderline" | "no-records";
+  | "country-captive-suspect" | "country-borderline" | "no-records" | "range-conflict" | "range-not-found";
 export interface Mismatch {
   speciesId: number;
   scientificName: string;

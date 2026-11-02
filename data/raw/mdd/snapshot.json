@@ -1,0 +1,216 @@
+{
+  "file": {
+    "bytes": 9303589,
+    "md5": "533e662fd5b8f66a5f56c191e7efac44",
+    "url": "https://zenodo.org/api/records/21654811/files/MDD_v2.5_6904species.csv/content"
+  },
+  "license": "CC BY 4.0",
+  "release": {
+    "doi": "10.5281/zenodo.21654811",
+    "issued": "2026-07-28",
+    "version": "v2.5"
+  },
+  "retrieved": "2026-11-01",
+  "species": {
+    "Acinonyx jubatus": {
+      "id": "1005979",
+      "places": "Algeria|Angola|Benin|Botswana|Burkina Faso|Central African Republic|Chad|Eswatini|Ethiopia|Iran|Kenya|Mali|Mozambique|Namibia|Niger|South Africa|South Sudan|Tanzania|Uganda|Zambia|Zimbabwe|Djibouti?|Egypt?|Eritrea?|Libya?|Somalia?|Sudan?|Togo?"
+    },
+    "Addax nasomaculatus": {
+      "id": "1006233",
+      "places": "Chad|Mauritania|Niger"
+    },
+    "Ailuropoda melanoleuca": {
+      "id": "1005930",
+      "places": "China"
+    },
+    "Ailurus fulgens": {
+      "id": "1005802",
+      "places": "Bhutan|China|India|Nepal|Myanmar?"
+    },
+    "Beatragus hunteri": {
+      "id": "1006132",
+      "places": "Kenya|Somalia"
+    },
+    "Bradypus pygmaeus": {
+      "id": "1000429",
+      "places": "Panama"
+    },
+    "Bradypus variegatus": {
+      "id": "1000432",
+      "places": "Argentina|Bolivia|Brazil|Colombia|Costa Rica|Ecuador|Honduras|Nicaragua|Panama|Paraguay|Peru|Venezuela"
+    },
+    "Canis simensis": {
+      "id": "1005946",
+      "places": "Ethiopia"
+    },
+    "Chrysocyon brachyurus": {
+      "id": "1005948",
+      "places": "Argentina|Bolivia|Brazil|Paraguay|Peru|Uruguay"
+    },
+    "Cryptochloris wintoni": {
+      "id": "1000483",
+      "places": "South Africa"
+    },
+    "Daubentonia madagascariensis": {
+      "id": "1000929",
+      "places": "Madagascar"
+    },
+    "Dendrolagus goodfellowi": {
+      "id": "1000254",
+      "places": "Papua New Guinea"
+    },
+    "Diceros bicornis": {
+      "id": "1006113",
+      "places": "Angola|Botswana|Eswatini|Kenya|Malawi|Mozambique|Namibia|Rwanda|South Africa|Tanzania|Zambia|Zimbabwe"
+    },
+    "Elephas maximus": {
+      "id": "1000521",
+      "places": "Bangladesh|Bhutan|Cambodia|China|India|Indonesia|Laos|Malaysia|Myanmar|Nepal|Sri Lanka|Thailand|Vietnam"
+    },
+    "Equus grevyi": {
+      "id": "1006124",
+      "places": "Ethiopia|Kenya|South Sudan?"
+    },
+    "Indri indri": {
+      "id": "1000981",
+      "places": "Madagascar"
+    },
+    "Lasiorhinus krefftii": {
+      "id": "1000405",
+      "places": "Australia"
+    },
+    "Loxodonta africana": {
+      "id": "1000522",
+      "places": "Angola|Benin|Botswana|Burkina Faso|Cameroon|Central African Republic|Chad|Cote d'Ivoire|Democratic Republic of the Congo|Eritrea|Eswatini|Ethiopia|Ghana|Guinea|Guinea-Bissau|Kenya|Liberia|Malawi|Mali|Mozambique|Namibia|Niger|Nigeria|Rwanda|Senegal|Sierra Leone|Somalia|South Africa|South Sudan|Tanzania|Togo|Uganda|Zambia|Zimbabwe"
+    },
+    "Loxodonta cyclotis": {
+      "id": "1000523",
+      "places": "Cameroon|Central African Republic|Democratic Republic of the Congo|Equatorial Guinea|Gabon|Republic of the Congo"
+    },
+    "Lycaon pictus": {
+      "id": "1005960",
+      "places": "Angola|Benin|Botswana|Burkina Faso|Central African Republic|Chad|Ethiopia|Kenya|Malawi|Mozambique|Namibia|Niger|Senegal|South Africa|South Sudan|Sudan|Tanzania|Zambia|Zimbabwe|Algeria?|Cote d'Ivoire?|Democratic Republic of the Congo?|Guinea?|Guinea-Bissau?|Mali?|Nigeria?|Togo?|Uganda?"
+    },
+    "Macrotis lagotis": {
+      "id": "1000249",
+      "places": "Australia"
+    },
+    "Manis crassicaudata": {
+      "id": "1005794",
+      "places": "India|Nepal|Pakistan|Sri Lanka"
+    },
+    "Manis javanica": {
+      "id": "1005796",
+      "places": "Cambodia|Indonesia|Laos|Malaysia|Myanmar|Thailand|Vietnam|China?"
+    },
+    "Marmota vancouverensis": {
+      "id": "1001737",
+      "places": "Canada"
+    },
+    "Mustela nigripes": {
+      "id": "1005873",
+      "places": "United States"
+    },
+    "Myrmecophaga tridactyla": {
+      "id": "1000442",
+      "places": "Argentina|Bolivia|Brazil|Colombia|Costa Rica|Ecuador|French Guiana|Guyana|Honduras|Nicaragua|Panama|Paraguay|Peru|Suriname|Venezuela|Belize?|El Salvador?|Guatemala?|Uruguay?"
+    },
+    "Nanger dama": {
+      "id": "1006164",
+      "places": "Algeria|Chad|Mali|Morocco|Niger|Sudan?"
+    },
+    "Ochotona iliensis": {
+      "id": "1001163",
+      "places": "China"
+    },
+    "Okapia johnstoni": {
+      "id": "1006343",
+      "places": "Democratic Republic of the Congo"
+    },
+    "Orycteropus afer": {
+      "id": "1000520",
+      "places": "Angola|Benin|Botswana|Burkina Faso|Burundi|Cameroon|Central African Republic|Chad|Cote d'Ivoire|Democratic Republic of the Congo|Djibouti|Equatorial Guinea|Eritrea|Eswatini|Ethiopia|Gabon|Gambia|Ghana|Guinea|Guinea-Bissau|Kenya|Lesotho|Liberia|Malawi|Mali|Mauritania|Mozambique|Namibia|Niger|Nigeria|Republic of the Congo|Rwanda|Senegal|Sierra Leone|Somalia|South Africa|South Sudan|Sudan|Tanzania|Uganda|Zambia|Zimbabwe"
+    },
+    "Pan troglodytes": {
+      "id": "1000720",
+      "places": "Burundi|Cameroon|Central African Republic|Cote d'Ivoire|Democratic Republic of the Congo|Equatorial Guinea|Gabon|Ghana|Guinea|Guinea-Bissau|Liberia|Mali|Nigeria|Republic of the Congo|Rwanda|Senegal|Sierra Leone|South Sudan|Tanzania|Uganda"
+    },
+    "Panthera onca": {
+      "id": "1006021",
+      "places": "Argentina|Belize|Bolivia|Brazil|Colombia|Costa Rica|Ecuador|French Guiana|Guatemala|Guyana|Honduras|Mexico|Nicaragua|Panama|Paraguay|Peru|Suriname|United States|Venezuela"
+    },
+    "Panthera tigris": {
+      "id": "1006023",
+      "places": "Bangladesh|Bhutan|China|India|Indonesia|Laos|Malaysia|Myanmar|Nepal|Russia|Thailand|Cambodia?|North Korea?|Vietnam?"
+    },
+    "Pongo abelii": {
+      "id": "1000721",
+      "places": "Indonesia"
+    },
+    "Priodontes maximus": {
+      "id": "1000418",
+      "places": "Argentina|Bolivia|Brazil|Colombia|Ecuador|French Guiana|Guyana|Paraguay|Peru|Suriname|Venezuela"
+    },
+    "Pseudoryx nghetinhensis": {
+      "id": "1006273",
+      "places": "Laos|Vietnam"
+    },
+    "Pteronura brasiliensis": {
+      "id": "1005852",
+      "places": "Bolivia|Brazil|Colombia|Ecuador|French Guiana|Guyana|Paraguay|Peru|Suriname|Venezuela|Argentina?|Uruguay?"
+    },
+    "Pteropus livingstonii": {
+      "id": "1004470",
+      "places": "Comoros"
+    },
+    "Rhinoceros sondaicus": {
+      "id": "1006114",
+      "places": "Indonesia"
+    },
+    "Rhinopithecus roxellana": {
+      "id": "1000685",
+      "places": "China"
+    },
+    "Rhynchocyon chrysopygus": {
+      "id": "1000460",
+      "places": "Kenya"
+    },
+    "Sarcophilus harrisii": {
+      "id": "1000166",
+      "places": "Australia"
+    },
+    "Smutsia gigantea": {
+      "id": "1005800",
+      "places": "Cameroon|Central African Republic|Cote d'Ivoire|Democratic Republic of the Congo|Equatorial Guinea|Gabon|Ghana|Guinea|Guinea-Bissau|Liberia|Nigeria|Republic of the Congo|Rwanda|Senegal|Sierra Leone|Tanzania|Uganda|Benin?|Burkina Faso?|Kenya?|Niger?"
+    },
+    "Smutsia temminckii": {
+      "id": "1005801",
+      "places": "Angola|Botswana|Burundi|Central African Republic|Chad|Eswatini|Ethiopia|Kenya|Malawi|Mozambique|Namibia|Rwanda|South Africa|South Sudan|Sudan|Tanzania|Uganda|Zambia|Zimbabwe|Democratic Republic of the Congo?"
+    },
+    "Solenodon paradoxus": {
+      "id": "1003840",
+      "places": "Dominican Republic|Haiti"
+    },
+    "Tapirus bairdii": {
+      "id": "1006116",
+      "places": "Belize|Colombia|Costa Rica|Guatemala|Honduras|Mexico|Nicaragua|Panama|Ecuador?"
+    },
+    "Tapirus terrestris": {
+      "id": "1006119",
+      "places": "Argentina|Bolivia|Brazil|Colombia|Ecuador|French Guiana|Guyana|Paraguay|Peru|Suriname|Venezuela"
+    },
+    "Tremarctos ornatus": {
+      "id": "1005931",
+      "places": "Bolivia|Colombia|Ecuador|Peru|Venezuela|Argentina?"
+    },
+    "Zaglossus bartoni": {
+      "id": "1000004",
+      "places": "Indonesia|Papua New Guinea"
+    },
+    "Zaglossus bruijnii": {
+      "id": "1000005",
+      "places": "Indonesia"
+    }
+  }
+}

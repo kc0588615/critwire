@@ -4,7 +4,7 @@ title: Native, introduced and historical range, a tested design
 
 # Native ranges
 
-For the owner: how critwire could publish where sources list each animal as native or introduced, from sources it may publish, next to today's "countries with open records", which aren't range. Plan and full evidence: `plans/2026-11-01-critwire-native-ranges-design.md`. Nothing here is built: `/v1` and `dist/` are unchanged.
+For the owner: how critwire could publish where sources list each animal as native or introduced, from sources it may publish, next to today's "countries with open records", which aren't range. Plan and full evidence: `plans/2026-11-01-critwire-native-ranges-design.md`. Built by mission `critwire-native-ranges-build` (`plans/2026-11-01-critwire-native-ranges-build.md`): `/v1/range-listings.{json,csv,parquet}`; its Decisions list every deviation, each edited here.
 
 ## Summary
 
@@ -282,7 +282,7 @@ A new file leaves `species.*`, `countries.*` and all of `dist/learn/` byte-ident
 | MDD | `Cambodia?` | | `native-or-pre-1500` | `uncertain` |
 | MDD | `NA`, `Domesticated` | | no row, counted | |
 | curated (O3) | as its reference says | | `native` | `present`, `uncertain` or `absent` |
-| dataset with no role | any | any | no row, counted | |
+| dataset with no role | any | any | no row, counted by the ingest per dataset key; its rows never reach the snapshot | |
 | register, checklist | no `country` | any | no row, counted | |
 | register, checklist | any | `EXCLUDED`, `NOT_DETECTED` | no row, counted | |
 | register, checklist | `MANAGED` | any | no row, counted | |
@@ -325,8 +325,8 @@ Most of the mapping's lines met no row today. They stay, because the enums allow
 **Conflict rule.** Prefer one good source:
 
 - **One authority per claim.** Native lists: MDD for mammals (O1), the curated file for others (O3). Introduced, and native but absent: the allowlisted registers and checklists. No two native lists are ever merged.
-- **Disagreements are shown, never fixed.** A conflict is a claim against its opposite, on `area`-null rows of one species and country: `native` or `native-or-pre-1500` against `introduced`; `present` against `absent`. `uncertain` and `unstated` contradict nothing. **Both rows ship**, and `data/review/range-conflicts.json` gets a `range-conflict` entry, severity `review`, naming both `sourceKey`s. Agreeing rows from two registers also both ship, each credited.
-- **Name misses.** A base name with no MDD row gets a `range-not-found` entry, severity `info`, when it's a mammal. The spike had none.
+- **Disagreements are shown, never fixed.** A conflict is a claim against its opposite, on `area`-null rows of one species and country: `native` or `native-or-pre-1500` against `introduced`; `present` against `absent`. `uncertain` and `unstated` contradict nothing. **Both rows ship**, and `data/review/range-conflicts.json` gets a `range-conflict` entry, severity `review`, with one entry per species and country whose `values.claims` names every `area`-null row's `sourceKey` (a cell can hold three). Agreeing rows from two registers also both ship, each credited.
+- **Name misses.** A species with no row from its native authority gets a `range-not-found` entry, severity `info`: a mammal with no MDD row (the spike had none), a non-mammal with no curated row. Coverage of the curated file is checked in E2E, not refused at derive, so a future non-mammal can't block a deploy.
 
 `range-conflicts.json` uses the `Mismatch` shape (`scripts/species.ts:60`), but stays out of `data/review/mismatches.json`, because `scripts/review/presort.ts:172-174` refuses a queue that differs from its evidence. That file isn't served, so the docs page prints the same test, checked on DuckDB against synthetic rows (found: `native-or-pre-1500` against `introduced`, `native` + `absent` against `introduced` + `present`, `introduced` + `present` against `introduced` + `absent`; not found: a pair where one row has an `area`, `native` against `native-or-pre-1500`, `uncertain` against `introduced`):
 
@@ -462,9 +462,9 @@ The wording names no source, so an O1 no leaves nothing false or dangling: `nati
 | Command | Owns | Notes |
 |---|---|---|
 | `pnpm ingest mdd` | `data/raw/mdd/snapshot.json` | **Exists only after O1 is a recorded yes.** Pinned file (md5 `533e662fd5b8f66a5f56c191e7efac44`); cut columns and names only, keyed by base mammal name (null = no match); under 1 min |
-| `pnpm ingest gbif-checklists` | `data/raw/gbif-checklists/snapshot.json` | Per species `keys` and rows, the `allowlist` it used, drop counts per reason. About 6 min at ≤ 2 req/s: the spike's GBIF part took 630 requests, which at its 0.55 s throttle is 347 s |
-| hand, agents + owner (O3) | `data/review/range-curated.json` | Only if O3 is (a). Each row cites its reference, and no IUCN page. `sourceKey` `curated`, `license` `CC BY 4.0` (critwire's own, `DATA-LICENSE.md`), `doi` null. `{reviewedBy, rows}`: derive publishes rows only once `reviewedBy` holds your reply and date, so the release needn't wait for your review |
-| `pnpm derive` | `data/range-listings.json` (`{sources, rows}`, like `countries.json`), `data/review/range-conflicts.json` | Pure and offline, in `deriveCore` before `matchCountries` (`scripts/derive/pipeline.ts:119`), which also gets the listing codes, so a code with no country row throws. Every code the spike's rows and places use has a row today. `MDD_PLACES` crosswalk: an unknown place throws |
+| `pnpm ingest gbif-checklists` | `data/raw/gbif-checklists/snapshot.json` | Per species `keys` and role-dataset rows only (rows of unchecked license stay out of a public repo; a new role forces a re-ingest through the `allowlist` check, so nothing is lost), the `allowlist` it used, drop counts per reason, no-role rows by dataset key. About 6 min at ≤ 2 req/s: the spike's GBIF part took 630 requests, which at its 0.55 s throttle is 347 s |
+| hand, agents + owner (O3) | `data/review/range-curated.json` | Only if O3 is (a). Each row cites its reference, and no IUCN page. `sourceKey` `curated`, `license` `CC BY 4.0` (critwire's own, `DATA-LICENSE.md`), `doi` null. A bare array, like `country-overrides.json`; each element has exactly `speciesId, country, area, presence, url, sourceTerm`, and derive fills the rest. No review gate (owner, build brief's addendum): rows publish labelled curated by `source`, and a handoff item says how to correct one |
+| `pnpm derive` | `data/range-listings.json` (`{sources, rows}`, like `countries.json`), `data/review/range-conflicts.json` | Pure and offline, a third half of `deriveAll`, like `deriveSample` (`scripts/derive/listings.ts`), not in `deriveCore`: there it would read a snapshot before the first ingest, and refuse the stale snapshot `ingest gbif-checklists` exists to replace, or a stale one during `ingest gbif-sample`. `matchCountries` stays untouched; `deriveListings` checks each code against `countries.rows`, so a code with no country row throws, naming the row. Every code the spike's rows and places use has a row today. `MDD_PLACES` crosswalk: an unknown place throws |
 | `pnpm build` | `dist/v1/range-listings.{json,csv,parquet}` | `scripts/build/range-listings.ts`, like `countries.ts`; after `writeCountries` (`scripts/build.ts:58`) |
 
 **The allowlist in the snapshot.** The ingest's constant holds dataset → role, `area` and reason, with O2's datasets only after a yes. The snapshot's `allowlist` holds dataset → role and `area` only. `reason` stays in the ingest's constant and in this file, because `assertNoIucnData` (the pattern at `scripts/ingest/gbif.ts:138`) walks the snapshot, and a reason may name the tie.
@@ -473,7 +473,7 @@ The wording names no source, so an O1 no leaves nothing false or dangling: `nati
 
 **O1 gate.** Nothing of MDD enters `data/`, `scripts/` or `dist/` until O1 is a recorded yes (the handoff reply, copied to the build plan's Decisions). Until then the build has no MDD ingest, no `MDD_PLACES` and no MDD rows; the brief makes these steps conditional.
 
-**Key staleness.** The GBIF rows belong to the taxon they were fetched for, and base names don't show a changed key. One function, `checklistKeys(g)` in `scripts/derive/gbif.ts`, gives a species' keys from `deriveGbif`'s result: the unique non-null `g.id`, `g.taxonKey`. The ingest fetches those and records them. `deriveCore`, right after `deriveGbif` (`scripts/derive/pipeline.ts:98`), compares them, the pattern of `assertGbifFresh` (`scripts/derive/gbif.ts:30`) and `assertBaseNames` (`scripts/raw.ts:89`): `staleSnapshot` names the species and the ingest, and nothing is written. Today that's 73 species with a key, 4 of them with two.
+**Key staleness.** The GBIF rows belong to the taxon they were fetched for, and base names don't show a changed key. One function, `checklistKeys(g)` in `scripts/derive/gbif.ts`, gives a species' keys from `deriveGbif`'s result: the unique non-null `g.id`, `g.taxonKey`. The ingest fetches those and records them. `deriveCore` only collects them in memory; `deriveListings` compares them (`assertGbifChecklistsFresh`, `scripts/derive/listings.ts`), the pattern of `assertGbifFresh` (`scripts/derive/gbif.ts:30`) and `assertBaseNames` (`scripts/raw.ts:89`): `staleSnapshot` names the species and the ingest, and nothing is written. Today that's 73 species with a key, 4 of them with two.
 
 **Refresh cost:** about 7 min of fetching (GBIF 6, MDD 1), then derive and build. No `learn:check`, no DOI, no habitat, no sample. A species change adds these two ingests to its existing ≈ 1 h.
 
@@ -531,7 +531,7 @@ Nothing in this design waited on these. The build brief carries the defaults, an
   - **Worth:** GRIIS alone reaches only 9 species, 15 rows from 10 datasets; with every other kept dataset, 32 rows on 12.
   - **Agreement:** the same 9 rows, too few to judge.
   - **No answer means all of them are left out:** 10 rows on 5 species from the other lists, and no historical rows.
-- **O3 (handoff H9). The 26 non-mammals have no open native list.** Either (a) a hand-written `data/review/range-curated.json`, agents' entries you review, each row citing its reference, under the existing rule "Bare trait values may come from any cited source in our own words; bulk imports only from open datasets", never reading IUCN pages, about two sessions plus your review; or (b) introduced rows only for them, no native rows. **Recommend (a).** It's the one route where every row names its reference, so IUCN can be kept out row by row, and with O1 it takes native coverage from 50 to 76. Wikidata won't shortcut it: 4 of the 26 have a referenced value. Without an answer: (b).
+- **O3 (handoff H9). The 26 non-mammals have no open native list.** Either (a) a hand-written `data/review/range-curated.json`, agents' entries, each row citing its reference (the build brief's addendum: published without waiting for your review, a handoff item says how to correct one), under the existing rule "Bare trait values may come from any cited source in our own words; bulk imports only from open datasets", never reading IUCN pages, about two sessions plus your review; or (b) introduced rows only for them, no native rows. **Recommend (a).** It's the one route where every row names its reference, so IUCN can be kept out row by row, and with O1 it takes native coverage from 50 to 76. Wikidata won't shortcut it: 4 of the 26 have a referenced value. Without an answer: (b).
 - **O4 (handoff H10). Change the copy rule as in Learn tie-in** when a page first reads this file. **Recommend yes,** only then, in that change.
 - **O5 (handoff H11). Which Learn additions, and when?** **Recommend** s1, f3 and e4 as one small mission after the build goes live; d1/d2 if it fits; defer g3 and c1. s1 and f3 need O1 or O3 (a), because they read native rows. e4 uses made-up rows, so it needs neither.
 

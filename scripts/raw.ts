@@ -65,7 +65,28 @@ export interface NaturalEarthSnapshot {
   layers: Record<NeLayer, Record<string, string>[]>;
 }
 
-export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot; naturalearth: NaturalEarthSnapshot }
+// GBIF checklist distributions on role datasets (scripts/ingest/gbif-checklists.ts). allowlist: the one it used, no reasons.
+// species: every base name, its keys when fetched, its role-dataset rows; dropped: what was only counted.
+export interface GbifChecklistRow { datasetKey: string; sourceTaxonKey: number; country: string | null; establishmentMeans: string | null; status: string | null }
+export interface GbifChecklistDataset { title: string; license: "CC0 1.0" | "CC BY 4.0"; doi: string; citation: string }
+export interface GbifChecklistsSnapshot {
+  retrieved: string;
+  allowlist: Record<string, { role: "register" | "checklist"; area: string | null }>;
+  datasets: Record<string, GbifChecklistDataset>;
+  species: Record<string, { keys: number[]; rows: GbifChecklistRow[] }>;
+  dropped: { noSourceTaxonKey: number; redList: number; noRole: Record<string, number> };
+}
+
+// MDD's country cell per base mammal (scripts/ingest/mdd.ts): places is the cell verbatim; null: the file has no such name.
+export interface MddSnapshot {
+  retrieved: string;
+  file: { url: string; md5: string; bytes: number };
+  release: { version: string; issued: string; doi: string };
+  license: "CC BY 4.0";
+  species: Record<string, { id: string; places: string } | null>;
+}
+
+export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot; naturalearth: NaturalEarthSnapshot; "gbif-checklists": GbifChecklistsSnapshot; mdd: MddSnapshot }
 export type Source = keyof Snapshots;
 
 const snapshotFile = (source: Source) => new URL(`../data/raw/${source}/snapshot.json`, import.meta.url);
@@ -91,7 +112,7 @@ export function assertBaseNames(source: Source, keys: string[], base: readonly {
   if ([...keys].sort().join("\n") !== want) throw staleSnapshot(source, "names: not the base's");
 }
 
-// Data rule: never store IUCN data. Throws on any additionalStatus key, or any key or string mentioning IUCN.
+// Data rule: never store IUCN data. Throws on any additionalStatus or threatStatus key, or any key or string mentioning IUCN.
 export function assertNoIucnData(value: unknown, path = "$"): void {
   if (typeof value === "string") {
     if (/iucn/i.test(value)) throw new Error(`IUCN data at ${path}: ${JSON.stringify(value.slice(0, 100))}`);
@@ -99,7 +120,7 @@ export function assertNoIucnData(value: unknown, path = "$"): void {
   }
   if (value === null || typeof value !== "object") return;
   for (const [k, v] of Object.entries(value)) {
-    if (k === "additionalStatus" || /iucn/i.test(k)) throw new Error(`IUCN data at ${path}.${k}`);
+    if (k === "additionalStatus" || k === "threatStatus" || /iucn/i.test(k)) throw new Error(`IUCN data at ${path}.${k}`);
     assertNoIucnData(v, `${path}.${k}`);
   }
 }
