@@ -664,6 +664,7 @@ SHOULD-CONSIDER:
 - 2026-11-02 03:50 UTC: S9: guard runs in a browser's tables and 5 files only (`withBrowserTables`, one `DATA_FILES` in `assets.ts`); F7's new cases seen failing, then passing; absolute paths refused too. typecheck pass, test 823/823, plain build pass (6 listing blocks, no stale lab), port check 552 files equal, byte check exactly the 8 expected lines, two specs 32/32 (`$S/e2e-s9`).
 - 2026-11-02 04:30 UTC: Final Verification on `81cfe90`: typecheck pass, test 823/823, port check 552 equal, plain build pass (6 listing blocks), `learn:check` ok twice (`checked.json` unchanged), byte check exactly 8 lines, 14 added result files, E2E 168/168 (`$S/e2e-final`), refusals 33 cases 0 failed, curated proof exactly 3 `data/` + 6 `dist/` files, restored byte-identical, scope commands empty. Summary written, status done; release next.
 - 2026-11-02 04:54 UTC: `pnpm test:db` 140/140, added to Verification since S1 and S9 changed `dist-fixture.ts` and `projection.ts`; on `7c222b9`, code as `81cfe90`.
+- 2026-11-02 06:02 UTC: Release: no rebase needed (`origin/main` `bceb0bf` is an ancestor). Full Verification re-run on `6f84300`: typecheck pass, test 823/823, port check 552 equal, plain build pass (6 listing blocks, 96,026,726 B), `learn:check` ok twice (25 `.sql`, 11 `.py`, `checked.json` unchanged), byte check 8 lines, 14 added result files, E2E 168/168 (`$S/e2e-final` replaced), refusals 33/0, curated proof 3 + 6 files, restored byte-identical, scope empty, `test:db` 140/140. Log: `$S/release-verify.log`.
 
 ## Summary
 
@@ -697,6 +698,8 @@ Three modules and d2 now use `/v1/range-listings`; e4 teaches the same lesson on
 - Fable: APPROVE_WITH_CHANGES, 2 MUST-FIX, resolved in Revision.
 - Astra (architecture): APPROVE_WITH_CHANGES, 2 MUST-FIX, resolved in Revision.
 - Astra (code): APPROVE_WITH_CHANGES, 1 MUST-FIX, fixed in S9.
+
+**Left for the owner (Astra's SHOULD-CONSIDER):** extend the tampered-file E2E check (`e2e/learn-browser.spec.ts:68`) to `range-listings.parquet`, to prove its new manifest pin. Not done: the pin itself ships; only that check's coverage is missing.
 
 **For the owner to consider (Astra's SHOULD-CONSIDER, not done):** extend the tampered-file E2E check (`e2e/learn-browser.spec.ts:68`) to `range-listings.parquet`, to prove its new manifest pin.
 
