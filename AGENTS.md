@@ -36,6 +36,10 @@ Simplest approach that works. Ask before adding complexity.
 GitHub `origin` is the hub; only pushed work exists on the other machine.
 - Agent work: one issue per branch `agent/<slug>` from fresh `origin/main`; rebase before the PR; push and open a PR via `gh` (HTTPS); the owner merges. GO comes only from the owner.
 - Push before you stop, WIP included.
+- Before reading or changing code, run `git fetch origin --prune`. If it fails, say freshness is unverified.
+- New work: branch from `origin/main`. Clean `main`: `git pull --ff-only`. Questions about the latest code: read `origin/main`, not the checkout, if they differ.
+- Existing branch: keep its work and compare it with `origin/main`; bring updates in on purpose. Never plain `git pull` on it, and never reset or force-push just to catch up.
+- Say which branch and commit you're working from.
 - Paths on the VPS: agents' checkout `/srv/critter-ai/critwire`, live copy `/srv/apps/critwire`.
 - Release: `deploy critwire` on the VPS (pull main into the live copy, `pnpm install --frozen-lockfile`, `pnpm build`, swap in `dist/` only if the build passed). Owner's word only, except a mission may merge its PR and deploy at its end once every check passes (owner, 2026-10-21; `~/AGENTS.md`).
 - Recovery (restore a commit into a scratch db, roll back the live site, state Git doesn't hold): `docs/recovery.md`. Adding state outside Git (a lock, a role, a secret) updates it.
