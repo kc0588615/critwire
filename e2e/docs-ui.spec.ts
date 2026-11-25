@@ -1,5 +1,5 @@
 // The docs page's UI (plan 2026-11-25-critwire-web-modernize §7): the page without JavaScript, the copy buttons (and
-// without a clipboard), focus, motion, layout (with the chip row's gated fade), axe and the font. Every test opens the page through learnContext (each off-origin request aborted and recorded) and ends with no page error
+// without a clipboard), the section index (native and fallback), focus, motion, layout (with the chip row's gated fade), axe and the font. Every test opens the page through learnContext (each off-origin request aborted and recorded) and ends with no page error
 // and no off-origin request. Screenshots: ARTIFACTS/docs-ui-*.png, attached to the report.
 import { expect, test, type Browser, type BrowserContextOptions, type Locator, type Page, type TestInfo } from "@playwright/test";
 import axe from "axe-core";
@@ -149,6 +149,107 @@ test("4. no clipboard: no copy buttons and no wrappers", async ({ browser }) => 
   await expect(page.locator(".example, .copy")).toHaveCount(0);
   await close();
 });
+
+// The section index (docs.js), per link: which links carry aria-current="true", the fallback's class, the native
+// :target-current, and a weight of 700 or more.
+const indexState = (page: Page) =>
+  page.locator("nav.toc a").evaluateAll((as) => {
+    const hrefs = (pick: (a: Element) => boolean) => as.filter(pick).map((a) => a.getAttribute("href"));
+    return {
+      aria: hrefs((a) => a.getAttribute("aria-current") === "true"),
+      ariaOther: hrefs((a) => a.hasAttribute("aria-current") && a.getAttribute("aria-current") !== "true"),
+      classed: hrefs((a) => a.classList.contains("target-current")),
+      native: hrefs((a) => a.matches(":target-current")),
+      bold: hrefs((a) => parseInt(getComputedStyle(a).fontWeight, 10) >= 700),
+    };
+  });
+const expectedIndex = (fallback: boolean, href: string) => ({ aria: [href], ariaOther: [], classed: fallback ? [href] : [], native: fallback ? [] : [href], bold: [href] });
+
+// The fallback: both kinds of native tracking off, the JS check (CSS.supports) and the CSS (scroll-target-group).
+const noNativeTracking = () => {
+  const supports = CSS.supports.bind(CSS) as (...args: string[]) => boolean;
+  CSS.supports = ((...args: string[]) => (args.join(" ").includes("scroll-target-group") ? false : supports(...args))) as typeof CSS.supports;
+  document.addEventListener("DOMContentLoaded", () => {
+    const style = document.createElement("style");
+    style.textContent = "nav.toc { scroll-target-group: none !important }";
+    document.head.append(style);
+  });
+};
+
+// A section's h2 top and the nav's bottom, and the window's scroll position.
+const landing = (page: Page, id: string) =>
+  page.evaluate((id) => ({
+    h2Top: document.querySelector(`section#${id} h2`)!.getBoundingClientRect().top,
+    navBottom: document.querySelector("nav.toc")!.getBoundingClientRect().bottom,
+    scrollY: scrollY,
+    atEnd: scrollY + innerHeight >= document.documentElement.scrollHeight - 2,
+  }), id);
+
+// The current chip against the row's box minus its scroll-padding-inline.
+const chipInRow = (page: Page) =>
+  page.evaluate(() => {
+    const row = document.querySelector("nav.toc ul")!;
+    const s = getComputedStyle(row);
+    const box = row.getBoundingClientRect();
+    const chip = row.querySelector('a[aria-current="true"]')?.getBoundingClientRect();
+    if (!chip) return { inside: false, scrollLeft: row.scrollLeft };
+    const inside = chip.left >= box.left + parseFloat(s.scrollPaddingLeft) - 1 && chip.right <= box.right - parseFloat(s.scrollPaddingRight) + 1;
+    return { inside, scrollLeft: row.scrollLeft };
+  });
+
+const SPY_VIEWPORTS = [{ width: 1280, height: 800 }, { width: 375, height: 812 }, { width: 1280, height: 1400 }];
+for (const path of ["native", "fallback"] as const) {
+  const fallback = path === "fallback";
+  for (const viewport of SPY_VIEWPORTS) {
+    const size = `${viewport.width}x${viewport.height}`;
+    test(`5. section index, ${path} path, at ${size}: the clicked section is current, in aria-current too`, async ({ browser }, info) => {
+      const open = async (url = "/") => {
+        const docs = await openDocs(browser, { viewport, reducedMotion: "reduce" }, url);
+        if (fallback) await docs.page.addInitScript(noNativeTracking);
+        await docs.load();
+        expect(await docs.page.evaluate(() => CSS.supports("scroll-target-group: auto")), "native tracking").toBe(!fallback);
+        return docs;
+      };
+
+      // Every link, down the page and back up: exactly that link is current. Cite is current at the page's end.
+      const { page, close } = await open();
+      await expect.poll(() => indexState(page), "at the top").toEqual(expectedIndex(fallback, "#about"));
+      const ids = [...DOCS_SECTIONS, ...DOCS_SECTIONS.slice(0, -1).reverse()];
+      for (const id of ids) {
+        await page.locator(`nav.toc a[href="#${id}"]`).click();
+        await expect.poll(() => indexState(page), `after clicking ${id}`).toEqual(expectedIndex(fallback, `#${id}`));
+        if (id === "cite") expect((await landing(page, id)).atEnd, "Cite at the page's end").toBe(true);
+      }
+      await close();
+
+      if (viewport.width >= 960) return;
+      // Learn's deep links (the section ids are its contract): that link is current, the h2 below the sticky row.
+      for (const id of ["files", "range-listings", "licenses"]) {
+        const deep = await open(`/#${id}`);
+        await expect.poll(() => indexState(deep.page), `/#${id}`).toEqual(expectedIndex(fallback, `#${id}`));
+        const l = await landing(deep.page, id);
+        expect(l.h2Top, `/#${id}: h2 below the nav`).toBeGreaterThanOrEqual(l.navBottom);
+        await deep.close();
+      }
+
+      // The chip reveal: a jump to Credits, its chip out of the row, brings it into view, and moves only the row.
+      const r = await open();
+      const before = await r.page.evaluate(() => {
+        document.querySelector("nav.toc ul")!.scrollTo({ left: 0, behavior: "instant" });
+        location.hash = "#credits";
+        return { scrollY, h2Top: document.querySelector("section#credits h2")!.getBoundingClientRect().top };
+      });
+      expect(before.scrollY, "the jump happened").toBeGreaterThan(0);
+      await expect.poll(() => indexState(r.page), "after the jump").toEqual(expectedIndex(fallback, "#credits"));
+      await expect.poll(() => chipInRow(r.page), "the Credits chip").toMatchObject({ inside: true });
+      expect((await chipInRow(r.page)).scrollLeft, "the row scrolled").toBeGreaterThan(0);
+      const after = await landing(r.page, "credits");
+      expect({ scrollY: after.scrollY, h2Top: after.h2Top }, "the page didn't move").toEqual(before);
+      await shot(r.page, info, `spy-${path}-${size}`, false);
+      await r.close();
+    });
+  }
+}
 
 // The focused element and its ring, as computed.
 const focused = (page: Page) =>
