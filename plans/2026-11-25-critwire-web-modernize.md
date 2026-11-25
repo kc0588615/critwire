@@ -125,7 +125,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -552,7 +552,215 @@ Also:
 
 ## Steps
 
+One step per session: do it, run its checks, check it off, add a Log line, commit and push. `S=/srv/critter-ai/agent-state/missions/critwire-web-modernize`. Run every command from the worktree root.
+
+### Shared checks (the steps refer to these by name)
+
+- **build-check**: a plain `pnpm build` (never `--draft`), then these two commands. On the Baseline build both reproduce the Baseline files byte for byte (checked 2026-11-25).
+  ```sh
+  # learn-hash: prints only LEARN-UNCHANGED
+  (cd dist && find learn -type f -print0 | sort -z | xargs -0 sha256sum) | diff "$S/baseline/learn-sha256-1.txt" - && echo LEARN-UNCHANGED
+  # dist-diff: from S2 on, exactly 3 lines: "added ./fonts/OFL.txt", "added ./fonts/atkinson-hyperlegible-next.woff2", "changed ./index.html"
+  (cd dist && find . -type f -not -path './learn/*' -print0 | sort -z | xargs -0 sha256sum) \
+    | awk 'NR==FNR{b[$2]=$1;next} {if(!($2 in b))print "added",$2; else if(b[$2]!=$1)print "changed",$2; delete b[$2]} END{for(p in b)print "removed",p}' "$S/baseline/nonlearn-sha256.txt" - | LC_ALL=C sort
+  ```
+- **docs-e2e** (after build-check, ≈ 1–2 min): `E2E_ARTIFACTS="$S/e2e-s<N>" pnpm exec playwright test e2e/docs.spec.ts e2e/docs-ui.spec.ts e2e/duckdb.spec.ts e2e/range-listings.spec.ts`. Everything must pass. duckdb and range-listings run the `<code>` texts, which the page's changes must not touch. Then delete every other `$S/e2e-s*` folder (disk rule: one intermediate folder plus `e2e-final`).
+- **prose** (from S2 on): `node "$S/tools/prose.mjs"` must print `ok` for every part and exit 0. V7 specifies the script.
+- **guides** (for steps that write HTML, CSS or JS):
+  - Before writing, read the guides the step names in `$S/guides/<id>.md`. Read the rules §1–§4 quote (find them with `grep -n`) and the sections around them. `accessibility.md` is 51 KB: don't read it whole.
+  - If no saved guide covers a topic, run `npx -y modern-web-guidance@latest search "<query>" --skill-version 2026_11_16-268fb9ea`, then `retrieve "<id>"`, and save the guide in `$S/guides/`.
+  - Before finishing, check the code against each guide (the skill's Step 3).
+  - Then add one line per guide under `### Modern-web-guidance log (mission session)`: ``- S<N> `<id>`: "<verbatim quote>": <what it drove>``, or ``- S<N> checked, not applied `<id>`: <why>``.
+  - Prove each quote is verbatim with `grep -F -- '<quote>' "$S/guides/<id>.md"`. The Summary's `### Modern Web Guidance` section is built only from these lines.
+- **legacy-scan** (S3–S6, on the files the step changed): `npx -y modern-web-guidance@latest legacy-scan <path> --json`. The only allowed finding is `scrollspy/js`, from S6 on. Fix any other finding in the same step, or record it under Decisions with its `keepWhen`/`dropWhen` reason.
+- **Every step** runs `pnpm typecheck`.
+- **Never touched:** `site/style.css`, `site/learn/**`, `scripts/build/learn/**`, `e2e/Caddyfile`, `e2e/learn-*.spec.ts`, `data/`, `contracts/`, `package.json` and `pnpm-lock.yaml`.
+
+### Checklist
+
+- [ ] S1. **Font subset, and `rawText` test-first.** Files: `site/fonts/atkinson-hyperlegible-next.woff2` and `site/fonts/OFL.txt` (new), `scripts/build/html.test.ts`, `scripts/build/html.ts`, and the plan's §1.
+  - **Font:**
+    - Run §1's "Font step" command exactly as written. It needs raw GitHub and PyPI (through uv). Both `sha256sum -c` lines must print `OK`.
+    - Run it a second time. The woff2's sha256 must be the same (the step is repeatable).
+    - Read the font back: `/usr/local/bin/uv tool run --from 'fonttools[woff]==4.68.0' --with 'brotli==1.2.1' ttx -q -t head -t OS/2 -t name -o /tmp/s1-font.ttx site/fonts/atkinson-hyperlegible-next.woff2 && grep -E 'unitsPerEm|sxHeight|nameID="1[34]"' /tmp/s1-font.ttx`. Expect `unitsPerEm` 1000, `sxHeight` 496, and name IDs 13 and 14 present.
+    - Under §1's "Font step", add a line `S1 result:` with the woff2's size and sha256, its sxHeight, the command as run and the tool versions.
+    - If the bytes differ from the mock's, update §1's table row. If sxHeight isn't 496, update §3's `0.496` and D6.
+    - Never commit the mock's woff2. If the network fails, split this step (`rawText` part first) and log it.
+  - **HT2, then `rawText`:**
+    - Write each Failure mode below as an assertion in `scripts/build/html.test.ts`, as test `HT2`, importing `rawText` from `./html.ts`.
+    - `pnpm exec tsx --test scripts/build/html.test.ts` must now fail, because `rawText` isn't exported yet. Quote the failure in the Log line.
+    - Then add `rawText` to `html.ts`, following §1's contract. HT1 and HT2 must pass.
+  - **Check:** `pnpm typecheck`; `pnpm test` all pass (the Baseline's 823 tests plus HT2). Nothing reads the font yet, so no build is needed. `git status` shows only these files.
+
+- [ ] S2. **Build wiring and page markup.** Files: `scripts/build/docs.ts`, `scripts/build.ts`, `site/index.html`, `site/docs.css` and `site/docs.js` (new), `e2e/helpers.ts`, `e2e/docs.spec.ts`, `e2e/docs-ui.spec.ts` (new), `AGENTS.md`, and `$S/tools/prose.mjs` (in the state folder, not committed).
+  - **`docs.ts` and `build.ts`**, exactly as §1 says:
+    - the `site` URL and the constants, with the `FONT` comment taken from S1's result line;
+    - `renderDocs(template, { style, script }, …)`, which passes the style and script through `rawText` as `site/docs.css` and `site/docs.js`;
+    - the slots `script`, `fontUrl` and `fontLicenseUrl`;
+    - every input read before `rm(out)`;
+    - `/fonts/*` written through `childFile`;
+    - the `styleSheet` import dropped.
+  - **`site/index.html`:**
+    - §2's `<head>`: the color-scheme meta, the font preload, `@font-face` with `{{fontUrl}}` before `{{style}}`, and `<script type="module">{{script}}</script>`.
+    - §2's `<body>`: `header.masthead`, then `div.page` holding `nav.toc` (with "On this page") and `main`; `tabindex="0"` on all 10 `<pre>`; the `footer` with the font line, after `#cite`.
+    - The tag SVG waits for S3. The prose, the slots and the section ids don't change.
+  - **Interim `site/docs.css`** (S3 replaces it whole): `site/style.css`'s rules, plus what the moved header, nav and footer need to keep today's column, plus the Atkinson font stack on `body` (test 10 needs the font in use).
+  - **`site/docs.js`**: only its header comment for now.
+  - **`e2e/helpers.ts`**, as §7 says: `DOCS_SECTIONS`, `learnContext(browser, options?)` and `docsAttribution()`.
+  - **`docs.spec.ts`** imports `DOCS_SECTIONS`. Its diff touches only the import and `SECTIONS`.
+  - **`docs-ui.spec.ts`:** §7's setup for every test (`learnContext`, no `pageerror`, an empty `offOrigin`, `docs-ui-*.png` attached), plus tests 1 (no JavaScript) and 10 (font).
+  - **`AGENTS.md`:** add §8's `fonts/` entry to the list of what `pnpm build` writes.
+  - **`$S/tools/prose.mjs`:** as V7 specifies.
+  - **Fail-fast probes** (restore each one after):
+    - Move `site/fonts/OFL.txt` away: `pnpm build` must fail and name it, and `dist/index.html`'s sha256 must be unchanged (the build touched nothing).
+    - Append `/* </STYLE> */` to `docs.css`: the build must fail with `site/docs.css: contains </style`.
+  - **Disk:** delete `$S/e2e-baseline/{playwright-report,test-results}` (765 MB). Its `results.json`, its PNGs and `baseline/e2e.log` stay as the Baseline's record.
+  - **Guides:** `html` (`tabindex` on `pre`), `dark-mode` (the meta), `performance` (inline CSS, module script, font preload), `optimize-preload-priority` (`crossorigin`), `accessibility` (header and footer landmarks).
+  - **Check:** typecheck; `pnpm test`; build-check (LEARN-UNCHANGED, and dist-diff gives the 3 lines); prose; docs-e2e (docs.spec 9/9; docs-ui tests 1 and 10).
+
+- [ ] S3. **Page style: the Visual direction.** Files: `site/docs.css` (rewritten), `site/index.html` (the tag SVG only), `e2e/docs-ui.spec.ts`, `AGENTS.md`.
+  - **`docs.css`**, every §3 bullet except the chip fade (S4) and the copy UI (S5):
+    - color tokens set by media query (D5); no `*` reset; logical properties;
+    - type: `font-size-adjust` (S1's value) with its comment, and `none` on `code, pre`; the `clamp()` sizes; the wrapping rules;
+    - focus: the focus rings, and the inset rings on nav links;
+    - nav: sticky, as a chip row below 60rem (native scrollbar kept) and a left column at 60rem and up; `scroll-padding-top`;
+    - current section: `nav.toc { scroll-target-group: auto }`, the `:is(:target-current, .target-current)` rule, and the underline under forced colors;
+    - no reserved space after Cite;
+    - shapes: file tags (`::before` and `::after`), code cards, `details` (native marker kept), notes, `dt.group`;
+    - motion: smooth scrolling only under `no-preference`.
+    - `$S/mock/docs.css` shows the direction; it isn't the code to ship.
+  - **The tag SVG** from `$S/mock/index.html`, in `header.masthead`, with `aria-hidden="true"` and no `focusable`.
+  - **Tests:**
+    - test 6 (motion);
+    - test 8 without its fade parts: scrollWidth, the sticky one-row chip row at 375, the chip cut at the row's edge at `scrollLeft` 0, the nav left of `main` at 1280, full-page screenshots;
+    - test 9 (axe, in learn-walk's form). Use `reducedMotion: "reduce"`; click a nav link to make a section current (Chromium's native `:target-current` marks it).
+  - **Compare with the mock:** look at test 8's screenshots beside `$S/mock/mock-*.png`. Record any deliberate difference under Decisions.
+  - **`AGENTS.md`:** the `axe-core` line also names `e2e/docs-ui.spec.ts`.
+  - **Guides:** `dark-mode`, `color`, `css`, `typography`, `improve-text-layout-and-legibility`, `visually-stable-font-fallbacks`, `accessibility` (focus), `single-line-overflow`, `state-aware-sticky-headers`, `scrollspy` (the CSS half), `motion`, `shaped-cutouts`, `html` (`summary`), `icons` (decorative SVG).
+  - **Check:** typecheck; build-check; prose; docs-e2e (axe: no violation in any of the 4 views); legacy-scan on `dist/index.html` and `site/docs.css` gives 0 findings.
+
+- [ ] S4. **Chip-row end fades, gated (D7).** Files: `site/docs.css`, `e2e/docs-ui.spec.ts`.
+  - **CSS**, as §3 "Chip row" says:
+    - the two `@property` rules and the keyframes go outside any gate;
+    - the mask, the animation, `animation-timeline: scroll(self inline)`, `animation-range` and `scroll-padding-inline` go only inside `@supports (animation-timeline: scroll()) and (animation-range: 0 1px)`, within the below-60rem rules;
+    - otherwise built as the guide builds them.
+  - **Test 8 gains:**
+    - at 375 and `scrollLeft` 0, `--fade-start` computes to `0px`;
+    - the CSSOM gate: every rule that sets `mask`, `animation-timeline` or `scroll-padding-inline` on the row has an `@supports` ancestor that names `animation-timeline` and `animation-range`.
+  - **Guides:** `scrollability-affordance-hints` (whole), `motion`.
+  - **Check:** typecheck; build-check; docs-e2e; legacy-scan on `site/docs.css`.
+
+- [ ] S5. **Copy buttons (D2, D3, D8, D10).** Files: `site/docs.js`, `site/docs.css` (the copy UI), `e2e/docs-ui.spec.ts`.
+  - **`docs.js`**, as §4 "Copy buttons" says: the feature check, the `div.example` wrapper, `span.copy` holding the button and the `role="status"` element, `copy`, `report`, and one delegated `click` listener.
+  - **`docs.css`**, as §3 "Code cards and the copy UI" says: the top strip; the button's boundary at 3:1 or more; at least 24 px; the status styled only when `:not(:empty)`; nothing animated.
+  - **Tests** 2, 3, 4 and 7.
+  - **Guides:** `copy-button` (whole), `accessibility` (focus), `color` (contrast of UI components).
+  - **Check:** `node --check site/docs.js`; typecheck; build-check; prose; docs-e2e (duckdb and range-listings prove the `<code>` texts are unchanged); legacy-scan on `site/docs.js` and `dist/index.html`.
+
+- [ ] S6. **Section index that follows the reader (D9).** Files: `site/docs.js`, `e2e/docs-ui.spec.ts` (and `site/docs.css` only if a rule is missing).
+  - **`docs.js`**, as §4 "Section index" says:
+    - `setCurrent`, which sets `aria-current`;
+    - the native path when `CSS.supports("scroll-target-group: auto")`, updating on `scrollend` and `load`;
+    - the fallback: `at()` at the landing line, debounced 100 ms;
+    - `reveal`, through `row.scrollTo({ behavior: "instant" })` and within the row's `scroll-padding-inline`; never `scrollIntoView`.
+  - **Test 5:** both paths, the 3 window sizes, all 8 links, the three Learn deep links at 375, and the chip reveal. Wait with `expect.poll`, never with fixed sleeps.
+  - **Flake check:** `E2E_ARTIFACTS="$S/e2e-s6" pnpm exec playwright test e2e/docs-ui.spec.ts --repeat-each=5` must pass. Then run docs-e2e into the same folder.
+  - **legacy-scan** on `site/docs.js` and `dist/index.html` must report only `scrollspy/js`. Record it under Decisions as the kept fallback, gated by `CSS.supports`.
+  - **Guides:** `scrollspy` (whole), `performance` (debounce), `state-aware-sticky-headers` (`scroll-padding-top`).
+  - **Check:** `node --check site/docs.js`; typecheck; build-check; prose; docs-e2e.
+
+- [ ] S7. **Modernization audit.** Files: fixes only, in `site/index.html`, `site/docs.css` or `site/docs.js`; the plan.
+  - **legacy-scan:** after a fresh build-check, run it on `dist/index.html`, `site/index.html`, `site/docs.css` and `site/docs.js`, saving each result to `$S/after/legacy-scan-<name>.json`. Check each finding against its `keepWhen`/`dropWhen`: fix it here, or keep it and give the reason under Decisions. Expected: `scrollspy/js` only.
+  - **Guide compliance** (the skill's Step 3), over the whole page:
+    - every guide the log marks as applied: its rules are followed in the final code;
+    - every "checked, not applied" reason (the Architecture's list and the step lines) still holds.
+  - **The brief's rules:** no outside request (docs-ui's `offOrigin` stays empty); no new dependency; each §5 feature's fallback is present in the code; reduced motion is honored.
+  - Fix small gaps here. A large gap becomes a new step after S7.
+  - **Check:** typecheck; the scope check (V1); build-check; prose; docs-e2e if anything changed.
+
+After S7: the Astra code review unit, then `## Verification` V0–V12 + Summary in one unit (`~/.claude/CLAUDE.md` "In a mission session" 6–7; not a step here, so it runs once, on the final commit), then the release.
+
+### Risks
+
+- **The font step needs the network.** S1 fetches from raw GitHub (at a pinned commit) and from PyPI through uv. If it fails, do `rawText` first and let S2 wait. The mock's unrecorded woff2 is never a fallback.
+- **Only Chromium is tested**, and Chromium 145 has native `scroll-target-group` and scroll timelines. Other browsers' paths are proven only by simulation: test 5's fallback init script, test 8's CSSOM gate and test 4's missing clipboard. The Summary must say so.
+- **Timing tests** (test 2's 2 s reset, test 5's 100 ms debounce and `scrollend`): use `expect.poll` or `toHaveText` with timeouts, never fixed sleeps. S6 runs `--repeat-each=5`.
+- **Headless clipboard:** test 2 checks the `writeText` call its init-script wrapper records, not the OS clipboard.
+- **Font swap and the CLS budget (≤ 0.05):** the preload and `font-size-adjust` should hold it. If V9 fails, the fix becomes a new step; never `font-display: optional` (rejected).
+- **`origin/main` may move:** the prose proof compares against the merge-base, and the release's rebase re-runs Verification. A plain build that refuses (DOI, `checked.json`) means `main` moved: rebase as `AGENTS.md` says, never `--draft`.
+- **The full suite runs only in the final Verification** (after the code review). A failure there in a spec outside the docs page becomes a new fix step; Verification then re-runs.
+
 ## Verification
+
+Run from the worktree root on the final commit, in order, heavy jobs one at a time. `S=/srv/critter-ai/agent-state/missions/critwire-web-modernize`. Playwright's evidence goes to `$S/e2e-final/`; everything else goes to `$S/after/`.
+
+- V0. `git fetch origin --prune`; `git status` is clean; `mkdir -p "$S/after"`.
+- V1. **Scope.** `git diff --name-only $(git merge-base HEAD origin/main)` lists only files from this set:
+  - `AGENTS.md`, `plans/2026-11-25-critwire-web-modernize.md`;
+  - `site/index.html`, `site/docs.css`, `site/docs.js`, `site/fonts/atkinson-hyperlegible-next.woff2`, `site/fonts/OFL.txt`;
+  - `scripts/build.ts`, `scripts/build/docs.ts`, `scripts/build/html.ts`, `scripts/build/html.test.ts`;
+  - `e2e/helpers.ts`, `e2e/docs.spec.ts`, `e2e/docs-ui.spec.ts`.
+
+  So no new dependency. In `e2e/docs.spec.ts`, the diff touches only the `DOCS_SECTIONS` import and `SECTIONS` (every assertion is intact).
+- V2. `pnpm install --frozen-lockfile`, then `pnpm typecheck`: passes.
+- V3. `pnpm build 2>&1 | tee "$S/after/build.log"` (a plain build): passes.
+- V4. **E2E, the whole suite:** `E2E_ARTIFACTS="$S/e2e-final" pnpm e2e 2>&1 | tee "$S/after/e2e.log"` (≈ 13 min).
+  - Every test passes (the Baseline's 168 plus docs-ui's), and none is skipped.
+  - docs.spec's 9 tests are unchanged. docs-ui's tests 1–10 all pass; test 9 (axe at 1280 and 375, light and dark) finds no violation.
+  - Artifact: `$S/e2e-final/playwright-report/index.html`, the traces in `test-results/`, `results.json` and the `docs-ui-*.png` files.
+  - Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e` (the docs page alone: `… pnpm exec playwright test e2e/docs.spec.ts e2e/docs-ui.spec.ts`).
+  - Afterwards, keep only the latest `e2e-s*` folder beside `e2e-final`.
+- V5. **Learn unchanged:** `(cd dist && find learn -type f -print0 | sort -z | xargs -0 sha256sum) > "$S/after/learn-sha256.txt" && diff "$S/baseline/learn-sha256-1.txt" "$S/after/learn-sha256.txt" && echo LEARN-UNCHANGED`. The diff is empty, over 151 files.
+- V6. **/v1 unchanged:**
+  - `(cd dist && find . -type f -not -path './learn/*' -print0 | sort -z | xargs -0 sha256sum) > "$S/after/nonlearn-sha256.txt"`, then build-check's `awk … "$S/baseline/nonlearn-sha256.txt" "$S/after/nonlearn-sha256.txt" | LC_ALL=C sort`. It must print exactly `added ./fonts/OFL.txt`, `added ./fonts/atkinson-hyperlegible-next.woff2` and `changed ./index.html`.
+  - `cmp dist/fonts/<f> site/fonts/<f>` for both fonts files, and their sha256s match §1's table.
+- V7. **Prose unchanged:** `node "$S/tools/prose.mjs" | tee "$S/after/prose.txt"` prints `ok` for every part and exits 0. The script (written in S2; Node only, no dependencies):
+  - compares `base` = `git show $(git merge-base HEAD origin/main):site/index.html` with `head` = `site/index.html`;
+  - from each it takes `<title>`, the description meta's `content`, `h1`, `p.lead`, the `<a>` texts inside `<nav>` (in order) and each `<section id>…</section>` (with the ids in order);
+  - it strips tags (`/<[^>]*>/g`), collapses whitespace and trims;
+  - it prints `ok <part>`, or `DIFF <part>` with 40 characters either side of the first difference;
+  - it exits 1 on any `DIFF`, on a part it finds 0 times, and on a part other than a section found more than once.
+- V8. `pnpm test`: everything passes (823 plus HT2).
+- V9. **Performance and screenshots**, after V4 (both use port 3100): `node "$S/tools/measure.mjs" after`.
+  - It writes `$S/after/metrics.json` and 10 `$S/screens/after-*.png` (docs at 1280 and 375, Learn's map, f1 and `/learn/data/`; each in light and dark).
+  - Budget at each width:
+    - `clsMax` ≤ 0.05;
+    - `lcpMedianMs` ≤ 172 at 1280 and ≤ 164 at 375 (the Baseline + 100 ms);
+    - `transferBytes` ≤ 150,000, in 2 requests (`/` and the woff2, fetched once).
+  - Learn screenshots: `cmp` each `before-learn-*` with its `after-` twin. Expect them identical. V5's hashes are the gate, so note any pixel difference rather than fail on it.
+- V10. **legacy-scan** on `dist/index.html`, `site/index.html`, `site/docs.css` and `site/docs.js`: `npx -y modern-web-guidance@latest legacy-scan <path> --json > "$S/after/legacy-scan-<name>.json"`. The only finding is `scrollspy/js` (in `dist/index.html` and `site/docs.js`), recorded as kept.
+- V11. **Look at the screenshots:** `after-docs-*.png` and docs-ui's focus shots. Anything broken counts as a failure.
+- Not run: `pnpm learn:port --check all` and `pnpm learn:check`. Nothing here changes a block, 004 or `site/learn/`; V5 proves Learn unchanged, and the plain build already refuses a stale lab.
+- V12. **Summary** (the Definition of done):
+  - each change, with the guide ids that drove it (from the log);
+  - each guide checked but not applied, and why (the Architecture's list and the step lines);
+  - `### Modern Web Guidance`: one bullet per applied id, in the first person, ≤ 75 words, each with its verbatim quote from the log (never from memory). The PR body carries the same section;
+  - the newer features: §5's table, with what other browsers get, and the note that only Chromium ran (the fallbacks are proven by simulation: tests 4, 5 and 8);
+  - the `legacy-scan` findings, each fixed or kept, with the reason;
+  - before and after numbers: LCP medians, CLS, transfer and requests, and the HTML's raw and gzip sizes;
+  - the verification results with their paths: E2E counts and the `e2e-final` report, axe, the Learn hashes, the /v1 diff, prose, typecheck and test;
+  - the Decisions where a guide gave way to critwire's rules (D1–D10, and any later);
+  - the review verdicts so far;
+  - the skill pack, in three lines: did the agents use it; its cost, from `mission usage critwire-web-modernize`; was it worth it.
+
+**At release** (not part of Verification; the release unit runs it after `deploy critwire`):
+- Delete the latest `$S/e2e-s*` folder first.
+- Run `RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS="$S/e2e-release" pnpm exec playwright test -c playwright.release.config.ts`, with `dist/` = the released build. It compares every `dist/` file with the live site, `/fonts/*` included.
+- `curl -sSI https://critwire.com/fonts/atkinson-hyperlegible-next.woff2` returns 200 with `content-type: font/woff2`.
+- `curl -sSI https://critwire.com/fonts/OFL.txt` returns 200 with `text/plain; charset=utf-8`.
+
+## Failure modes
+
+`rawText` (§1) is the only code tested in isolation (§6). Each line below becomes an assertion in HT2 (`scripts/build/html.test.ts`) before `rawText` exists (S1).
+
+- F1. `</style` in a style ends the element early: `rawText("style", "a{}</style><p>", "site/docs.css")` throws `site/docs.css: contains </style`.
+- F2. Any letter case, and anything after it: `</STYLE >` and `</Style\n` throw too (HTML end tags are case-insensitive).
+- F3. Inside a CSS comment it still counts: `/* </style> */` throws (nothing parses the CSS).
+- F4. `</script` in a script, in any case (`</SCRIPT>`), throws `site/docs.js: contains </script`.
+- F5. `<!--` in a script throws `site/docs.js: contains <!--`, because the script's escape states can hide the real `</script>`.
+- F6. Refusing too much: `<!--` in a style passes; `</script` in a style and `</style` in a script pass (each element ends only at its own tag).
+- F7. Clean text comes back as the same string: no trimming, no escaping, and no `$` replacement patterns (`"a{content:'$&'}\n"`).
+- F8. The message names the file passed in, not a fixed name.
 
 ## Code review (Astra)
 
@@ -561,6 +769,8 @@ Also:
 
 ## Decisions
 
+- D11 (Steps): final Verification + Summary not a checklist step; runs once as the post-code-review unit (CLAUDE.md flow), avoiding a duplicate 13-min full e2e. Planner's S8 dropped.
+
 ## Log
 
 - 2026-11-25 06:25 UTC · Baseline: typecheck ok, test 823/823, plain build ×2 (Learn hashes stable, 151 files), e2e 168/168, before screens + metrics recorded.
@@ -568,5 +778,6 @@ Also:
 - 2026-11-25 06:57 UTC · Fable review: APPROVE WITH CHANGES, 2 MUST-FIX (chip fade needs `@supports` gate; font subset provenance reproducible), 1 missed (section-id deep-link contract), 5 SHOULD-CONSIDER. Plan-only change.
 - 2026-11-25 07:00 UTC · Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (fallback scroll-spy wrong section at 1280×1400, test with native tracking off; chip fade gate, same as Fable's), 3 SHOULD-CONSIDER. Plan-only change.
 - 2026-11-25 07:14 UTC · Revision: architect fixed all MUST-FIX (chip fade behind `@supports`, D7 corrected; pinned font step w/ hashes + pyftsubset cmd; fallback scroll-spy at anchor landing line, D9, 1280×1400 test w/ native tracking off), adopted section-id contract + Fable SC2–SC5 (D10 click-only copy), rejected shared axe helper. Plan-only change.
+- 2026-11-25 07:28 UTC · Steps: planner wrote S1–S7 (font+rawText test-first, wiring+markup, style, gated fade, copy, scroll-spy, audit), shared checks (build-check reproduces Baseline hashes), Verification V0–V12, Failure modes F1–F8; final Verification kept as post-review unit (D11). Plan-only change.
 
 ## Summary
