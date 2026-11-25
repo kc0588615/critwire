@@ -1,7 +1,7 @@
-// The docs page's UI (plan 2026-11-25-critwire-web-modernize §7): the page without JavaScript, motion, layout (with the
-// chip row's gated fade), axe and the font. Every test opens the page through learnContext (each off-origin request aborted and recorded) and ends with no page error
+// The docs page's UI (plan 2026-11-25-critwire-web-modernize §7): the page without JavaScript, the copy buttons (and
+// without a clipboard), focus, motion, layout (with the chip row's gated fade), axe and the font. Every test opens the page through learnContext (each off-origin request aborted and recorded) and ends with no page error
 // and no off-origin request. Screenshots: ARTIFACTS/docs-ui-*.png, attached to the report.
-import { expect, test, type Browser, type BrowserContextOptions, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContextOptions, type Locator, type Page, type TestInfo } from "@playwright/test";
 import axe from "axe-core";
 import { readdir, readFile } from "node:fs/promises";
 import { ARTIFACTS, DOCS_SECTIONS, distPath, docsAttribution, learnContext, repoPath, SCHEMES, WIDTHS } from "./helpers.ts";
@@ -55,6 +55,163 @@ test("1. without JavaScript, every section, file link and credit is there", asyn
   await shot(page, info, "nojs-375");
   await close();
 });
+
+// The copy UI (docs.js): every sample's text, and what each button's own sample holds.
+const examples = (page: Page) =>
+  page.locator("pre > code").evaluateAll((codes) =>
+    codes.map((code) => {
+      const example = code.closest(".example");
+      return {
+        text: code.textContent,
+        pres: example ? example.querySelectorAll("pre").length : 0,
+        buttons: example ? [...example.querySelectorAll(".copy > button")].map((b) => ({ type: b.getAttribute("type"), inPre: b.closest("pre") !== null, name: b.textContent })) : [],
+      };
+    }),
+  );
+
+// Records each writeText call in window.__copies, then writes as the browser does (clipboard permissions granted).
+const recordCopies = () => {
+  const calls: string[] = [];
+  (window as unknown as { __copies: string[] }).__copies = calls;
+  const write = Clipboard.prototype.writeText;
+  Clipboard.prototype.writeText = function (text: string) {
+    calls.push(text);
+    return write.call(this, text);
+  };
+};
+const copies = (page: Page) => page.evaluate(() => [...(window as unknown as { __copies: string[] }).__copies]);
+const statusText = (button: Locator) => button.evaluate((b) => b.nextElementSibling!.textContent);
+const CLIPBOARD = ["clipboard-read", "clipboard-write"];
+
+test("2. copy: one button per sample, outside its code, copying that code's text", async ({ browser }, info) => {
+  const { page, close, load } = await openDocs(browser, { viewport: { width: 375, height: 812 }, permissions: CLIPBOARD, reducedMotion: "reduce" });
+  await page.addInitScript(recordCopies);
+  await load();
+
+  const samples = await examples(page);
+  expect(samples).toHaveLength(10);
+  for (const s of samples) expect(s, s.text!.slice(0, 40)).toMatchObject({ pres: 1, buttons: [{ type: "button", inPre: false, name: "Copy" }] });
+  const buttons = page.locator(".example > .copy > button");
+  await expect(buttons).toHaveCount(10);
+  await expect(page.locator('.copy > [role="status"]')).toHaveCount(10);
+  for (const b of await buttons.all()) expect(await statusText(b)).toBe("");
+
+  // The status: "Copied", empty again within 4 s, and a repeat differs by a no-break space (announced again).
+  const first = buttons.first();
+  await first.click();
+  await expect.poll(() => statusText(first)).toBe("Copied");
+  await expect(first).toHaveAttribute("data-copied", "");
+  await shot(page, info, "copied-375", false);
+  await expect.poll(() => statusText(first), { timeout: 4000 }).toBe("");
+  await expect(first).not.toHaveAttribute("data-copied");
+  await first.click();
+  await expect.poll(() => statusText(first)).toBe("Copied ");
+  expect(await copies(page)).toEqual([samples[0]!.text, samples[0]!.text]);
+
+  // Each button copies its own sample, once per click.
+  for (const b of await buttons.all()) await b.click();
+  await expect.poll(() => copies(page)).toEqual([samples[0]!.text, samples[0]!.text, ...samples.map((s) => s.text)]);
+
+  // The keyboard: Enter and Space on a focused button copy, through the same click path.
+  const last = buttons.last();
+  await last.focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Space");
+  await expect.poll(async () => (await copies(page)).slice(-2)).toEqual([samples[9]!.text, samples[9]!.text]);
+  expect(await copies(page)).toHaveLength(14);
+  await close();
+});
+
+test("3. copy fails: the status says so, and the button stays enabled and focused", async ({ browser }) => {
+  const { page, close, load } = await openDocs(browser, { viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" });
+  await page.addInitScript(() => {
+    Clipboard.prototype.writeText = () => Promise.reject(new DOMException("Write permission denied.", "NotAllowedError"));
+  });
+  await load();
+  const button = page.locator(".example > .copy > button").nth(2);
+  await button.focus();
+  await page.keyboard.press("Enter");
+  await expect.poll(() => statusText(button)).toBe("Copy failed");
+  await expect(button).toHaveAttribute("data-failed", "");
+  await expect(button).toBeEnabled();
+  await expect(button).toBeFocused();
+  await expect.poll(() => statusText(button), { timeout: 4000 }).toBe("");
+  await close();
+});
+
+test("4. no clipboard: no copy buttons and no wrappers", async ({ browser }) => {
+  const { page, close, load } = await openDocs(browser, { viewport: { width: 1280, height: 800 } });
+  await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "clipboard", { get: () => undefined, configurable: true }));
+  await load();
+  expect(await page.evaluate(() => navigator.clipboard)).toBeUndefined();
+  await expect(page.locator("pre > code")).toHaveCount(10);
+  await expect(page.locator("button")).toHaveCount(0);
+  await expect(page.locator(".example, .copy")).toHaveCount(0);
+  await close();
+});
+
+// The focused element and its ring, as computed.
+const focused = (page: Page) =>
+  page.evaluate(() => {
+    const e = document.activeElement!;
+    const s = getComputedStyle(e);
+    return {
+      tag: e.tagName.toLowerCase(),
+      firstNav: e === document.querySelector("nav.toc a"),
+      copy: e.matches(".copy > button"),
+      overflowingPre: e.matches("pre") && e.scrollWidth > e.clientWidth,
+      visible: e.matches(":focus-visible"),
+      ring: s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0,
+    };
+  });
+
+// A viewport shot clipped to the focused element plus room for its ring.
+async function focusShot(page: Page, info: TestInfo, name: string): Promise<void> {
+  const r = await page.evaluate(() => {
+    const b = document.activeElement!.getBoundingClientRect();
+    return { x: b.x, y: b.y, width: b.width, height: b.height };
+  });
+  const pad = 12;
+  const vp = page.viewportSize()!;
+  const x = Math.max(0, r.x - pad);
+  const y = Math.max(0, r.y - pad);
+  const path = `${ARTIFACTS}/docs-ui-${name}.png`;
+  await page.screenshot({ path, clip: { x, y, width: Math.min(vp.width - x, r.width + 2 * pad), height: Math.min(vp.height - y, r.height + 2 * pad) } });
+  await info.attach(`docs-ui-${name}`, { path, contentType: "image/png" });
+}
+
+for (const width of WIDTHS) {
+  test(`7. focus at ${width} px: Tab reaches the index, a copy button and a scrolling sample, each with a ring`, async ({ browser }, info) => {
+    const { page, close, load } = await openDocs(browser, { viewport: { width, height: 800 }, permissions: CLIPBOARD, reducedMotion: "reduce" });
+    await load();
+    await expect(page.locator(".copy > button")).toHaveCount(10);
+
+    await page.keyboard.press("Tab");
+    const nav = await focused(page);
+    expect(nav, "the first Tab").toMatchObject({ firstNav: true, visible: true, ring: true });
+    await focusShot(page, info, `focus-nav-${width}`);
+
+    const seen = { copy: false, pre: false };
+    for (let i = 0; i < 300 && !(seen.copy && seen.pre); i++) {
+      await page.keyboard.press("Tab");
+      const f = await focused(page);
+      const kind = f.copy ? "copy" : f.overflowingPre ? "pre" : null;
+      if (!kind || seen[kind]) continue;
+      seen[kind] = true;
+      expect(f, `Tab to a ${kind}`).toMatchObject({ visible: true, ring: true });
+      await focusShot(page, info, `focus-${kind}-${width}`);
+      if (kind === "pre" && width < 960) {
+        // The keyboard scrolls a focused sample sideways.
+        const pre = page.locator("pre:focus");
+        expect(await pre.evaluate((e) => e.scrollLeft)).toBe(0);
+        await page.keyboard.press("ArrowRight");
+        await expect.poll(() => pre.evaluate((e) => e.scrollLeft)).toBeGreaterThan(0);
+      }
+    }
+    expect(seen, "Tab reached both").toEqual({ copy: true, pre: true });
+    await close();
+  });
+}
 
 test("6. smooth anchor scrolling only without a reduced-motion preference", async ({ browser }) => {
   for (const [reducedMotion, expected] of [["no-preference", "smooth"], ["reduce", "auto"]] as const) {

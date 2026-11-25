@@ -177,6 +177,15 @@ pre { padding: .9rem 1rem; overflow-x: auto; background: var(--fern); border: 1p
 pre code { overflow-wrap: normal; white-space: pre; }
 pre.wrap code { overflow-wrap: anywhere; white-space: pre-wrap; }
 
+/* The copy UI (docs.js adds it where the clipboard exists). It sits in a strip above the code, never over it, at rest
+   or while the <pre> scrolls (D8). Lichen border: ≥ 3:1 against the card and the paper, both schemes. Nothing moves. */
+.example { position: relative; }
+.example > pre { padding-block-start: 2.75rem; }
+.copy { position: absolute; inset-block-start: .45rem; inset-inline-end: .5rem; display: flex; flex-direction: row-reverse; align-items: center; gap: .4rem; }
+.copy button { min-inline-size: 24px; min-block-size: 1.75rem; padding: .15rem .65rem; background: var(--paper); color: var(--ink); border: 1px solid var(--lichen); border-radius: 6px; font: 600 .85rem/1.2 var(--sans); cursor: pointer; }
+.copy button:hover { background: var(--fern); }
+.copy [role="status"]:not(:empty) { padding: .1rem .5rem; background: var(--paper); color: var(--ink); border-radius: 4px; font-size: .85rem; }
+
 /* Credits' drawers: the native marker stays. */
 details { padding: .6rem .9rem; background: var(--fern); border: 1px solid var(--rule); border-radius: var(--card-radius); }
 summary { cursor: pointer; font-weight: 700; }
