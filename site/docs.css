@@ -1,33 +1,162 @@
-/* The docs page (dist/index.html)'s own stylesheet, inlined through the template's style slot (scripts/build/docs.ts). Interim: site/style.css's rules, laid out for the header, nav and footer outside main (plan 2026-11-25-critwire-web-modernize S2); S3 replaces it. Never shared with Learn. */
-:root { color-scheme: light dark; --fg: #1d2420; --muted: #56605a; --bg: #fbfcfa; --line: #d5dcd6; --code: #eef2ee; --link: #1f6b45; }
-@media (prefers-color-scheme: dark) {
-  :root { --fg: #e4e9e5; --muted: #a3ada6; --bg: #141816; --line: #323a35; --code: #1f2522; --link: #7fd1a3; }
+/* The docs page (dist/index.html)'s own stylesheet, inlined through the template's style slot after its @font-face
+   (scripts/build/docs.ts). Never shared with Learn, which keeps site/style.css. Design: plan
+   2026-11-25-critwire-web-modernize, "Visual direction" (specimen tags) and §3. Flat selectors, no nesting and no
+   global reset, so a browser that lacks a newer feature still gets the whole layout. */
+
+/* Tokens. Light first; dark by media query (D5, no light-dark()). Learn's link green kept. */
+:root {
+  color-scheme: light dark;
+  --paper: #f6f8f3;
+  --ink: #1b2620;
+  --lichen: #55625a;
+  --moss: #1f6b45;
+  --fern: #e1ede4;
+  --rule: #cbd8ce;
+  --pollen: #f2d36b;
+  --on-pollen: #1b2620;
+  --sans: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --gutter: 1.25rem;
+  --wide: 72rem;
+  --measure: 44rem;
+  --index: 12rem;
+  --card-radius: 10px;
+  --chip-row: 4.5rem;
 }
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 1.0625rem/1.6 "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-.masthead, .page { max-width: 42rem; margin: 0 auto; padding: 0 1rem; }
-.masthead { padding-top: 1.5rem; }
-.page { padding-bottom: 4rem; }
-nav.toc h2 { font-size: 1rem; margin: 0 0 .5rem; padding: 0; border: 0; }
-footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
-h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 .25rem; }
-h2 { font-size: 1.4rem; margin: 2.5rem 0 .75rem; padding-top: 1rem; border-top: 1px solid var(--line); }
-h3 { font-size: 1.1rem; margin: 1.75rem 0 .5rem; }
-p, ul, dl, pre { margin: 0 0 1rem; }
-a { color: var(--link); overflow-wrap: anywhere; }
-code { font: .9em/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
-pre { background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: .75rem; overflow-x: auto; }
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #111813; --ink: #e3eae5; --lichen: #a3b0a8; --moss: #7fd1a3; --fern: #1b2821; --rule: #2e3d34; --pollen: #d9b84a; }
+}
+/* Forced colors repaint backgrounds and text; the tokens follow, so the art and borders keep system colors. */
+@media (forced-colors: active) {
+  :root { --paper: Canvas; --ink: CanvasText; --lichen: CanvasText; --moss: LinkText; --fern: Canvas; --rule: CanvasText; --pollen: Highlight; --on-pollen: HighlightText; }
+}
+
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: var(--chip-row); }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 1.0625rem/1.65 var(--sans);
+  /* Atkinson Hyperlegible Next's x-height: OS/2 sxHeight 496 / unitsPerEm 1000, read from site/fonts/ (S1). The
+     fallback font is scaled to it while the web font loads (D6: from-font would read the fallback itself). */
+  font-size-adjust: 0.496;
+}
+code, pre { font-size-adjust: none; }
+
+/* Text. */
+h1, h2, h3 { text-wrap: balance; }
+p, li, dd { text-wrap: pretty; }
+p, ul, dl, pre { margin-block: 0 1rem; }
+a { color: var(--moss); text-underline-offset: .18em; text-decoration-thickness: from-font; overflow-wrap: anywhere; }
+a:hover { text-decoration-thickness: 2px; }
+code { font: .88em/1.45 var(--mono); overflow-wrap: anywhere; }
+:not(pre) > code { background: var(--fern); border-radius: 4px; padding: .05em .3em; }
+:where(a, button, summary, pre):focus-visible { outline: 3px solid var(--moss); outline-offset: 2px; }
+
+/* Header: a fern band, the wordmark, the lead and the hanging specimen tag. */
+.masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 2rem;
+  align-items: center;
+  padding-block: 2.5rem 2rem;
+  padding-inline: max(var(--gutter), (100% - var(--wide)) / 2 + var(--gutter));
+  background: var(--fern);
+  border-block-end: 1px solid var(--rule);
+}
+h1 { grid-area: 1 / 1; align-self: end; margin: 0; font-size: clamp(2.75rem, 1.5rem + 5vw, 5rem); font-weight: 800; line-height: 1; letter-spacing: -.035em; }
+.lead { grid-area: 2 / 1; align-self: start; max-inline-size: 34ch; margin: .75rem 0 0; font-size: clamp(1.15rem, 1rem + .75vw, 1.4rem); line-height: 1.45; }
+.tag-art { grid-area: 1 / 2 / 3; inline-size: clamp(5.5rem, 3rem + 10vw, 11rem); block-size: auto; color: var(--moss); }
+.tag-art .ink { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.tag-art .card { fill: var(--paper); } /* after .ink: the card path has both classes */
+.tag-art .spot { fill: currentColor; }
+
+/* Page: one column with a sticky chip row; from 60rem, a sticky index beside the reading column. */
+.page {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-inline-size: var(--wide);
+  margin-inline: auto;
+  padding: 0 var(--gutter) 5rem;
+}
+main { min-inline-size: 0; max-inline-size: var(--measure); }
+
+nav.toc {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-inline: calc(-1 * var(--gutter));
+  padding: .5rem var(--gutter);
+  background: var(--paper);
+  border-block-end: 1px solid var(--rule);
+  scroll-target-group: auto;
+}
+nav.toc h2 { display: none; }
+nav.toc ul { display: flex; gap: .4rem; margin: 0; padding: .15rem 0; list-style: none; overflow-x: auto; scrollbar-width: thin; }
+nav.toc li { flex: none; }
+nav.toc a { display: block; padding: .3rem .75rem; border-radius: 999px; background: var(--fern); color: var(--ink); font-size: .95rem; text-decoration: none; white-space: nowrap; }
+nav.toc a:hover { text-decoration: underline; }
+/* Inset ring: the chip row clips overflow, and currentColor keeps contrast on the pollen fill. */
+nav.toc a:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+/* The current section: native :target-current (Chromium 140+), else docs.js's class. Fill and weight, not color alone. */
+nav.toc a:is(:target-current, .target-current) { background: var(--pollen); color: var(--on-pollen); font-weight: 700; }
+@media (forced-colors: active) {
+  nav.toc a:is(:target-current, .target-current) { text-decoration: underline; }
+}
+
+@media (min-width: 60rem) {
+  html { scroll-padding-top: 1.5rem; }
+  .page { grid-template-columns: var(--index) minmax(0, var(--measure)); column-gap: 3.5rem; }
+  nav.toc { top: 1.5rem; align-self: start; margin: 2.5rem 0 0; padding: 0; background: none; border: 0; }
+  nav.toc h2 { display: block; margin: 0 0 .5rem; color: var(--lichen); font-size: .95rem; font-weight: 600; }
+  nav.toc ul { flex-direction: column; gap: .1rem; padding: 0; overflow: visible; border-inline-start: 2px solid var(--rule); }
+  nav.toc a { padding: .3rem .8rem; border-radius: 0 6px 6px 0; background: none; white-space: normal; }
+  nav.toc a:hover { background: var(--fern); }
+  nav.toc a:is(:target-current, .target-current) { background: var(--pollen); }
+}
+
+/* Sections. */
+section { padding-block-start: 2.5rem; }
+section + section { margin-block-start: 1.5rem; border-block-start: 1px solid var(--rule); }
+h2 { margin: 0 0 1rem; font-size: clamp(1.6rem, 1.3rem + 1.2vw, 2rem); line-height: 1.15; letter-spacing: -.02em; }
+h3 { margin: 2rem 0 .5rem; font-size: 1.2rem; }
+.note { padding-inline-start: .85rem; border-inline-start: 3px solid var(--rule); color: var(--lichen); font-size: .97rem; }
+dt { margin-block-start: .9rem; font-weight: 700; }
+dd { margin: .2rem 0 0 1rem; overflow-wrap: anywhere; }
+dt.group { margin-block-start: 2rem; padding-block-start: .75rem; border-block-start: 1px dashed var(--rule); }
+
+/* Files: each file name hangs on a specimen tag. The notched card is ::before and the punched hole ::after, so the
+   dt itself is never clipped and its links' text and focus rings stay whole. */
+#files dl > dt { position: relative; isolation: isolate; inline-size: fit-content; max-inline-size: 100%; margin-block-start: 1.1rem; padding: .3rem .8rem .3rem 1.6rem; font-weight: 600; }
+#files dl > dt::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--fern);
+  border: 1px solid var(--rule);
+  border-radius: 4px var(--card-radius) var(--card-radius) 4px;
+  clip-path: polygon(.6rem 0, 100% 0, 100% 100%, .6rem 100%, 0 50%);
+}
+#files dl > dt::after { content: ""; position: absolute; left: .75rem; top: calc(50% - .2rem); inline-size: .4rem; block-size: .4rem; border: 1px solid var(--rule); border-radius: 50%; background: var(--paper); }
+#files dl > dt code { padding: 0; background: none; }
+#files dd { margin-inline-start: .4rem; }
+
+/* Code samples: a fern card. */
+pre { padding: .9rem 1rem; overflow-x: auto; background: var(--fern); border: 1px solid var(--rule); border-radius: var(--card-radius); }
 pre code { overflow-wrap: normal; white-space: pre; }
-pre.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
-:not(pre) > code { background: var(--code); border-radius: 4px; padding: .05em .3em; }
-dt { font-weight: 600; margin-top: .75rem; }
-dd { margin: .15rem 0 0 1rem; overflow-wrap: anywhere; }
-dt.group { margin-top: 1.5rem; }
-.lead { font-size: 1.15rem; color: var(--muted); margin-bottom: 1.5rem; }
-nav ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
-.note { color: var(--muted); font-size: .95rem; }
-details { border: 1px solid var(--line); border-radius: 6px; padding: .5rem .75rem; }
-summary { cursor: pointer; font-weight: 600; }
-details ul { margin-top: .75rem; padding-left: 1.25rem; }
-details li { margin-bottom: .4rem; overflow-wrap: anywhere; }
+pre.wrap code { overflow-wrap: anywhere; white-space: pre-wrap; }
+
+/* Credits' drawers: the native marker stays. */
+details { padding: .6rem .9rem; background: var(--fern); border: 1px solid var(--rule); border-radius: var(--card-radius); }
+summary { cursor: pointer; font-weight: 700; }
+details ul { margin-block-start: .75rem; padding-inline-start: 1.25rem; }
+details li { margin-block-end: .4rem; overflow-wrap: anywhere; }
+details :not(pre) > code { background: var(--paper); }
+
+footer { margin-block-start: 3rem; padding-block-start: 1rem; border-block-start: 1px solid var(--rule); }
+.font-note { margin: 0; color: var(--lichen); font-size: .9rem; }

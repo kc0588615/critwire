@@ -1,9 +1,11 @@
-// The docs page's UI (plan 2026-11-25-critwire-web-modernize §7): the page without JavaScript, and its font. Every
+// The docs page's UI (plan 2026-11-25-critwire-web-modernize §7): the page without JavaScript, motion, layout, axe and
+// the font. Every
 // test opens the page through learnContext (each off-origin request aborted and recorded) and ends with no page error
 // and no off-origin request. Screenshots: ARTIFACTS/docs-ui-*.png, attached to the report.
 import { expect, test, type Browser, type BrowserContextOptions, type Page, type TestInfo } from "@playwright/test";
+import axe from "axe-core";
 import { readdir, readFile } from "node:fs/promises";
-import { ARTIFACTS, DOCS_SECTIONS, distPath, docsAttribution, learnContext, repoPath } from "./helpers.ts";
+import { ARTIFACTS, DOCS_SECTIONS, distPath, docsAttribution, learnContext, repoPath, SCHEMES, WIDTHS } from "./helpers.ts";
 
 const FONT_PATH = "/fonts/atkinson-hyperlegible-next.woff2";
 const LICENSE_PATH = "/fonts/OFL.txt";
@@ -52,6 +54,84 @@ test("1. without JavaScript, every section, file link and credit is there", asyn
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   await shot(page, info, "nojs-375");
+  await close();
+});
+
+test("6. smooth anchor scrolling only without a reduced-motion preference", async ({ browser }) => {
+  for (const [reducedMotion, expected] of [["no-preference", "smooth"], ["reduce", "auto"]] as const) {
+    const { page, close, load } = await openDocs(browser, { reducedMotion });
+    await load();
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior), reducedMotion).toBe(expected);
+    await close();
+  }
+});
+
+// The chip row's and the index's boxes, read in the page.
+const layout = (page: Page) =>
+  page.evaluate(() => {
+    const box = (e: Element) => e.getBoundingClientRect();
+    const nav = document.querySelector("nav.toc")!;
+    const row = nav.querySelector("ul")!;
+    const chips = [...row.querySelectorAll("a")].map(box);
+    return {
+      scrollWidth: document.documentElement.scrollWidth,
+      navTop: box(nav).top,
+      navRight: box(nav).right,
+      mainLeft: box(document.querySelector("main")!).left,
+      rowRight: box(row).right,
+      rowOverflows: row.scrollWidth > row.clientWidth,
+      rowScrollLeft: row.scrollLeft,
+      chipTops: new Set(chips.map((c) => Math.round(c.top))).size,
+      cut: chips.filter((c) => c.left < box(row).right && c.right > box(row).right).length,
+    };
+  });
+
+for (const width of WIDTHS) {
+  test(`8. layout at ${width} px, light and dark`, async ({ browser }, info) => {
+    const { page, close, load } = await openDocs(browser, { viewport: { width, height: 800 }, reducedMotion: "reduce" });
+    await load();
+    for (const colorScheme of SCHEMES) {
+      await page.emulateMedia({ colorScheme });
+      await page.evaluate(() => window.scrollTo(0, 0));
+      const top = await layout(page);
+      expect.soft(top.scrollWidth, `${colorScheme}: scrollWidth`).toBeLessThanOrEqual(width);
+      if (width < 960) {
+        // The chip row: one row, overflowing, a chip cut at its inline end at scrollLeft 0 (the cue without a fade).
+        expect.soft(top.chipTops, `${colorScheme}: one row of chips`).toBe(1);
+        expect.soft(top.rowOverflows, `${colorScheme}: the row overflows`).toBe(true);
+        expect.soft(top.rowScrollLeft).toBe(0);
+        expect.soft(top.cut, `${colorScheme}: a chip crosses the row's end`).toBe(1);
+        await page.evaluate(() => window.scrollTo(0, 6000));
+        const scrolled = await layout(page);
+        expect.soft(scrolled.navTop, `${colorScheme}: the row sticks at the top`).toBe(0);
+        expect.soft(scrolled.chipTops, `${colorScheme}: still one row`).toBe(1);
+      } else {
+        expect.soft(top.navRight, `${colorScheme}: the index sits left of main`).toBeLessThanOrEqual(top.mainLeft);
+        await page.evaluate(() => window.scrollTo(0, 6000));
+        expect.soft((await layout(page)).navTop, `${colorScheme}: the index sticks`).toBeGreaterThanOrEqual(0);
+      }
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await shot(page, info, `layout-${width}-${colorScheme}`);
+    }
+    await close();
+  });
+}
+
+test("9. axe: no violation at 1280 and 375 px, light and dark, with a section current and every details open", async ({ browser }) => {
+  const { page, close, load } = await openDocs(browser, { viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" });
+  await load();
+  await page.evaluate(axe.source);
+  await page.locator("details").evaluateAll((ds) => ds.forEach((d) => ((d as HTMLDetailsElement).open = true)));
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.locator('nav.toc a[href="#files"]').click();
+    await expect(page.locator("nav.toc a:target-current")).toHaveAttribute("href", "#files");
+    for (const colorScheme of SCHEMES) {
+      await page.emulateMedia({ colorScheme });
+      const r = await page.evaluate(() => (window as unknown as { axe: typeof axe }).axe.run());
+      expect.soft(r.violations.map((v) => `${v.id}: ${v.nodes.length} (${v.nodes[0]!.target.join(" ")})`), `${width} ${colorScheme}: axe`).toEqual([]);
+    }
+  }
   await close();
 });
 
