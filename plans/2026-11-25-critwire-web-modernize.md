@@ -194,6 +194,11 @@ Guides saved in `/srv/critter-ai/agent-state/missions/critwire-web-modernize/gui
   - `motion`: "Use `@media (prefers-reduced-motion: no-preference)` when the reduced-motion strategy is to **not have the animation at all**".
 - Not yet read in full (architect: read before designing the parts they cover): `accessibility`, `performance`, `optimize-preload-priority`, `html`, `css`, `icons`, `shaped-cutouts`, `scrollability-affordance-hints`, `state-aware-sticky-headers`, `search-hidden-content`, `single-line-overflow`, `color`, `typography`.
 - Architect, 2026-11-25: read all 19 saved guides in full. Every quote below is verbatim from `guides/<id>.md`.
+- S2 `html`: "ensure that code blocks are accessible by adding `tabindex="0"` to the `<pre>` element if it becomes scrollable": `tabindex="0"` on all 10 `<pre>` in `site/index.html`.
+- S2 `dark-mode`: "place a `<meta>` tag in your `<head>`": `<meta name="color-scheme" content="light dark">`.
+- S2 `performance`: "DO inline critical CSS": `site/docs.css` inlined through the style slot; "`type="module"` is preferred for modern JavaScript and is deferred by default": `site/docs.js` inlined as `<script type="module">`; "Do include the `crossorigin` attribute for all fonts (even same origin fonts)" and "DON'T use `fetchpriority="high"` on fonts": the font preload.
+- S2 `optimize-preload-priority`: "ensure that font preloads always have the `crossorigin` attribute (even if same-origin)": preload has `crossorigin`; docs-ui test 10 proves one font request per load.
+- S2 `accessibility`: "Use the `<header>` element as a container for introductory content": `header.masthead` (h1 + lead) moved out of `main`; "the `<footer>` element as a container for information about the related content, such as the author, copyright information": `footer` with the font line after `#cite`.
 
 ### Findings (architect)
 
@@ -593,7 +598,7 @@ One step per session: do it, run its checks, check it off, add a Log line, commi
     - Then add `rawText` to `html.ts`, following §1's contract. HT1 and HT2 must pass.
   - **Check:** `pnpm typecheck`; `pnpm test` all pass (the Baseline's 823 tests plus HT2). Nothing reads the font yet, so no build is needed. `git status` shows only these files.
 
-- [ ] S2. **Build wiring and page markup.** Files: `scripts/build/docs.ts`, `scripts/build.ts`, `site/index.html`, `site/docs.css` and `site/docs.js` (new), `e2e/helpers.ts`, `e2e/docs.spec.ts`, `e2e/docs-ui.spec.ts` (new), `AGENTS.md`, and `$S/tools/prose.mjs` (in the state folder, not committed).
+- [x] S2. **Build wiring and page markup.** Files: `scripts/build/docs.ts`, `scripts/build.ts`, `site/index.html`, `site/docs.css` and `site/docs.js` (new), `e2e/helpers.ts`, `e2e/docs.spec.ts`, `e2e/docs-ui.spec.ts` (new), `AGENTS.md`, and `$S/tools/prose.mjs` (in the state folder, not committed).
   - **`docs.ts` and `build.ts`**, exactly as §1 says:
     - the `site` URL and the constants, with the `FONT` comment taken from S1's result line;
     - `renderDocs(template, { style, script }, …)`, which passes the style and script through `rawText` as `site/docs.css` and `site/docs.js`;
@@ -781,5 +786,6 @@ Run from the worktree root on the final commit, in order, heavy jobs one at a ti
 - 2026-11-25 07:14 UTC · Revision: architect fixed all MUST-FIX (chip fade behind `@supports`, D7 corrected; pinned font step w/ hashes + pyftsubset cmd; fallback scroll-spy at anchor landing line, D9, 1280×1400 test w/ native tracking off), adopted section-id contract + Fable SC2–SC5 (D10 click-only copy), rejected shared axe helper. Plan-only change.
 - 2026-11-25 07:28 UTC · Steps: planner wrote S1–S7 (font+rawText test-first, wiring+markup, style, gated fade, copy, scroll-spy, audit), shared checks (build-check reproduces Baseline hashes), Verification V0–V12, Failure modes F1–F8; final Verification kept as post-review unit (D11). Plan-only change.
 - 2026-11-25 07:34 UTC · S1: font step ×2 → same woff2 `416e6dfa…` (32,336 B ≠ mock's; §1 row updated), sxHeight 496, name IDs 13/14 kept; HT2 written first, failed `SyntaxError: The requested module './html.ts' does not provide an export named 'rawText'`, then `rawText` added: HT1+HT2 pass; typecheck ok; `pnpm test` 824/824.
+- 2026-11-25 07:58 UTC · S2: docs.ts (`site`, `FONT`/`FONT_LICENSE`/`DOCS_FILES`, FONT provenance comment from S1, `renderDocs(template, {style, script}, …)` via `rawText`, slots `script`/`fontUrl`/`fontLicenseUrl`), build.ts (all docs inputs read before `rm(out)`, `/fonts/*` via `childFile`, `styleSheet` import dropped); index.html head (color-scheme meta, font preload, `@font-face`, module script), `header.masthead` + `div.page` > `nav.toc` (+"On this page") + `main`, 10× `pre tabindex="0"`, footer font line; interim docs.css, stub docs.js; helpers `DOCS_SECTIONS`/`learnContext(browser, options?)`/`docsAttribution`; docs-ui tests 1 + 10; AGENTS.md `fonts/`; `$S/tools/prose.mjs` (probe: a changed word → DIFF, exit 1). Checks: typecheck ok; `pnpm test` 824/824; plain build ok, LEARN-UNCHANGED, dist-diff = the 3 expected lines; prose all ok; probes: OFL.txt moved → build fails ENOENT naming it, `dist/index.html` unchanged; `/* </STYLE> */` → `site/docs.css: contains </style`; docs-e2e 26/26 (`$S/e2e-s2`). Deleted `e2e-baseline/{playwright-report,test-results}` (765 MB).
 
 ## Summary

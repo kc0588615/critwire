@@ -1,12 +1,13 @@
 // Shared E2E helpers (plan §9): paths and origins, the committed records, the dist/ check, DuckDB, the local Caddy's
 // access log, and Learn's browser pages (learnContext, waitReady, the course pages and running their blocks).
-import { expect, type Browser, type BrowserContext, type Locator, type Page } from "@playwright/test";
+import { expect, type Browser, type BrowserContext, type BrowserContextOptions, type Locator, type Page } from "@playwright/test";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Attribution } from "../scripts/build/attribution.ts";
 import type { LabManifest } from "../scripts/build/learn/data.ts";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
 import { SETUP_PAGE, type CoursePage, type Curriculum } from "../scripts/learn/course.ts";
@@ -23,6 +24,11 @@ export const distPath = (path: string) => repoPath(`dist/${path}`);
 export const ARTIFACTS = resolve(process.env.E2E_ARTIFACTS ?? repoPath("e2e-artifacts"));
 export const ORIGIN = "http://127.0.0.1:3100";
 export const SECOND_ORIGIN = "http://127.0.0.1:3101";
+
+// The docs page's sections (dist/index.html), in page order: each is a <section id> and a nav link.
+export const DOCS_SECTIONS = ["about", "files", "fields", "countries", "range-listings", "licenses", "credits", "cite"];
+// dist/v1/attribution.json, the file the docs page's credits are made from.
+export const docsAttribution = async (): Promise<Attribution> => JSON.parse(await readFile(distPath("v1/attribution.json"), "utf8"));
 
 export const speciesBytes = () => readFile(speciesFile);
 export const records = async (): Promise<Species[]> => JSON.parse(await readFile(speciesFile, "utf8"));
@@ -128,13 +134,14 @@ export async function accessLog(): Promise<Access[]> {
 // in `offOrigin`, so a page that reaches for another host fails its test, except a card's photo: a request to a
 // Wikimedia photo host for a record's photo.url is answered with PHOTO and recorded in `photos`. Routes a test adds
 // later run first (Playwright's order). Routing disables the cache, so learn-timing uses a plain context instead.
+// options go to browser.newContext (viewport, javaScriptEnabled, reducedMotion, permissions…).
 const PHOTO_HOSTS = new Set(["https://thumb.wikimedia.org", "https://upload.wikimedia.org"]);
 // A 1×1 PNG, the fixture every photo request gets.
 const PHOTO = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 
-export async function learnContext(browser: Browser): Promise<{ context: BrowserContext; offOrigin: string[]; photos: string[] }> {
+export async function learnContext(browser: Browser, options?: BrowserContextOptions): Promise<{ context: BrowserContext; offOrigin: string[]; photos: string[] }> {
   const photoUrls = new Set((await records()).flatMap((r) => (r.photo?.url ? [r.photo.url] : [])));
-  const context = await browser.newContext();
+  const context = await browser.newContext(options);
   const offOrigin: string[] = [];
   const photos: string[] = [];
   await context.route("**/*", (route) => {

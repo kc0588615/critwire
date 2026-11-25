@@ -3,9 +3,8 @@
 import { expect, test } from "@playwright/test";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { ARTIFACTS, ORIGIN, records, repoPath } from "./helpers.ts";
+import { ARTIFACTS, DOCS_SECTIONS as SECTIONS, ORIGIN, records, repoPath } from "./helpers.ts";
 
-const SECTIONS = ["about", "files", "fields", "countries", "range-listings", "licenses", "credits", "cite"];
 const REGISTRATION = repoPath("data/gbif-derived-dataset/registration.json");
 // External links are checked against this list, not fetched (gbif.org returns 403 to bots).
 const HOSTS = new Set([
