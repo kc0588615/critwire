@@ -837,6 +837,15 @@ SHOULD-CONSIDER:
 
 ## Release
 
+2026-11-25, `deploy` (MISSION_RELEASE). Branch already on `origin/main` `524bb38` (rebase no-op).
+- Pre-merge Verification re-run on `e32d7a2`: typecheck ok; `pnpm test` 824/824; plain build ok, `dist/` byte-identical to the final Verification's (`/srv/critter-ai/agent-state/missions/critwire-web-modernize/after/nonlearn-sha256-release.txt`), LEARN-UNCHANGED 151; prose 14 ok; whole e2e 185/185 (`/srv/critter-ai/agent-state/missions/critwire-web-modernize/e2e-final/`, log `/srv/critter-ai/agent-state/missions/critwire-web-modernize/after/e2e-release.log`).
+- PR https://github.com/kc0588615/critwire/pull/22 (no CI on critwire), merged: merge commit `e501b11`.
+- `deploy critwire`: `095e8a3 -> e501b11`; last line `deploy critwire: live at https://critwire.com` (log `/srv/critter-ai/agent-state/missions/critwire-web-modernize/after/deploy.log`). Local `dist/` = `/srv/apps/critwire/.live/`, every file's sha256.
+- Release smoke `RELEASE_ORIGIN=https://critwire.com … -c playwright.release.config.ts`: 9/9 (`/srv/critter-ai/agent-state/missions/critwire-web-modernize/e2e-release/`, log `/srv/critter-ai/agent-state/missions/critwire-web-modernize/after/release-smoke.log`). First run 8/9: the worktree had no `.venv-learn` (s4.py `spawn … ENOENT`); `pnpm learn:venv`, then re-ran the whole smoke: pass.
+- `curl -sSI https://critwire.com/fonts/atkinson-hyperlegible-next.woff2`: 200 `font/woff2`; `/fonts/OFL.txt`: 200 `text/plain; charset=utf-8`.
+
+Result: done
+
 ## Decisions
 
 - D11 (Steps): final Verification + Summary not a checklist step; runs once as the post-code-review unit (CLAUDE.md flow), avoiding a duplicate 13-min full e2e. Planner's S8 dropped.
@@ -868,10 +877,13 @@ SHOULD-CONSIDER:
 - 2026-11-25 08:31 UTC · S8: test 5 gains the toggle case first (page end, Cite current, Photos `<details>` opened by script: page unscrolled, Cite past the landing line, Credits expected); failed before the fix on all 6 (native: `aria` only, `:target-current` had moved; fallback: aria/class/bold); fix = `document` capture-phase `toggle` → native `sync`, fallback `later`. Checks: `node --check` ok; typecheck ok; plain build ok, LEARN-UNCHANGED, dist-diff 3 lines; prose all ok; docs-ui `--repeat-each=5` 85/85 (`e2e-s8/repeat-each-5.log`); docs-e2e 41/41 (`e2e-s8/`).
 - 2026-11-25 08:39 UTC · S9: test 5 (1280×800, both paths) gains wide→narrow first: Credits current at 1280×800, resize to 375×812, Credits chip inside the row, row scrolled, page `scrollY` unmoved; failed before the fix on both paths ("the Credits chip, narrow"); fix = shared `debounce` (fallback's `later` now uses it) + one `resize` → `revealCurrent` (100 ms) after both paths, `setCurrent` guard kept (D17b); SC1: `openDocs` close asserts `photos` empty. Checks: `node --check` ok; typecheck ok; plain build ok, LEARN-UNCHANGED, dist-diff 3 lines; prose all ok; docs-ui `--repeat-each=5` 85/85 (`e2e-s9/repeat-each-5.log`); docs-e2e 41/41 (`e2e-s9/`).
 - 2026-11-25 09:06 UTC · Verification + Summary: V1 scope 14 files; typecheck ok; plain build ok; e2e 185/185 (0 skipped/flaky, axe 0, `$S/e2e-final/`); LEARN-UNCHANGED 151; /v1 diff = 3 expected lines; prose 14 ok; test 824/824; LCP 76/76 ms, CLS 0, 55,017 B in 2 req; Learn screens identical; legacy-scan 0 ×4; screens looked at. Summary written, status done.
+- 2026-11-25 09:31 UTC · Release: Verification re-run (e2e 185/185, dist identical), PR #22 merged `e501b11`, `deploy critwire` ok, release smoke 9/9 (after `pnpm learn:venv`), fonts 200 with right types.
 
 ## Summary
 
 Final Verification 2026-11-25 on `92c7c03` (`origin/main` `524bb38` = merge-base). `S=/srv/critter-ai/agent-state/missions/critwire-web-modernize`.
+
+**Released** 2026-11-25: PR #22 merged (`e501b11`), `deploy critwire` live, release smoke 9/9 (`## Release`).
 
 ### What changed (guide ids that drove it)
 
