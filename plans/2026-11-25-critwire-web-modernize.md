@@ -2,7 +2,7 @@
 mission: critwire-web-modernize
 project: critwire
 branch: agent/critwire-web-modernize
-status: active
+status: done
 started: 2026-11-25 05:56 UTC
 ---
 
@@ -867,5 +867,93 @@ SHOULD-CONSIDER:
 - 2026-11-25 08:21 UTC · Code review (Astra): APPROVE_WITH_CHANGES, 2 MUST-FIX (fallback index misses disclosure toggles at page end; current chip not revealed after wide→narrow resize), 2 SC; both MUST-FIX real → S8, S9; SC1 adopted in S9 (D19). Plan-only change.
 - 2026-11-25 08:31 UTC · S8: test 5 gains the toggle case first (page end, Cite current, Photos `<details>` opened by script: page unscrolled, Cite past the landing line, Credits expected); failed before the fix on all 6 (native: `aria` only, `:target-current` had moved; fallback: aria/class/bold); fix = `document` capture-phase `toggle` → native `sync`, fallback `later`. Checks: `node --check` ok; typecheck ok; plain build ok, LEARN-UNCHANGED, dist-diff 3 lines; prose all ok; docs-ui `--repeat-each=5` 85/85 (`e2e-s8/repeat-each-5.log`); docs-e2e 41/41 (`e2e-s8/`).
 - 2026-11-25 08:39 UTC · S9: test 5 (1280×800, both paths) gains wide→narrow first: Credits current at 1280×800, resize to 375×812, Credits chip inside the row, row scrolled, page `scrollY` unmoved; failed before the fix on both paths ("the Credits chip, narrow"); fix = shared `debounce` (fallback's `later` now uses it) + one `resize` → `revealCurrent` (100 ms) after both paths, `setCurrent` guard kept (D17b); SC1: `openDocs` close asserts `photos` empty. Checks: `node --check` ok; typecheck ok; plain build ok, LEARN-UNCHANGED, dist-diff 3 lines; prose all ok; docs-ui `--repeat-each=5` 85/85 (`e2e-s9/repeat-each-5.log`); docs-e2e 41/41 (`e2e-s9/`).
+- 2026-11-25 09:06 UTC · Verification + Summary: V1 scope 14 files; typecheck ok; plain build ok; e2e 185/185 (0 skipped/flaky, axe 0, `$S/e2e-final/`); LEARN-UNCHANGED 151; /v1 diff = 3 expected lines; prose 14 ok; test 824/824; LCP 76/76 ms, CLS 0, 55,017 B in 2 req; Learn screens identical; legacy-scan 0 ×4; screens looked at. Summary written, status done.
 
 ## Summary
+
+Final Verification 2026-11-25 on `92c7c03` (`origin/main` `524bb38` = merge-base). `S=/srv/critter-ai/agent-state/missions/critwire-web-modernize`.
+
+### What changed (guide ids that drove it)
+
+- **New look** (frontend-design Visual direction): the museum specimen tag as the one motif (masthead SVG, `#files` file names on tags); green-tinted paper and Learn's greens, pollen yellow only for the current section; Atkinson Hyperlegible Next (OFL, self-hosted, 32,336 B woff2 subset) with a footer line linking its `OFL.txt`. Own `site/docs.css` + `site/docs.js`, inlined through slots via the new `rawText` guard (`html.ts`, test-first F1–F8); `site/style.css` and Learn untouched. `css`, `typography`, `improve-text-layout-and-legibility`, `visually-stable-font-fallbacks`, `color`, `dark-mode`, `shaped-cutouts`, `icons`.
+- **Landmarks and keyboard:** `header` + `nav` moved out of `main`, `footer` added; `tabindex="0"` on all 10 `<pre>` (fixes the Baseline's axe `scrollable-region-focusable` serious violation); focus rings, inset rings in the chip row. `accessibility`, `html`, `single-line-overflow`.
+- **Section index that follows the reader:** sticky left index ≥ 60rem, sticky chip row below; native `scroll-target-group`/`:target-current` mirrored to `aria-current`, JS landing-line fallback elsewhere; resyncs on `<details>` toggle (S8) and reveals the current chip after resize (S9). `scrollspy`, `state-aware-sticky-headers`, `performance`.
+- **Chip-row end fades:** scroll-driven mask, `@supports`-gated, `@property` lengths. `scrollability-affordance-hints`, `motion`.
+- **Copy buttons:** one per sample, outside `<code>`, `role="status"` feedback, never disabled, only when a clipboard exists. `copy-button`, `color`, `accessibility`.
+- **Head:** `color-scheme` meta, inline CSS, module script, font preload with `crossorigin`. `dark-mode`, `performance`, `optimize-preload-priority`.
+- **Reflow:** `main { overflow-wrap: break-word }` (375 px at 200% text was 565 px wide). `respect-os-text-scale`.
+- **Tests:** new `e2e/docs-ui.spec.ts` (10 tests, 17 runs: no-JS completeness, copy ×3, index native + fallback × 3 sizes incl. toggle + resize, smooth scroll vs reduced motion, focus ×2, layout ×2, axe ×4 views, font); `docs.spec.ts` unchanged except `SECTIONS` now from `helpers.ts`; `html.test.ts` HT2.
+
+### Checked, not applied
+
+Nesting and `@layer` (`css`, D12); `light-dark()` (`dark-mode`, D5: media-query tokens); `font-size-adjust: from-font` (D6: fixed 0.496); `tabindex="-1"` on sections (`scrollspy`, D1); `role="region"` on `pre` (`html`, D4); `-50%` IntersectionObserver band (`scrollspy`, D9); invoker commands, failure-UI without clipboard, `innerText`, padding-end button, animation restart (`copy-button`, D10, D2, D3, D8, D16); RTL fade flip and JS fade fallback (`scrollability-affordance-hints`, D7, D15d); stuck styles (`state-aware-sticky-headers`); `content-visibility` (`performance`); `search-hidden-content` (credits already `<details>`); skip link (`accessibility`: index is first focusable); `prefers-contrast` (`color`); CSS icon engine (`icons`); theme toggle, `accent-color`, `scrollbar-color` (`dark-mode`); truncation (`single-line-overflow`); `fetchpriority` (`optimize-preload-priority`); SVG masks (`shaped-cutouts`); `<meta name="text-scale">` (`respect-os-text-scale`, D18: masthead doesn't hold at 200% OS text; candidate for later). Reasons: Architecture's "Guides checked, not applied" and the log's S3–S7 lines.
+
+### Modern Web Guidance
+
+- `html`: I added `tabindex="0"` to all ten code samples, per "ensure that code blocks are accessible by adding `tabindex="0"` to the `<pre>` element if it becomes scrollable". This cleared axe's one serious violation.
+- `dark-mode`: I added `<meta name="color-scheme" content="light dark">` and `:root { color-scheme: light dark }`, per "place a `<meta>` tag in your `<head>`" and "Apply the `color-scheme` property to the `html` element or the `:root`".
+- `performance`: I inlined the stylesheet and a module script, per "DO inline critical CSS" and "`type="module"` is preferred for modern JavaScript and is deferred by default", and debounced the fallback index's listeners, per "DO debounce or throttle rapid event listeners".
+- `optimize-preload-priority`: I preloaded the one font with `crossorigin`, per "ensure that font preloads always have the `crossorigin` attribute (even if same-origin)"; a test proves one font request per load.
+- `accessibility`: I moved the title into a `<header>` and the font line into a `<footer>`, per "Use the `<header>` element as a container for introductory content", and styled rings with "Use `:focus-visible` when styling focus indicators".
+- `color`: I mapped the tokens to system colors, per "Define system color fallbacks for color tokens using `@media (forced-colors: active)`", and kept the copy button's border at least 3:1, per "Maintain a minimum contrast ratio of 3:1 for user interface component boundaries and states".
+- `css`: I avoided a `*` reset, per "use global resets (styles on `*`) as they cannot be overridden by web components", and used logical properties, per "Prefer **logical properties and values** over physical ones".
+- `typography`: I sized headings with `clamp()`, per "combine viewport-relative and font-relative units in `clamp()`".
+- `improve-text-layout-and-legibility`: I balanced only headings, per "For short text blocks like headings, use `text-wrap: balance`" and "DO NOT apply `text-wrap: balance` globally".
+- `visually-stable-font-fallbacks`: I set `font-size-adjust: 0.496` from the font's own x-height, per "If you know the specific value (e.g., 0.545 for Verdana), you can provide it directly for more precise control."
+- `single-line-overflow`: I gave the clipped chips inset rings, per "give those items an inset outline (`outline-offset: -2px`)".
+- `state-aware-sticky-headers`: I set `scroll-padding-top` under the sticky index, per "Add `scroll-padding-top` to the scrollport and set the value to be equal or greater than the sticky element's height".
+- `scrollspy`: I used native tracking where supported, per "Apply the `scroll-target-group: auto` property to the container of your navigation links", mirrored to `aria-current` because "the visual state must be mirrored with `aria-current`", with a JS fallback elsewhere.
+- `motion`: I kept smooth scrolling for readers without a preference, per "Use `@media (prefers-reduced-motion: no-preference)` when the reduced-motion strategy is to **not have the animation at all**".
+- `shaped-cutouts`: I clipped the file tags' notch on a pseudo-element, per "Apply the mask to an adjacent element rather than the parent element containing text".
+- `icons`: I hid the decorative tag illustration, per "Mark decorative SVGs with `aria-hidden="true"`".
+- `scrollability-affordance-hints`: I added scroll-driven end fades to the phone chip row, gated by `@supports`, per "MANDATORY: Register `--fade-start` and `--fade-end` with `@property`."
+- `copy-button`: I added a Copy button per sample with a status region, per "DO NOT disable the button while showing feedback" and "Keep it empty until a copy, and outside the button".
+- `respect-os-text-scale`: I stopped sideways scrolling at 200% text with `overflow-wrap: break-word` on `main`, per "Text MUST remain readable and content MUST remain visible without overlap, clipping, or horizontal scrolling."
+
+### Newer browser features (only Chromium ran; fallbacks proven by simulation in docs-ui tests 4, 5, 8)
+
+| Feature | Status | Other browsers get |
+|---|---|---|
+| `scroll-target-group`, `:target-current` | Chrome/Edge 140+ | JS landing-line fallback (test 5, fallback path); no JS: plain index |
+| Async Clipboard `writeText` | widely available | no copy buttons (test 4) |
+| `font-size-adjust` | Baseline 2024-07-25 | fallback font at its own size |
+| `text-wrap: balance` / `pretty` | Baseline 2024-05-13 / Chrome, Safari 26 | normal wrapping |
+| Scroll-driven animations (chip fade) | Baseline 2026-10-27 | `@supports`-gated: unmasked row, cut chip as cue (test 8 checks the gate) |
+| `scrollend` | native path only (Chrome 114+) | n/a |
+
+### legacy-scan
+
+Baseline page and `style.css`: 0 findings. Final: `dist/index.html` (copy outside `dist/`, D14), `site/index.html`, `site/docs.css`, `site/docs.js`: **0 findings each** (1 file, 52 rules), `$S/after/legacy-scan-*.json`. The mock's one finding, `scrollspy/js`, didn't recur: the fallback is a debounced scroll listener, not an IntersectionObserver (D17d). Nothing kept.
+
+### Numbers (before → after; Playwright Chromium vs local Caddy, 5 loads)
+
+- LCP median: 1280 **72 → 76 ms** (budget ≤ 172); 375 **64 → 76 ms** (≤ 164).
+- CLS max: **0 → 0** both widths (≤ 0.05).
+- Transfer: **15,453 B, 1 request → 55,017 B, 2 requests** (HTML zstd 21,916 + woff2 32,336 + headers; ≤ 150,000).
+- `dist/index.html`: **53,546 → 71,782 B** raw; gzip -9 **14,234 → 20,749 B**.
+- `$S/before/metrics.json`, `$S/after/metrics.json`.
+
+### Verification
+
+- V1 scope: 14 files, all in the allowed set; no dependency change. V2 typecheck pass. V3 plain build pass (`$S/after/build.log`).
+- V4 E2E whole suite: **185/185** (Baseline 168 + docs-ui 17), 0 skipped, 0 flaky, 12.8 min. axe (test 9): 0 violations at 1280 and 375, light and dark. Artifact `$S/e2e-final/playwright-report/index.html`, `results.json`, traces, `docs-ui-*.png`. Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+- V5 Learn: **LEARN-UNCHANGED**, 151 files = Baseline (`$S/after/learn-sha256.txt`).
+- V6 /v1: diff is exactly `added ./fonts/OFL.txt`, `added ./fonts/atkinson-hyperlegible-next.woff2`, `changed ./index.html`; both fonts files `cmp` = source, sha256 `aca6a428…c4030` / `416e6dfa…fe97c` as §1.
+- V7 prose: `ok` for all 14 parts (`$S/after/prose.txt`).
+- V8 `pnpm test`: **824/824** (823 + HT2).
+- V9 screens `$S/screens/{before,after}-*.png` (10 each); Learn's 6 after-shots byte-identical to before.
+- V10 legacy-scan: above. V11 looked at docs 1280/375 light/dark, copied status, chip reveal after resize, focus rings: nothing broken.
+
+### Decisions where a guide gave way to critwire's rules
+
+D1–D10 (Architecture), D12 (no nesting/`@layer`: page must stay readable in old engines), D15 (fade kept under reduced motion: scroll-linked, no movement), D16, D17 (native sync one frame late), D18 (no `text-scale` meta). D11, D13, D14, D19 are process/mock notes.
+
+### Reviews
+
+Architecture: Fable APPROVE_WITH_CHANGES (2 MUST-FIX), Astra APPROVE_WITH_CHANGES (2 MUST-FIX); all fixed in Revision. Code: Astra APPROVE_WITH_CHANGES, 2 MUST-FIX → S8, S9; SC1 adopted, SC2 checked (base current).
+
+### Skill pack
+
+- Used: yes, every stage. 20 guides saved and quoted (19 at Architecture, `respect-os-text-scale` added in S7), 4-file legacy-scan at baseline, S3–S7 and final; the architect, Fable, Astra and each step cited guide text.
+- Cost (`mission usage critwire-web-modernize`, before this session): 16 sessions, 147 min, list price ≈ $38.86 (Opus $33.86, Fable $5); Astra's Codex runs not counted.
+- Worth it: yes, modestly. legacy-scan found nothing on this small page, but the guides drove real fixes (axe-failing `<pre>`, landmarks, font fallback metrics, 200%-text reflow, forced colors) and their own caveats caught three traps (ungated fade, `-50%` spy band, `from-font`).
