@@ -83,11 +83,12 @@ h1 { grid-area: 1 / 1; align-self: end; margin: 0; font-size: clamp(2.75rem, 1.5
   margin-inline: auto;
   padding: 0 var(--gutter) 5rem;
 }
-main { min-inline-size: 0; max-inline-size: var(--measure); }
+/* break-word: a long URL in the prose breaks rather than scroll the page at large text sizes (respect-os-text-scale). */
+main { min-inline-size: 0; max-inline-size: var(--measure); overflow-wrap: break-word; }
 
 nav.toc {
   position: sticky;
-  top: 0;
+  inset-block-start: 0;
   z-index: 1;
   margin-inline: calc(-1 * var(--gutter));
   padding: .5rem var(--gutter);
@@ -137,10 +138,10 @@ nav.toc a:is(:target-current, .target-current) { background: var(--pollen); colo
 @media (min-width: 60rem) {
   html { scroll-padding-top: 1.5rem; }
   .page { grid-template-columns: var(--index) minmax(0, var(--measure)); column-gap: 3.5rem; }
-  nav.toc { top: 1.5rem; align-self: start; margin: 2.5rem 0 0; padding: 0; background: none; border: 0; }
+  nav.toc { inset-block-start: 1.5rem; align-self: start; margin: 2.5rem 0 0; padding: 0; background: none; border: 0; }
   nav.toc h2 { display: block; margin: 0 0 .5rem; color: var(--lichen); font-size: .95rem; font-weight: 600; }
   nav.toc ul { flex-direction: column; gap: .1rem; padding: 0; overflow: visible; border-inline-start: 2px solid var(--rule); }
-  nav.toc a { padding: .3rem .8rem; border-radius: 0 6px 6px 0; background: none; white-space: normal; }
+  nav.toc a { padding: .3rem .8rem; border-radius: 0; border-start-end-radius: 6px; border-end-end-radius: 6px; background: none; white-space: normal; }
   nav.toc a:hover { background: var(--fern); }
   nav.toc a:is(:target-current, .target-current) { background: var(--pollen); }
 }
@@ -152,7 +153,7 @@ h2 { margin: 0 0 1rem; font-size: clamp(1.6rem, 1.3rem + 1.2vw, 2rem); line-heig
 h3 { margin: 2rem 0 .5rem; font-size: 1.2rem; }
 .note { padding-inline-start: .85rem; border-inline-start: 3px solid var(--rule); color: var(--lichen); font-size: .97rem; }
 dt { margin-block-start: .9rem; font-weight: 700; }
-dd { margin: .2rem 0 0 1rem; overflow-wrap: anywhere; }
+dd { margin-block: .2rem 0; margin-inline: 1rem 0; overflow-wrap: anywhere; }
 dt.group { margin-block-start: 2rem; padding-block-start: .75rem; border-block-start: 1px dashed var(--rule); }
 
 /* Files: each file name hangs on a specimen tag. The notched card is ::before and the punched hole ::after, so the
@@ -182,7 +183,8 @@ pre.wrap code { overflow-wrap: anywhere; white-space: pre-wrap; }
 .example { position: relative; }
 .example > pre { padding-block-start: 2.75rem; }
 .copy { position: absolute; inset-block-start: .45rem; inset-inline-end: .5rem; display: flex; flex-direction: row-reverse; align-items: center; gap: .4rem; }
-.copy button { min-inline-size: 24px; min-block-size: 1.75rem; padding: .15rem .65rem; background: var(--paper); color: var(--ink); border: 1px solid var(--lichen); border-radius: 6px; font: 600 .85rem/1.2 var(--sans); cursor: pointer; }
+/* `font` resets font-size-adjust; inherit puts body's back, so the label scales with the fallback like the page. */
+.copy button { min-inline-size: 24px; min-block-size: 1.75rem; padding: .15rem .65rem; background: var(--paper); color: var(--ink); border: 1px solid var(--lichen); border-radius: 6px; font: 600 .85rem/1.2 var(--sans); font-size-adjust: inherit; cursor: pointer; }
 .copy button:hover { background: var(--fern); }
 .copy [role="status"]:not(:empty) { padding: .1rem .5rem; background: var(--paper); color: var(--ink); border-radius: 4px; font-size: .85rem; }
 
