@@ -216,7 +216,7 @@ These areas are fine: `fillSlots`, `esc`, `link` and `licenseLink` (pure, escape
 |---|---|---|
 | `site/docs.css` | the docs page's whole stylesheet | inlined via `{{style}}` |
 | `site/docs.js` | plain ES module: no TypeScript, no dependencies | inlined via `{{script}}` |
-| `site/fonts/atkinson-hyperlegible-next.woff2` | the font step's output (below). The mock's subset was 32,432 B, sha256 `a896eccb…31cda59`; if the step's bytes differ, this row takes the new size and sha | `/fonts/atkinson-hyperlegible-next.woff2` |
+| `site/fonts/atkinson-hyperlegible-next.woff2` | the font step's output (below): **32,336 B, sha256 `416e6dfac2746f060c23ecd8f183ba805278bc48192eb06060ac00ccd42fe97c`** (S1; the mock's unrecorded subset was 32,432 B, `a896eccb…31cda59`, never committed) | `/fonts/atkinson-hyperlegible-next.woff2` |
 | `site/fonts/OFL.txt` | the upstream license at the pinned commit: 4,431 B, sha256 `aca6a428…c4030` (git blob `88955733…` = the mock's copy, checked) | `/fonts/OFL.txt` |
 
 - **CSS and JS are inlined through slots, not served as files.** That means no extra requests. Caddy sends no `Cache-Control` (`e2e/Caddyfile:10-36`, the live block, which this mission can't change), so separate files with fixed names would be cached by heuristic from `Last-Modified` and could go stale against a newer HTML. Inlined code can't. Learn inlines `style.css` the same way. `performance`: "DO inline critical CSS" (here the whole sheet is critical; the mock's is 2.4 KB gzipped) and "`type="module"` is preferred for modern JavaScript and is deferred by default".
@@ -243,6 +243,7 @@ These areas are fine: `fillSlots`, `esc`, `link` and `licenseLink` (pure, escape
     ```
     The code points are the mock's `unicode-range` (`mock/docs.css:7`). `brotli` is pinned because it writes the woff2's bytes. `--name-IDs='*'` keeps the license and its URL (name IDs 13, 14) inside the file, so a copy saved alone still carries them (OFL condition 2); layout features stay pyftsubset's default set.
   - `sha256sum -c` stops the step on any other input bytes. The source TTF has name IDs 13 and 14 and sxHeight 496 (checked with ttx); subsetting keeps both. A woff2 whose bytes differ from the mock's updates the table row and the budget, and its sxHeight is re-read for §3's `font-size-adjust`.
+  - **S1 result:** woff2 32,336 B, sha256 `416e6dfac2746f060c23ecd8f183ba805278bc48192eb06060ac00ccd42fe97c`, identical over 2 runs; sxHeight 496, unitsPerEm 1000, name IDs 13 + 14 kept (ttx read-back); both `sha256sum -c` OK; `OFL.txt` 4,431 B, `aca6a428…c4030`. Command: the block above, verbatim (2026-11-25). Tools: uv's `fonttools[woff]==4.68.0` + `brotli==1.2.1`. §3's `0.496` and D6 stand.
   - The `FONT` comment in `docs.ts` records: the two pinned URLs, both input sha256s, the command as run, the tool versions, the woff2's sha256, and that the copyright line names no Reserved Font Name, so the subset may keep its name (OFL condition 3). No hash is pinned in code: Git holds the bytes, and the build only copies them.
 - **Preload without `fetchpriority`.** `<link rel="preload" href="{{fontUrl}}" as="font" type="font/woff2" crossorigin>`.
   - `performance`: "DO preload critical fonts … for fonts seen above the fold" and "DON'T use `fetchpriority="high"` on fonts".
@@ -578,7 +579,7 @@ One step per session: do it, run its checks, check it off, add a Log line, commi
 
 ### Checklist
 
-- [ ] S1. **Font subset, and `rawText` test-first.** Files: `site/fonts/atkinson-hyperlegible-next.woff2` and `site/fonts/OFL.txt` (new), `scripts/build/html.test.ts`, `scripts/build/html.ts`, and the plan's §1.
+- [x] S1. **Font subset, and `rawText` test-first.** Files: `site/fonts/atkinson-hyperlegible-next.woff2` and `site/fonts/OFL.txt` (new), `scripts/build/html.test.ts`, `scripts/build/html.ts`, and the plan's §1.
   - **Font:**
     - Run §1's "Font step" command exactly as written. It needs raw GitHub and PyPI (through uv). Both `sha256sum -c` lines must print `OK`.
     - Run it a second time. The woff2's sha256 must be the same (the step is repeatable).
@@ -779,5 +780,6 @@ Run from the worktree root on the final commit, in order, heavy jobs one at a ti
 - 2026-11-25 07:00 UTC · Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (fallback scroll-spy wrong section at 1280×1400, test with native tracking off; chip fade gate, same as Fable's), 3 SHOULD-CONSIDER. Plan-only change.
 - 2026-11-25 07:14 UTC · Revision: architect fixed all MUST-FIX (chip fade behind `@supports`, D7 corrected; pinned font step w/ hashes + pyftsubset cmd; fallback scroll-spy at anchor landing line, D9, 1280×1400 test w/ native tracking off), adopted section-id contract + Fable SC2–SC5 (D10 click-only copy), rejected shared axe helper. Plan-only change.
 - 2026-11-25 07:28 UTC · Steps: planner wrote S1–S7 (font+rawText test-first, wiring+markup, style, gated fade, copy, scroll-spy, audit), shared checks (build-check reproduces Baseline hashes), Verification V0–V12, Failure modes F1–F8; final Verification kept as post-review unit (D11). Plan-only change.
+- 2026-11-25 07:34 UTC · S1: font step ×2 → same woff2 `416e6dfa…` (32,336 B ≠ mock's; §1 row updated), sxHeight 496, name IDs 13/14 kept; HT2 written first, failed `SyntaxError: The requested module './html.ts' does not provide an export named 'rawText'`, then `rawText` added: HT1+HT2 pass; typecheck ok; `pnpm test` 824/824.
 
 ## Summary
