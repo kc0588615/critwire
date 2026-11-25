@@ -92,6 +92,19 @@ function setCurrent(link) {
   if (link) reveal(link);
 }
 
+// `fn` once, 100 ms after the last call (performance guide: debounce).
+function debounce(fn) {
+  let timer;
+  return () => {
+    clearTimeout(timer);
+    timer = setTimeout(fn, 100);
+  };
+}
+
+// A resize can make the chip row overflow (wide to narrow) without a change of section, which setCurrent skips: reveal
+// the current chip once the window settles. Both paths; the fallback's own resize update runs first (registered first).
+const revealCurrent = debounce(() => current && reveal(current));
+
 if (CSS.supports("scroll-target-group: auto")) {
   // Native (Chromium 140+): the browser tracks the target; mirror it at start, after load and once scrolling stops.
   // Chromium updates :target-current while rendering a frame, after rAF callbacks: at module run and at load it still
@@ -126,15 +139,13 @@ if (CSS.supports("scroll-target-group: auto")) {
     for (const a of links) a.classList.toggle("target-current", a === link);
     setCurrent(link);
   };
-  // Once, 100 ms after the last scroll or resize (performance guide: debounce): a smooth jump updates when it stops.
-  let timer;
-  const later = () => {
-    clearTimeout(timer);
-    timer = setTimeout(update, 100);
-  };
+  // Once, 100 ms after the last scroll or resize: a smooth jump updates when it stops.
+  const later = debounce(update);
   update();
   addEventListener("scroll", later, { passive: true });
   addEventListener("resize", later, { passive: true });
   // A <details> opening or closing moves the sections without a scroll. toggle doesn't bubble: capture it on document.
   document.addEventListener("toggle", later, true);
 }
+
+addEventListener("resize", revealCurrent, { passive: true });

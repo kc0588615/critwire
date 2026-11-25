@@ -11,13 +11,14 @@ const LICENSE_PATH = "/fonts/OFL.txt";
 
 // The docs page at `path` in a fresh learnContext; `close` asserts no page error and no off-origin request.
 async function openDocs(browser: Browser, options: BrowserContextOptions, path = "/") {
-  const { context, offOrigin } = await learnContext(browser, options);
+  const { context, offOrigin, photos } = await learnContext(browser, options);
   const page = await context.newPage();
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const close = async () => {
     expect(errors, "page errors").toEqual([]);
     expect(offOrigin, "off-origin requests").toEqual([]);
+    expect(photos, "photo requests").toEqual([]);
     await context.close();
   };
   return { page, close, load: async () => expect((await page.goto(path))?.status()).toBe(200) };
@@ -241,6 +242,22 @@ for (const path of ["native", "fallback"] as const) {
       expect(pushed.scrollY, "the toggle didn't scroll the page").toBe(scrolled);
       expect(pushed.citeTop, "Cite left the landing line").toBeGreaterThan(pushed.line + 2);
       await t.close();
+
+      if (viewport.width === 1280 && viewport.height === 800) {
+        // Wide to narrow with Credits current: the row starts to overflow without a change of section, and the Credits
+        // chip, out of the row's view, is brought into it; the reveal moves only the row.
+        const w = await open();
+        await w.page.evaluate(() => (location.hash = "#credits"));
+        await expect.poll(() => indexState(w.page), "Credits, wide").toEqual(expectedIndex(fallback, "#credits"));
+        await w.page.setViewportSize({ width: 375, height: 812 });
+        const settled = await w.page.evaluate(() => new Promise<number>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(scrollY)))));
+        await expect.poll(() => chipInRow(w.page), "the Credits chip, narrow").toMatchObject({ inside: true });
+        await expect.poll(() => indexState(w.page), "Credits, narrow").toEqual(expectedIndex(fallback, "#credits"));
+        expect((await chipInRow(w.page)).scrollLeft, "the row scrolled").toBeGreaterThan(0);
+        expect(await w.page.evaluate(() => scrollY), "the reveal didn't scroll the page").toBe(settled);
+        await shot(w.page, info, `spy-${path}-resize`, false);
+        await w.close();
+      }
 
       if (viewport.width >= 960) return;
       // Learn's deep links (the section ids are its contract): that link is current, the h2 below the sticky row.
