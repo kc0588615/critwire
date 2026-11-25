@@ -108,6 +108,32 @@ nav.toc a:is(:target-current, .target-current) { background: var(--pollen); colo
   nav.toc a:is(:target-current, .target-current) { text-decoration: underline; }
 }
 
+/* Chip-row end fades (D7, scrollability-affordance-hints). The registered bands interpolate as the row scrolls; on
+   their own these four rules paint nothing. Everything that masks sits behind the gate: without scroll timelines,
+   `animation: ... both` would run as a 0 s time animation and hold its end state, fading the first chip for good. There
+   the row stays unmasked and the chip cut at its edge is the cue. Not motion (the bands follow the reader's own
+   scroll), so reduced motion keeps them. Physical gradient directions: the page is English, left to right. */
+@property --fade-start { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --fade-end { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@keyframes reveal-fade-start { to { --fade-start: var(--fade-size); } }
+@keyframes hide-fade-end { from { --fade-end: var(--fade-size); } }
+@supports (animation-timeline: scroll()) and (animation-range: 0 1px) {
+  @media (width < 60rem) {
+    nav.toc ul {
+      --fade-size: 3rem;
+      /* A focused or revealed chip never stops inside a fade (docs.js's reveal reads it too). */
+      scroll-padding-inline: var(--fade-size);
+      mask:
+        linear-gradient(black, black) no-clip subtract,
+        linear-gradient(to right, black, transparent) 0 0 / var(--fade-start) 100% no-repeat no-clip,
+        linear-gradient(to right, transparent, black) 100% 0 / var(--fade-end) 100% no-repeat no-clip;
+      animation: reveal-fade-start linear both, hide-fade-end linear both;
+      animation-timeline: scroll(self inline);
+      animation-range: 0 var(--fade-size), calc(100% - var(--fade-size)) 100%;
+    }
+  }
+}
+
 @media (min-width: 60rem) {
   html { scroll-padding-top: 1.5rem; }
   .page { grid-template-columns: var(--index) minmax(0, var(--measure)); column-gap: 3.5rem; }

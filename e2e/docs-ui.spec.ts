@@ -1,6 +1,5 @@
-// The docs page's UI (plan 2026-11-25-critwire-web-modernize §7): the page without JavaScript, motion, layout, axe and
-// the font. Every
-// test opens the page through learnContext (each off-origin request aborted and recorded) and ends with no page error
+// The docs page's UI (plan 2026-11-25-critwire-web-modernize §7): the page without JavaScript, motion, layout (with the
+// chip row's gated fade), axe and the font. Every test opens the page through learnContext (each off-origin request aborted and recorded) and ends with no page error
 // and no off-origin request. Screenshots: ARTIFACTS/docs-ui-*.png, attached to the report.
 import { expect, test, type Browser, type BrowserContextOptions, type Page, type TestInfo } from "@playwright/test";
 import axe from "axe-core";
@@ -86,10 +85,47 @@ const layout = (page: Page) =>
     };
   });
 
+// The row's fade bands (--fade-start, --fade-end), as computed, after scrolling the row to `left`.
+const fades = (page: Page, left: number) =>
+  page.evaluate((left) => {
+    const row = document.querySelector("nav.toc ul")!;
+    row.scrollTo({ left, behavior: "instant" });
+    const style = getComputedStyle(row);
+    return [style.getPropertyValue("--fade-start"), style.getPropertyValue("--fade-end")];
+  }, left);
+
+// Every style rule that masks the row, gives it a scroll timeline or a scroll-padding-inline, and whether each sits
+// inside an @supports naming both animation-timeline and animation-range (D7: the fade's gate).
+const fadeGate = (page: Page) =>
+  page.evaluate(() => {
+    const row = document.querySelector("nav.toc ul")!;
+    const props = ["mask-image", "animation-timeline", "scroll-padding-inline-start", "scroll-padding-inline-end"];
+    const gated = (rule: CSSRule) => {
+      for (let r = rule.parentRule; r; r = r.parentRule) {
+        if (r instanceof CSSSupportsRule && r.conditionText.includes("animation-timeline") && r.conditionText.includes("animation-range")) return true;
+      }
+      return false;
+    };
+    const found: { selector: string; gated: boolean }[] = [];
+    const walk = (rules: CSSRuleList) => {
+      for (const rule of rules) {
+        if (rule instanceof CSSStyleRule && row.matches(rule.selectorText) && props.some((p) => rule.style.getPropertyValue(p) !== "")) {
+          found.push({ selector: rule.selectorText, gated: gated(rule) });
+        }
+        if ("cssRules" in rule) walk((rule as CSSGroupingRule).cssRules);
+      }
+    };
+    for (const sheet of document.styleSheets) walk(sheet.cssRules);
+    return found;
+  });
+
 for (const width of WIDTHS) {
   test(`8. layout at ${width} px, light and dark`, async ({ browser }, info) => {
     const { page, close, load } = await openDocs(browser, { viewport: { width, height: 800 }, reducedMotion: "reduce" });
     await load();
+    const gate = await fadeGate(page);
+    expect(gate.length, "rules that fade the row").toBeGreaterThan(0);
+    expect(gate.filter((r) => !r.gated), "fade rules outside the gate").toEqual([]);
     for (const colorScheme of SCHEMES) {
       await page.emulateMedia({ colorScheme });
       await page.evaluate(() => window.scrollTo(0, 0));
@@ -101,6 +137,10 @@ for (const width of WIDTHS) {
         expect.soft(top.rowOverflows, `${colorScheme}: the row overflows`).toBe(true);
         expect.soft(top.rowScrollLeft).toBe(0);
         expect.soft(top.cut, `${colorScheme}: a chip crosses the row's end`).toBe(1);
+        // The fade (Chromium has scroll timelines): none at the start at rest, one at the end; swapped at the far end.
+        await expect.poll(() => fades(page, 0), `${colorScheme}: fades at scrollLeft 0`).toEqual(["0px", "48px"]);
+        await expect.poll(() => fades(page, 1e5), `${colorScheme}: fades at the row's end`).toEqual(["48px", "0px"]);
+        await fades(page, 0);
         await page.evaluate(() => window.scrollTo(0, 6000));
         const scrolled = await layout(page);
         expect.soft(scrolled.navTop, `${colorScheme}: the row sticks at the top`).toBe(0);
