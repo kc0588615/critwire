@@ -122,7 +122,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -436,6 +436,46 @@ Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`,
 
 ## Architecture review (Fable)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **The chip-row fade hides the first chip in browsers without scroll-driven animations** (Safari < 26, Firefox < 159; Baseline only since 2026-10-27).
+   - Evidence: §3 "Chip row" (plan:280-281) builds the fade "as the guide builds them" and says such browsers "show no fade"; §5 (plan:328) repeats it. The guide's CSS has no `@supports` gate. Where `animation-timeline` and `animation-range` are unknown they are dropped, and `animation: … linear both` then runs as a 0 s time animation that holds its end state.
+   - Probe (Chromium 145, the guide's CSS with those two declarations removed, `scrollLeft` 0): `--fade-start: 48px`, `--fade-end: 0px`. That is a permanent 3rem fade over "About" (the chip spans x 20–84 at 375 in the mock) and no end fade. With the declarations: `0px` / `48px`.
+   - It breaks the brief's rule "content and links stay complete and readable without it", and no Chromium test can see it.
+   - Fix: put the `mask`, `animation`, `animation-timeline`, `animation-range` and `scroll-padding-inline` inside `@supports (animation-timeline: scroll())`; the `@property` rules stay outside. Or drop the fade: at 375 the row already cuts "Range listings" at its edge (x 316–432, row ends at 355). Correct D7 (plan:407) too: phone scrollbars are overlays, hidden at rest, so without the fade the cue is the clipped chip, not the scrollbar.
+2. **The font's provenance can't be written as designed.**
+   - Evidence: §1 (plan:231) has the `FONT` comment record the upstream TTF's sha256, "the exact `pyftsubset` command" and the fonttools version. None of the three is recorded: plan:164 gives only a `main`-branch URL, `mock/` holds `build-mock.py` and the finished woff2, and fonttools isn't installed (`python3 -c "import fontTools"` fails; the worktree has no `.venv-learn`). A later session would have to guess a command nobody ran.
+   - Fix: one step before the font is committed. Fetch the TTF at a pinned `google/fonts` commit and record its sha256. Run one written command (for example `uv tool run --from 'fonttools[woff]==<version>' pyftsubset … --unicodes=<the list in mock/docs.css:7> --flavor=woff2`). Commit the bytes that command produces, and put the command, the version and both hashes in the comment. If the result differs from `a896eccb…`, update §1's size and sha. Never a reconstructed command.
+
+MISSED:
+- **The section ids are a contract with Learn**, which this mission can't change. Learn deep-links here: `/#files` (`site/learn/pages/map.html:19`, `pages/schema-schema.html:4`, `data/index.html:38`, `modules/s1.html:19`), `/#licenses` (`modules/d2.html:33`, `f3.html:32`, `s1.html:38`), `/#range-listings` (`modules/e4.html:36`, `s1.html:47`). The design keeps all eight ids on the sections (D1 is right not to move them onto headings). Say so in §2, and have test 5's deep-link case also load `/#files` and `/#range-listings` at 375 (heading below the sticky row).
+
+SHOULD-CONSIDER:
+1. **The fallback scroll-spy picks the wrong link in tall windows** (§4, plan:315; `#cite` reserve, plan:283). Probe on the mock with the guide's `-50%` observer: right at 1280×800 and 375×812; at 1280×1400, clicking About makes Files current (About is 591 px tall, the midline is at 700) and Cite makes Credits current. The planned reserve fixes Cite only. The native path (same mock, no reserve, Chromium 145) is right at all three sizes, with Cite current at the page's end. Suggest a higher line (about `-20% 0px -80% 0px`) and a 1280×1400 case in test 5. The reserve then only has to let Cite reach that line, so it can go below the footer; as designed it leaves about 450 px blank at 800 high, and about 1,050 at 1400, between Cite's text and the font line.
+2. **Smooth scrolling costs more than it gives** (plan:290, 316). In the fallback path `setCurrent` calls `reveal` for every section the line crosses during a smooth 15,000–21,000 px jump, so chips flicker and smooth row scrolls stack. Either drop `scroll-behavior: smooth` (test 6 and `reveal`'s `behavior` branch go with it), or keep it and make `reveal` always `instant`.
+3. **Reuse the e2e helpers** (§7, plan:345-349). The off-origin guard exists: give `learnContext` (`e2e/helpers.ts:135-150`) an optional context-options argument (viewport, `javaScriptEnabled`, `reducedMotion`, permissions) rather than writing a second route guard. `axeViolations` repeats `e2e/learn-walk.spec.ts:44-45`; have learn-walk import it too (test-only, `dist/learn/` unaffected), or note why not.
+4. **The prose proof covers only the eight sections** (§8, plan:391). The lead and the nav labels move outside them. Compare `<title>`, the description, `h1`, `.lead` and the nav link texts as well.
+5. **Two copy wirings for one behavior** (§4, plan:310). A `--copy` custom command still needs a listener, so invoker commands save no code here; the click path alone serves every browser, and keeping both doubles test 2. The brief allows it. Record it under Decisions as guide over "Prefer simplicity", or ship the click path only and list invoker commands under "checked, not applied".
+
+Verified (on `3e68dce` = `origin/main` `524bb38` + plan):
+- Findings 1–6: line references match the code. axe 4.14 on the Baseline `dist/index.html`: `scrollable-region-focusable` 9 at 375, 2 at 1280, nothing else.
+- Contrast recomputed from the tokens: every text pair ≥ 5.3:1 in both schemes (moss on paper 6.05 / 9.92, on fern 5.37 / 8.42; lichen on fern 5.31 / 6.80; ink on pollen 10.64 / 8.11).
+- Learn stays byte-equal by design: `site/style.css` and `scripts/build/learn/**` untouched, `html.ts` keeps `styleSheet` and only gains a function, nothing new under `dist/learn/`. No test or tsconfig walks `site/`'s root.
+- `fillSlots`: CSS and JS enter through slots, which aren't rescanned (HT1, `html.test.ts:8`); the replace uses a callback, so `$` in the JS is safe; the template's `@font-face` and SVG hold no `{{`.
+- Copy buttons sit outside `<pre>` and `<code>`, so `pre > code[data-example]` (`e2e/duckdb.spec.ts:25`) and `code[data-query]` (`e2e/range-listings.spec.ts:132`) read the same text. No file link is hidden.
+- Serving: `/etc/mime.types` has `font/woff2`; the live block equals `e2e/Caddyfile` (no `Cache-Control`), which inlining and the fixed-bytes font tolerate. The release smoke walks every `dist/` file (`e2e/release/live.spec.ts:31-49`) and `deploy` rsyncs all of `dist/`, so `/fonts/*` is covered.
+- Font: `OFL.txt` names no Reserved Font Name; x-height measured in Chromium ≈ 0.50, so D6's 0.496 is sound. Budget: about 51 KB of 150, feasible; the first `pre` sits at y ≈ 788 (1280) and 1,082 (375), so the copy strip adds no shift in the measured viewports.
+
+Guides consulted (saved copies in the state folder's `guides/`):
+- `scrollability-affordance-hints`: "Without scroll-driven animations, the fades are never shown" (not so without the gate: MUST-FIX 1); "If the scrollbar is hidden, the hints are the only cue that the region scrolls, so you MUST use a fallback."
+- `scrollspy`: "{ rootMargin: '-50% 0px -50% 0px', threshold: 0 }"; "DO provide enough vertical space for sections".
+- `copy-button`: "keep the same markup and add a click listener that calls the same `copy()` function"; "`command` events do not bubble: listen in the capture phase on document."
+- `visually-stable-font-fallbacks`: "Manual calculation: If you know the specific value (e.g., 0.545 for Verdana), you can provide it directly for more precise control."
+- `performance`: "Do include the `crossorigin` attribute for all fonts (even same origin fonts)."
+- `state-aware-sticky-headers`: "Add `scroll-padding-top` to the scrollport and set the value to be equal or greater than the sticky element's height."
+- `motion`: "Use `@media (prefers-reduced-motion: no-preference)` when the reduced-motion strategy is to **not have the animation at all**".
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -455,5 +495,6 @@ Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`,
 
 - 2026-11-25 06:25 UTC · Baseline: typecheck ok, test 823/823, plain build ×2 (Learn hashes stable, 151 files), e2e 168/168, before screens + metrics recorded.
 - 2026-11-25 06:43 UTC · Architecture: frontend-design → Visual direction + mock (`mock/`, screens light/dark 1280/375, no overflow, font loads); modern-web-guidance legacy-scan (page 0 findings, mock 1 `scrollspy/js`), 12 searches, 19 guides saved to `guides/`; architect wrote Findings (axe `scrollable-region-focusable` on current `<pre>`s) + Target design + D1–D8. Plan-only change.
+- 2026-11-25 06:57 UTC · Fable review: APPROVE WITH CHANGES, 2 MUST-FIX (chip fade needs `@supports` gate; font subset provenance reproducible), 1 missed (section-id deep-link contract), 5 SHOULD-CONSIDER. Plan-only change.
 
 ## Summary
