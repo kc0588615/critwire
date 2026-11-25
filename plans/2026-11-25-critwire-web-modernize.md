@@ -124,7 +124,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -216,8 +216,8 @@ These areas are fine: `fillSlots`, `esc`, `link` and `licenseLink` (pure, escape
 |---|---|---|
 | `site/docs.css` | the docs page's whole stylesheet | inlined via `{{style}}` |
 | `site/docs.js` | plain ES module: no TypeScript, no dependencies | inlined via `{{script}}` |
-| `site/fonts/atkinson-hyperlegible-next.woff2` | the mock's subset: 32,432 B, sha256 `a896eccb…31cda59` | `/fonts/atkinson-hyperlegible-next.woff2` |
-| `site/fonts/OFL.txt` | the upstream license: 4,431 B, sha256 `aca6a428…c4030` | `/fonts/OFL.txt` |
+| `site/fonts/atkinson-hyperlegible-next.woff2` | the font step's output (below). The mock's subset was 32,432 B, sha256 `a896eccb…31cda59`; if the step's bytes differ, this row takes the new size and sha | `/fonts/atkinson-hyperlegible-next.woff2` |
+| `site/fonts/OFL.txt` | the upstream license at the pinned commit: 4,431 B, sha256 `aca6a428…c4030` (git blob `88955733…` = the mock's copy, checked) | `/fonts/OFL.txt` |
 
 - **CSS and JS are inlined through slots, not served as files.** That means no extra requests. Caddy sends no `Cache-Control` (`e2e/Caddyfile:10-36`, the live block, which this mission can't change), so separate files with fixed names would be cached by heuristic from `Last-Modified` and could go stale against a newer HTML. Inlined code can't. Learn inlines `style.css` the same way. `performance`: "DO inline critical CSS" (here the whole sheet is critical; the mock's is 2.4 KB gzipped) and "`type="module"` is preferred for modern JavaScript and is deferred by default".
 - **Raw-text guard (fail fast).** `fillSlots` inserts slot values verbatim. A `</style` in the CSS, or a `</script` or `<!--` in the JS, would end the element early, and the build would report nothing. New in `html.ts`: `rawText(element: "style" | "script", text: string, name: string): string`. It returns `text` unchanged, or throws `<name>: contains </style` (case-insensitive). `renderDocs` passes `style` and `script` through it. Learn doesn't call it.
@@ -228,7 +228,22 @@ These areas are fine: `fillSlots`, `esc`, `link` and `licenseLink` (pure, escape
 
   `renderDocs(template, { style, script }, attribution, species)` adds three slots: `script`, `fontUrl` (`esc("/" + FONT)`) and `fontLicenseUrl`. The template uses `{{fontUrl}}` twice: in the preload and in the `@font-face` rule. So `@font-face` lives in the template's `<style>`, just before `{{style}}`. The two URLs must match byte for byte, or the browser fetches the font twice. `fillSlots` already refuses a slot that is missing or unused. The `docs.ts` header comment changes to name `site/docs.css` and `site/docs.js`.
 - **`scripts/build.ts`.** Drop the `styleSheet` import; Learn's modules import it themselves. Read the template, `docsStyle`, `docsScript` and every `DOCS_FILES` entry (`readFile(childFile(site, f))`) **before** `rm(out)`, so a missing file fails the build before `dist/` is touched. After writing `index.html`, write each file to `childFile(out, f)`, creating its folder first. `childFile` is the existing guard for computed output paths (`paths.ts`).
-- **Provenance in the `FONT` comment.** It records the upstream TTF URL (from the Visual direction), its sha256, the exact `pyftsubset` command and the fonttools version that made the subset. It also notes that the copyright line names no Reserved Font Name, so the subset may keep its name (OFL condition 3). No hash is pinned in code: Git holds the bytes, and the build only copies them.
+- **Font step** (one implementation step, before the font is committed; never part of `pnpm build`, which stays offline and only copies the bytes). The mock's woff2 isn't committed: nobody recorded how it was made.
+  - Pinned inputs: google/fonts commit `66eef70728ca29f28c31cdc5e7947f2c2de73e8d` (2025-01-07, the last commit that touched the TTF or `OFL.txt`; replaces the Visual direction's `main` URL). There the TTF is 114,552 B, sha256 `5a455d1cfa099b601ab70751bb9673e8fe1854dc4500c80e1a220d0d75e31745`, and `OFL.txt` 4,431 B, sha256 `aca6a428580965d2297d1b718042dd427c2a9443ece3b0d02d758e161e0c4030` (both fetched and hashed 2026-11-25).
+  - Command, run once from the repo root (feasibility checked: uv resolves fonttools 4.68.0 and brotli 1.2.1 on this VPS):
+    ```sh
+    set -euo pipefail; d=$(mktemp -d); u=https://raw.githubusercontent.com/google/fonts/66eef70728ca29f28c31cdc5e7947f2c2de73e8d/ofl/atkinsonhyperlegiblenext
+    curl -fsSL -o "$d/font.ttf" "$u/AtkinsonHyperlegibleNext%5Bwght%5D.ttf" && curl -fsSL -o "$d/OFL.txt" "$u/OFL.txt"
+    printf '%s  %s\n' 5a455d1cfa099b601ab70751bb9673e8fe1854dc4500c80e1a220d0d75e31745 "$d/font.ttf" aca6a428580965d2297d1b718042dd427c2a9443ece3b0d02d758e161e0c4030 "$d/OFL.txt" | sha256sum -c
+    mkdir -p site/fonts && cp "$d/OFL.txt" site/fonts/OFL.txt
+    /usr/local/bin/uv tool run --from 'fonttools[woff]==4.68.0' --with 'brotli==1.2.1' pyftsubset "$d/font.ttf" \
+      --unicodes='U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD' \
+      --name-IDs='*' --flavor=woff2 --output-file=site/fonts/atkinson-hyperlegible-next.woff2
+    sha256sum site/fonts/atkinson-hyperlegible-next.woff2; rm -r "$d"
+    ```
+    The code points are the mock's `unicode-range` (`mock/docs.css:7`). `brotli` is pinned because it writes the woff2's bytes. `--name-IDs='*'` keeps the license and its URL (name IDs 13, 14) inside the file, so a copy saved alone still carries them (OFL condition 2); layout features stay pyftsubset's default set.
+  - `sha256sum -c` stops the step on any other input bytes. The source TTF has name IDs 13 and 14 and sxHeight 496 (checked with ttx); subsetting keeps both. A woff2 whose bytes differ from the mock's updates the table row and the budget, and its sxHeight is re-read for §3's `font-size-adjust`.
+  - The `FONT` comment in `docs.ts` records: the two pinned URLs, both input sha256s, the command as run, the tool versions, the woff2's sha256, and that the copyright line names no Reserved Font Name, so the subset may keep its name (OFL condition 3). No hash is pinned in code: Git holds the bytes, and the build only copies them.
 - **Preload without `fetchpriority`.** `<link rel="preload" href="{{fontUrl}}" as="font" type="font/woff2" crossorigin>`.
   - `performance`: "DO preload critical fonts … for fonts seen above the fold" and "DON'T use `fetchpriority="high"` on fonts".
   - `optimize-preload-priority`: "ensure that font preloads always have the `crossorigin` attribute (even if same-origin)".
@@ -239,6 +254,8 @@ These areas are fine: `fillSlots`, `esc`, `link` and `licenseLink` (pure, escape
 #### 2. Markup (`site/index.html`)
 
 The prose, the slots and the eight `<section id>`s stay word for word.
+
+**The section ids are a contract with Learn**, which this mission can't change. Learn links `/#files` (`site/learn/pages/map.html:19`, `pages/schema-schema.html:4`, `data/index.html:38`, `modules/s1.html:19`), `/#licenses` (`modules/d2.html:33`, `f3.html:32`, `s1.html:38`) and `/#range-listings` (`modules/e4.html:36`, `s1.html:47`). All eight ids stay on their `<section>`s (D1 is why they don't move onto headings). Test 5 deep-loads these three.
 
 ```
 <head> + <meta name="color-scheme" content="light dark">
@@ -277,27 +294,27 @@ The prose, the slots and the eight `<section id>`s stay word for word.
   - `html { scroll-padding-top }` is at least the chip row's height plus a gap below 60rem, and smaller above. `state-aware-sticky-headers`: "Add `scroll-padding-top` to the scrollport and set the value to be equal or greater than the sticky element's height".
 - **Chip row** (`nav.toc ul`, below 60rem):
   - `overflow-x: auto`. The native scrollbar stays: `scrollbar-width: thin` at most, never `none` (D7). No scroll snapping. Block padding so nothing gets clipped.
-  - End fades, as the guide builds them: mask bands sized by two `@property` lengths, animated on `animation-timeline: scroll(self inline)`, with `scroll-padding-inline` equal to the fade size. `scrollability-affordance-hints`: a fade suits "a row of items (tabs, chips, carousels)"; "MANDATORY: Register `--fade-start` and `--fade-end` with `@property`"; "Set `scroll-padding-inline` … to the fade size if the scroller … contains focusable items".
-  - Browsers without scroll-driven animations show no fade but keep the scrollbar: "omitting the hints is acceptable when the scrollbar is visible".
+  - **Default: an unmasked row.** Its only cue is the chip cut at the row's edge (at 375 the mock cuts "Range listings", x 316–432, against a row ending at 355); phone scrollbars are overlays, hidden at rest (D7).
+  - **End fades only inside `@supports (animation-timeline: scroll()) and (animation-range: 0 1px)`**, nested in the below-60rem rules: the `mask`, the `animation`, `animation-timeline: scroll(self inline)`, `animation-range` and `scroll-padding-inline` (= the fade size) all sit in that block, built as the guide builds them. Only the two `@property` rules and the keyframes stay outside; on their own they paint nothing. Ungated, a browser without scroll timelines drops `animation-timeline`/`animation-range`, runs `animation: … linear both` as a 0 s time animation and holds its end state: a permanent 3rem fade over "About" (Fable's probe: `--fade-start: 48px` at `scrollLeft` 0). `scrollability-affordance-hints`: a fade suits "a row of items (tabs, chips, carousels)"; "MANDATORY: Register `--fade-start` and `--fade-end` with `@property`"; "Set `scroll-padding-inline` … to the fade size if the scroller … contains focusable items".
+  - Kept rather than dropped: scroll-driven animations are Baseline in all three engines since 2026-10-27, the guide picks a fade for exactly this row, and gated it costs nothing where it's missing. Test 8 proves the gate and the cut chip.
 - **Current section.** `nav.toc a:is(:target-current, .target-current)` gets the pollen fill, `--on-pollen` text and weight 700. `scrollspy`: "Use :is() to combine the native pseudo-class with a fallback class"; "AVOID relying solely on color for the active state: Include other visual cues like font weight". Under `@media (forced-colors: active)` the same selector also gets `text-decoration: underline`, because fills disappear there (`color`: "Support Forced Colors Mode").
-- **Room for the last section.** `#cite { min-block-size: calc(100svh - <scroll-padding-top>) }`. Without it, the last link can't bring its heading to the top or become current. `svh`, not `dvh`, so a mobile toolbar never resizes the layout. `scrollspy`: "DO provide enough vertical space for sections".
+- **No room reserved after the last section** (the `#cite` reserve is dropped; it left ≈ 450 px blank at 800 high and ≈ 1,050 at 1400). Cite can't reach the landing line, so both paths mark it once the page can't scroll further: Chromium's native tracking does this by itself, and the fallback has the same page-end rule (§4). Probe on the mock, no reserve, Chromium 145, at 1280×800, 375×812 and 1280×1400: the native path and the §4 rule both give the clicked link for all 8 links, Cite at the end. The rule needs Credits to reach the line before the page end, i.e. (page end − Credits' top) > (window height − `scroll-padding-top`): 2,546 > 1,376 at 1280×1400, and 3,929 at 375. So it holds in windows up to ≈ 2,570 px tall; taller ones would mark Cite after a Credits jump in the fallback (accepted). `scrollspy`: "DO provide enough vertical space for sections": every section but Cite is ≥ 591 px.
 - **File tags** (`#files dl > dt`). The notched shape is the dt's `::before` (a clip-path polygon at `z-index: -1`, with the dt `position: relative; isolation: isolate`), and the punched hole is its `::after`. The dt itself is never clipped, so its links' text and focus rings can't be cut. `shaped-cutouts`: "Apply the mask to an adjacent element rather than the parent element containing text". `motion`: clip-path and mask "also clip the element's own focus outline".
 - **Code cards and the copy UI.**
   - `pre` is a fern card with a 10 px radius and `overflow-x: auto`; `pre code { white-space: pre }` and `pre.wrap code { white-space: pre-wrap }` as today.
   - `.example { position: relative }`. `.example > pre` gets a top strip (`padding-block-start` ≈ the button's height plus gaps). `.copy` (the button and its status) sits absolutely in that strip, top right, so it never covers code, at rest or while scrolling (D8).
   - The button has a paper background and a `--lichen` border, which gives a boundary of at least 3:1 (`color`: "Maintain a minimum contrast ratio of 3:1 for user interface component boundaries and states"). It uses `min-inline-size`/`min-block-size` ≥ 24 px (`copy-button`: "Size the button at least 24×24 CSS px with `min-inline-size`/`min-block-size`").
   - The status bubble is styled only when `:not(:empty)`. Nothing is animated.
-- **Motion.** The only motion is `@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth } }`. `motion`: "Use `@media (prefers-reduced-motion: no-preference)` when the reduced-motion strategy is to **not have the animation at all**". The script's chip-row scroll checks the same query.
+- **Motion.** The only motion is `@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth } }`. `motion`: "Use `@media (prefers-reduced-motion: no-preference)` when the reduced-motion strategy is to **not have the animation at all**". The script's chip-row scroll is always instant (§4), so it needs no motion check.
 - **`summary`** keeps its native marker (`html`: "DON'T hide visible triangles via `list-style: none`").
 
 #### 4. Script (`site/docs.js`): two independent parts, each feature-detected
 
-**Copy buttons** (`copy-button`: "Declare the target with Invoker Commands (`command` + `commandfor`) instead of per-button JavaScript wiring, and write with the Async Clipboard API"):
+**Copy buttons** (`copy-button`, Async Clipboard API; one click path, no invoker commands: D10):
 - The buttons are added only when `navigator.clipboard?.writeText` exists (D2).
 - For each `pre > code` (10):
-  - set `code.id ||= "code-<n>"`;
   - wrap the `pre` in `div.example`;
-  - add `<span class="copy"><button type="button" command="--copy" commandfor="code-<n>">Copy</button><span role="status"></span></span>` after the `pre`.
+  - add `<span class="copy"><button type="button">Copy</button><span role="status"></span></span>` after the `pre`.
 
   The button stays outside both `<code>` and `<pre>`, because duckdb.spec and range-listings.spec run `code`'s `textContent`. Its accessible name is the visible "Copy", with no `aria-label` (`copy-button`: "If the button shows visible text, that text is the name; do not add an `aria-label` that differs from it").
 - **`copy(button, code)`** awaits `navigator.clipboard.writeText(code.textContent)` (D3), then calls `report(button, ok)`. `report` follows the guide:
@@ -307,28 +324,35 @@ The prose, the slots and the eight `<section id>`s stay word for word.
   - the button is never `disabled`.
 
   `copy-button`: "The confirmation bubble IS the live region. Keep it empty until a copy, and outside the button"; "append a no-break space (` `) so it differs"; "DO NOT disable the button while showing feedback".
-- **Exactly one wiring path.** If `"CommandEvent" in window`: `document.addEventListener("command", (e) => { if (e.command === "--copy") copy(e.source, e.target) }, true)`. Otherwise: one delegated `click` listener that resolves `commandfor`. `copy-button`: "`command` events do not bubble: listen in the capture phase on document"; "Register only one of the two paths so a click never copies twice".
+- **One wiring path, every browser:** one delegated `click` listener on `document`; for a `.copy button` it calls `copy(button, button.closest(".example").querySelector("code"))`. Enter and Space reach it as the button's native click. `copy-button`'s own fallback: "keep the same markup and add a click listener that calls the same `copy()` function".
 
 **Section index** (`scrollspy`):
 - `links` = `nav.toc a[href^="#"]`. `setCurrent(link)` puts `aria-current="true"` on that link, removes it from the others, then calls `reveal(link)`.
 - **Native path** (`CSS.supports("scroll-target-group: auto")`). CSS `nav.toc { scroll-target-group: auto }` draws the highlight. `sync = () => setCurrent(nav.querySelector("a:target-current"))` runs at start, on `scrollend` (on `document`) and on `load` (which covers a deep link's jump). `scrollspy`: "Apply the `scroll-target-group: auto` property to the container of your navigation links"; "the visual state must be mirrored with `aria-current`"; "update `aria-current="true"` on the active link when scrolling stops".
-- **Fallback path.** An `IntersectionObserver` watches the 8 sections with `rootMargin: "-50% 0px -50% 0px"`. On an intersecting entry it toggles `.target-current` on the links and calls `setCurrent`. `scrollspy`: "For browsers that do not support `scroll-target-group`, you should use a fallback based on the `IntersectionObserver` API". `legacy-scan` will report this as `scrollspy/js`; it is a kept fallback.
-- **`reveal(link)`** (the 375 px chip row). If the row overflows and the link isn't fully inside the row's box minus the fades, it calls `row.scrollTo({ left, behavior })`: `"instant"` under `prefers-reduced-motion: reduce`, `"smooth"` otherwise. It never uses `scrollIntoView`, which scrolls every ancestor, the viewport included, and could cut short the reader's smooth page scroll; `row.scrollTo` moves only the row. In the native path it runs at `scrollend`, after the page has stopped.
+- **Fallback path: the section at the anchor landing line** (D9). `at()` returns, in order:
+  1. the last section, once the page can't scroll further: `scrollY + root.clientHeight ≥ root.scrollHeight − 2`;
+  2. else the last section whose `getBoundingClientRect().top ≤ line`, with `line = parseFloat(getComputedStyle(root).scrollPaddingTop) + 2` (2 px of sub-pixel slack);
+  3. else the first section (the header is still in view).
+
+  `scroll-padding-top` is exactly where the browser lands an anchor, and CSS already sets it below the sticky chip row (§3), so the line accounts for the nav in both layouts. The nav's own height would be wrong at 1280, where it's a 314 px column beside the text. The value is read on every run, so the 60rem switch needs no extra code.
+  - `update()` toggles `.target-current` on the links and calls `setCurrent`, only when `at()` changed. It runs at start and 100 ms after the last `scroll` or `resize` (one timer, passive listeners). So a smooth 15,000 px jump updates once when it stops, not for each section it passes. `performance`: "DO debounce or throttle rapid event listeners: Limit the execution frequency of handlers attached to `scroll`, `resize`". `scrollspy`: "update `aria-current="true"` on the active link when scrolling stops".
+  - A deep link's jump, and any scroll-anchoring shift after the font swaps, fire `scroll` and so run `update()`.
+  - `legacy-scan` will report it as `scrollspy/js` ("Manual scroll listener calculates section positions"); it is a kept fallback, gated by the `CSS.supports` check.
+- **`reveal(link)`** (the 375 px chip row). If the row overflows and the link isn't fully inside the row's box minus its `scroll-padding-inline` (the fade size where the fade runs, 0 elsewhere: one source, §3), it calls `row.scrollTo({ left, behavior: "instant" })`. Always instant: it is a short sideways nudge after the page has stopped, never an animation (Fable SC2). It never uses `scrollIntoView`, which scrolls every ancestor, the viewport included; `row.scrollTo` moves only the row. Both paths call it only once scrolling has stopped (`scrollend` natively, the timer in the fallback).
 - **Without JavaScript**, Chromium 140+ still highlights the current section through `:target-current`, CSS only and without `aria-current`. Other browsers show the plain index. The links work everywhere.
 
 #### 5. Newer browser features (for the Summary)
 
 | Feature | Status (from the guides) | Without it |
 |---|---|---|
-| `scroll-target-group`, `:target-current` | Chrome/Edge 140 only | the IntersectionObserver fallback; with no JS, a plain index |
-| Invoker commands | Baseline 2025-12-12 | the click fallback, calling the same `copy()` |
+| `scroll-target-group`, `:target-current` | Chrome/Edge 140 only | the landing-line fallback (§4); with no JS, a plain index |
 | Async Clipboard `writeText` | widely available | no copy buttons |
 | `font-size-adjust` | Baseline 2024-07-25 | the fallback font at its own size |
 | `text-wrap: balance` / `pretty` | Baseline 2024-05-13 / Chrome and Safari 26 | normal wrapping |
-| Scroll-driven animations (the chip fade) | Baseline 2026-10-27 | no fade; the scrollbar stays |
+| Scroll-driven animations (the chip fade) | Baseline 2026-10-27 | `@supports`-gated: an unmasked row, the cut chip as the cue |
 | `scrollend` | used only on the native path (Chrome 114+) | n/a |
 
-Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`, `content-visibility`.
+Not used: `light-dark()`, invoker commands (D10), scroll-state queries, popover, `hidden="until-found"`, `content-visibility`.
 
 #### 6. Unit tests
 
@@ -344,9 +368,10 @@ Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`,
 
 - **`e2e/helpers.ts`** gains:
   - `DOCS_SECTIONS`, moved from `docs.spec.ts:8`; docs.spec imports it and every assertion stays the same;
-  - `axeViolations(page)`, in the form `learn-walk.spec.ts:36-48` uses (`id: count (first target)`);
+  - an optional second argument on `learnContext(browser, options?: BrowserContextOptions)` (`helpers.ts:135`), passed to `browser.newContext`. Existing callers don't change; docs-ui gets its viewport, `javaScriptEnabled`, `reducedMotion` and clipboard permissions through it, and its off-origin guard with them (no second route guard);
   - `docsAttribution()`, which reads dist's `attribution.json`.
-- **New `e2e/docs-ui.spec.ts`.** In every test: no `pageerror`, and no request leaves `ORIGIN`. Screenshots go to `ARTIFACTS/docs-ui-*.png` and are attached to the report.
+- **axe runs inline in test 9**, in `learn-walk.spec.ts:44-45`'s form (`id: count (first target)`). No shared helper: learn-walk is outside the brief's e2e scope, and its loop also sums `incomplete`, so sharing would mean editing a Learn spec for two lines.
+- **New `e2e/docs-ui.spec.ts`.** Every test opens its page through `learnContext` and asserts no `pageerror` and an empty `offOrigin`. Screenshots go to `ARTIFACTS/docs-ui-*.png` and are attached to the report.
   1. **No JavaScript** (`javaScriptEnabled: false`, 375 px):
      - the nav's hrefs are `#` + DOCS_SECTIONS, in order, and every section's h2 is visible;
      - `#files` has a visible link to every top-level file in `dist/v1/`, plus `/v1/species/51.json` and `/v1/species/jaguar.json`;
@@ -354,17 +379,18 @@ Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`,
      - the page has no `button`;
      - the font line sits outside `#credits` and links `/fonts/OFL.txt`;
      - scrollWidth ≤ 375.
-  2. **Copy**, once with each wiring (as shipped, and with `CommandEvent` deleted by an init script):
-     - 10 buttons, each `type="button"` and `command="--copy"`, with `commandfor` naming the `code` in the same `.example`, and none inside a `pre`;
+  2. **Copy** (one wiring, D10):
+     - 10 buttons, each `type="button"`, each in the same `.example` as its `pre`, and none inside a `pre`;
      - clicking a button calls `writeText` exactly once (recorded by an init-script wrapper; clipboard permissions granted) with that `code`'s `textContent`;
      - the status shows "Copied", then empties within 4 s, and a repeat shows "Copied ";
      - pressing Enter on a focused button copies.
   3. **Copy fails.** When `writeText` rejects, the status shows "Copy failed", and the button stays enabled and focused.
   4. **No clipboard** (`Navigator.prototype.clipboard` returns undefined): no buttons and no `.example` wrappers.
-  5. **Scroll-spy**, on both the native and the fallback path (an init script makes `CSS.supports("scroll-target-group: auto")` false), with `reducedMotion: "reduce"`, at 1280 and 375 px:
-     - after each of the 8 nav links is clicked, exactly that link has `aria-current="true"` and font-weight ≥ 700;
-     - `/#licenses` loads with Licenses current;
-     - at 375, after a jump to Credits, the current chip lies inside the row's box, and the target h2's top sits below the nav's bottom: not obscured, and the chip scroll didn't move the page.
+  5. **Scroll-spy**, on the native and the fallback path, with `reducedMotion: "reduce"`, at 1280×800, 375×812 and 1280×1400 (the window where a midpoint band picked Files for About).
+     - Fallback = one init script that turns off both kinds of native tracking: `CSS.supports` returns false for any query naming `scroll-target-group`, and a style `nav.toc { scroll-target-group: none !important }` is added at `DOMContentLoaded`. The test asserts `nav.toc a:target-current` matches nothing, so the highlight it sees is the script's `.target-current`.
+     - After each of the 8 nav links is clicked, exactly that link has `aria-current="true"` and font-weight ≥ 700 (fallback: and class `target-current`). Cite is reached at the page's end.
+     - Deep loads at 375, the three Learn links to: `/#files`, `/#range-listings`, `/#licenses`. That link is current, and the section's h2 top ≥ the nav's bottom.
+     - At 375, after a jump to Credits, the current chip lies inside the row's box minus its `scroll-padding-inline`, and the h2's top didn't change: the chip scroll didn't move the page.
   6. **Motion.** `scroll-behavior` computes to `smooth` with `reducedMotion: "no-preference"` and to `auto` with `"reduce"`.
   7. **Focus.**
      - Tab from the top reaches the first nav link, which matches `:focus-visible` with an outline that isn't `none`.
@@ -374,6 +400,8 @@ Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`,
   8. **Layout**, at 375 and 1280 px in light and dark:
      - scrollWidth ≤ the width;
      - at 375, the nav stays at `top: 0` after scrolling and stays one row;
+     - at 375, the row overflows and, at `scrollLeft` 0, one chip crosses its inline end (the cue without the fade); the first chip is unmasked (`--fade-start` computes to `0px`);
+     - the fade's gate, read from the CSSOM: every style rule that sets `mask`, `animation-timeline` or `scroll-padding-inline` on the row has an `@supports` ancestor whose condition names `animation-timeline` and `animation-range` (the only proof Chromium can give that other browsers get no mask);
      - at 1280, the nav sits left of `main`;
      - full-page screenshots.
   9. **axe**, with JS on, every `details` open and a section current, at 1280 and 375 px in light and dark: no violations.
@@ -388,8 +416,8 @@ Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`,
 
 - **Learn unchanged.** After the final plain build, hash `dist/learn/` as the Baseline did and diff against `baseline/learn-sha256-1.txt`: the diff is empty.
 - **/v1 unchanged.** Hash every non-Learn file in `dist/` as `baseline/nonlearn-sha256.txt` did. The only differences: `./index.html` changed, and `./fonts/atkinson-hyperlegible-next.woff2` and `./fonts/OFL.txt` added.
-- **Prose unchanged.** Take each `<section id>…</section>` from `git show origin/main:site/index.html` and from the branch's template, strip the tags and collapse whitespace: the two must be equal. The slots fill the same way, so the built text matches too. New words appear only outside the sections (the nav heading and the footer).
-- **`legacy-scan`** on the final `dist/index.html`, `site/docs.css` and `site/docs.js`: the only expected hit is the gated `scrollspy/js` fallback, recorded as kept.
+- **Prose unchanged.** From `git show origin/main:site/index.html` and from the branch's template, take each `<section id>…</section>`, plus `<title>`, the description meta's `content`, the `h1`, `.lead` and the 8 nav link texts (the last three move in §2); strip the tags and collapse whitespace: each pair must be equal. The slots fill the same way, so the built text matches too. New words appear only outside them (the nav heading and the footer).
+- **`legacy-scan`** on the final `dist/index.html`, `site/docs.css` and `site/docs.js`: the only expected hit is `scrollspy/js` on the gated fallback ("Manual scroll listener calculates section positions"), recorded as kept.
 - **AGENTS.md.** The list of what `pnpm build` writes to `dist/` gains `fonts/` (the docs page's font and its license).
 
 ### Decisions to log (architect: conflicts between guides, the Visual direction and critwire's rules)
@@ -404,8 +432,16 @@ Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`,
 - **D4. Scrollable `pre` get `tabindex="0"` only, no `role="region"`.** `html` asks for "`role="region"` to the `<pre>`, along with an accessible name". `accessibility` counters: "Don't overuse landmarks: Too many landmarks dilute their value." That would make ten landmarks for ten code samples. Learn's code blocks use `tabindex="0"` alone and pass axe in learn-walk.
 - **D5. Media-query tokens, not the Visual direction's `light-dark()`.** With `light-dark()`, `dark-mode` requires "MANDATORY: Fallback for browsers without light-dark support", and that media query does the whole job alone; `light-dark()` "is not required for a basic implementation". No element on the page sets its own scheme. Using only `light-dark()` would leave old browsers with dark ink on an unfilled current chip over the dark canvas.
 - **D6. `font-size-adjust: 0.496`, not the Visual direction's `from-font`.** `from-font` reads the first available font, which during the swap is the fallback itself, so it adjusts nothing at the moment it matters.
-- **D7. The chip row keeps its scrollbar** (the mock had `scrollbar-width: none`). `scrollability-affordance-hints`: "If the scrollbar is hidden, the hints are the only cue that the region scrolls, so you MUST use a fallback." Keeping the scrollbar means no JavaScript fallback is needed for the fade.
+- **D7. The chip row keeps its scrollbar and gates its fade** (the mock had `scrollbar-width: none`; the guide's fade CSS has no gate).
+  - We never hide the scrollbar. `scrollability-affordance-hints`: "If the scrollbar is hidden, the hints are the only cue that the region scrolls, so you MUST use a fallback." Desktop browsers with classic scrollbars show it.
+  - Phone scrollbars are overlays, hidden at rest. So where the fade is unsupported (Safari < 26, Firefox < 159), the cue is the chip cut at the row's edge, which test 8 checks at 375; there is no JavaScript fallback for the fade (the guide's IntersectionObserver one would redraw a cue the cut chip already gives).
+  - The fade is gated by `@supports (animation-timeline: scroll()) and (animation-range: 0 1px)` (§3). Ungated, the guide's CSS fades "About" for good in those browsers (Fable's probe), which would break the brief's "content and links stay complete and readable without it".
 - **D8. The copy button sits in a top strip, not over `padding-inline-end`** (the guide's default and the mock's). `copy-button` itself notes: "On a horizontally scrolling `<pre>`, that padding is only reached at the end of the scroll range, so long lines can pass under the button while scrolling." At 375 px the button would also cover the end of the first line. The strip adds height and never takes width, which is the guide's actual concern ("a permanent margin that narrows the code area on small screens").
+- **D9. The scroll-spy fallback uses the anchor landing line and a debounced scroll listener, not the guide's `-50%` IntersectionObserver band.**
+  - `scrollspy`'s fallback: "{ rootMargin: '-50% 0px -50% 0px', threshold: 0 }". At 1280×1400 that band marks Files after a jump to About (About is 591 px tall, the midline is at 700), and Credits after Cite (Fable's and Astra's probes).
+  - §4's rule (last section at the page end; else the last section whose top ≤ `scroll-padding-top` + 2 px) matched Chromium's native tracking for all 8 links at 1280×800, 375×812 and 1280×1400, and on deep loads of `/#files`, `/#range-listings`, `/#licenses` and `/#cite` (probe on the mock, 2026-11-25). With it, the `#cite` reserve goes.
+  - An observer with a px band is exact too, but its bottom margin depends on the window's height, so it would be rebuilt on every resize, and the page end would need a second observer. One function read 100 ms after scrolling stops is fewer parts. `performance`: "DO debounce or throttle rapid event listeners".
+- **D10. Copy buttons use one click listener, not invoker commands.** `copy-button`: "Declare the target with Invoker Commands (`command` + `commandfor`) instead of per-button JavaScript wiring". But a custom `--copy` command does nothing by itself, so a listener is needed either way. And invoker commands are only newly Baseline, so the guide's own rule needs the click fallback beside them anyway: "If your Baseline target does not include Invoker Commands, keep the same markup and add a click listener that calls the same `copy()` function". So the click listener alone serves every browser: one path and one test pass, and no ids added to the `<code>`s. "Prefer simplicity" wins (Fable SC5).
 
 ### Rejected alternatives (architect)
 
@@ -418,6 +454,12 @@ Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`,
 - **`scrollIntoView` for the active chip:** it scrolls the viewport too and can cut a smooth page scroll short.
 - **Reusing Learn's `focusableScrollers`** (`learn/pages.ts:69`): it would import a Learn module into the docs build for ten static attributes, and moving it into `html.ts` would edit `scripts/build/learn/`, which is out of scope.
 - **A format switcher:** already dropped in the Visual direction (it would hide file links that docs.spec needs visible).
+- **The guide's `-50%` observer band, or a higher percentage band (`-20% 0px -80% 0px`):** any percentage line misses the line where anchors land, so the right link depends on the window's height (D9).
+- **An IntersectionObserver with a 1 px band in px:** exact, but it has to be rebuilt on every resize, plus a second observer for the page end (D9).
+- **A `#cite` (or wrapper) reserve so that Cite reaches the top:** ≈ 450–1,050 px of blank paper at the end; the page-end rule needs none (§3).
+- **Dropping the chip fade:** gated, it costs nothing where unsupported, and it is Baseline in all three engines (§3).
+- **Dropping smooth page scrolling (Fable SC2):** the flicker came from updating on every section passed; the fallback's debounce and an instant `reveal` remove it, and smooth scrolling stays the one motion under `no-preference`.
+- **A shared axe helper with learn-walk importing it:** that edits a Learn spec outside the brief's e2e scope, for two lines (§7).
 
 ### Guides checked, not applied (architect)
 
@@ -426,6 +468,7 @@ Not used: `light-dark()`, scroll-state queries, popover, `hidden="until-found"`,
 - **`css`, `@layer`.** One small sheet with no third-party CSS to order against.
 - **`search-hidden-content`.** The credits already use `<details>`: "The `<details>` element has searchable and accessible text by default, and no special implementation is required."
 - **`copy-button` §3 (selection popover)** ("Skip it for code blocks") and **§4 (hide until hover).** Ten always-visible buttons are simpler and work on touch screens.
+- **`copy-button`, invoker commands** (`command="--copy"` + `commandfor`): D10.
 - **`accessibility`, skip link.** The index is the first focusable thing on the page, and each link skips to a section: "Avoid using skip links where they are not needed".
 - **`color`, `prefers-contrast`.** Text and controls already pass AA. The `--rule` lines are decoration, not component boundaries.
 - **`icons`, the CSS icon engine.** The page has one decorative inline SVG and no icon set. Only its "Mark decorative SVGs with `aria-hidden="true"`" is applied.
@@ -493,6 +536,20 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+Architect, 2026-11-25, one round. Probes on the mock (Chromium 145, `/tmp` scripts, nothing committed).
+
+MUST-FIX:
+- **Chip fade (Fable MF1 = Astra MF2): fixed.** The row is unmasked by default. Mask, animation, timeline, range and `scroll-padding-inline` sit only in `@supports (animation-timeline: scroll()) and (animation-range: 0 1px)` (`CSS.supports` true in Chromium 145). The fade is kept, not dropped (§3: Baseline in all three engines, the guide picks it, free where missing). D7 is corrected: phone scrollbars are overlays, so without the fade the cue is the cut chip. Test 8 checks the cut chip, `--fade-start` 0px at rest and the gate in the CSSOM. `reveal` reads the row's `scroll-padding-inline`, so it follows the gate.
+- **Font provenance (Fable MF2; Astra SC1): fixed.** §1 "Font step": google/fonts commit `66eef707…` (the TTF's and `OFL.txt`'s last change), one written `curl` + `uv tool run --from 'fonttools[woff]==4.68.0' --with 'brotli==1.2.1' pyftsubset …` command, both sha256s recorded, the produced bytes committed, everything named in the `FONT` comment, and §1's row updated if the bytes differ from the mock's. It runs outside `pnpm build`. Checked, not run: uv resolves both pins; at that commit `OFL.txt`'s git blob equals the mock's.
+- **Fallback scroll-spy (Astra MF1, Fable SC1): fixed.** §4/D9: the last section at the page end; else the last section whose top ≤ computed `scroll-padding-top` + 2 px (the browser's own landing line, which already sits below the sticky row; the nav's height would be wrong in the 1280 column); else the first. It runs 100 ms after the last scroll or resize. The probe matched native at 1280×800, 375×812 and 1280×1400 for all 8 links, Cite at the end, and on 375 deep loads. The `#cite` reserve is dropped (re-sized to zero): the page-end rule needs none, and the bound is stated (windows ≤ ≈ 2,570 px tall). Test 5 adds 1280×1400, and its fallback turns off both the JS check and CSS tracking (`scroll-target-group: none !important`; it asserts `:target-current` matches nothing) (Astra SC3).
+
+Also:
+- **Section ids as Learn's contract (Fable MISSED = Astra SC2): adopted.** §2 lists Learn's links; test 5 deep-loads `/#files`, `/#range-listings`, `/#licenses` at 375, h2 below the nav.
+- **Fable SC2, smooth scroll: adopted in part.** Smooth page scrolling stays. The fallback's debounce updates once per stop, and `reveal` is always instant, so the chips can't flicker and row scrolls can't stack. The motion branch in `reveal` is gone.
+- **Fable SC3, reuse e2e helpers: adopted in part.** `learnContext` gets an optional `BrowserContextOptions` argument, and docs-ui uses its off-origin guard. No `axeViolations` helper: axe runs inline in learn-walk's form, because sharing would edit learn-walk (outside the brief's e2e scope, and it also sums `incomplete`).
+- **Fable SC4, prose proof: adopted.** It also compares `<title>`, the description, `h1`, `.lead` and the nav link texts.
+- **Fable SC5, two copy wirings: adopted, click path only** (D10). Invoker commands are listed as checked, not applied; test 2 runs once; no ids on the `<code>`s.
+
 ## Steps
 
 ## Verification
@@ -510,5 +567,6 @@ SHOULD-CONSIDER:
 - 2026-11-25 06:43 UTC · Architecture: frontend-design → Visual direction + mock (`mock/`, screens light/dark 1280/375, no overflow, font loads); modern-web-guidance legacy-scan (page 0 findings, mock 1 `scrollspy/js`), 12 searches, 19 guides saved to `guides/`; architect wrote Findings (axe `scrollable-region-focusable` on current `<pre>`s) + Target design + D1–D8. Plan-only change.
 - 2026-11-25 06:57 UTC · Fable review: APPROVE WITH CHANGES, 2 MUST-FIX (chip fade needs `@supports` gate; font subset provenance reproducible), 1 missed (section-id deep-link contract), 5 SHOULD-CONSIDER. Plan-only change.
 - 2026-11-25 07:00 UTC · Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (fallback scroll-spy wrong section at 1280×1400, test with native tracking off; chip fade gate, same as Fable's), 3 SHOULD-CONSIDER. Plan-only change.
+- 2026-11-25 07:14 UTC · Revision: architect fixed all MUST-FIX (chip fade behind `@supports`, D7 corrected; pinned font step w/ hashes + pyftsubset cmd; fallback scroll-spy at anchor landing line, D9, 1280×1400 test w/ native tracking off), adopted section-id contract + Fable SC2–SC5 (D10 click-only copy), rejected shared axe helper. Plan-only change.
 
 ## Summary
