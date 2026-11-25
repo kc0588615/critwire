@@ -722,6 +722,16 @@ One step per session: do it, run its checks, check it off, add a Log line, commi
   - Fix small gaps here. A large gap becomes a new step after S7.
   - **Check:** typecheck; the scope check (V1); build-check; prose; docs-e2e if anything changed.
 
+- [ ] S8. **Index re-syncs when a disclosure changes the page (Astra code review MUST-FIX 1).** Files: `site/docs.js`, `e2e/docs-ui.spec.ts`.
+  - Write the test first (test 5, both paths): at the page end, Cite current; open the Photos credits `<details>` so the page grows and Cite leaves the landing line; `aria-current` (and the fallback's `.target-current`) moves to the section at the landing line (Credits). Fails before the fix in the fallback.
+  - Fix: one `toggle` listener on `document`, capture phase (`toggle` doesn't bubble), calling the path's own resync (native `sync`, fallback `later`). Both paths, since the native mirror only syncs on `scrollend`/`load`.
+  - **Check:** `node --check`; typecheck; build-check; prose; docs-ui `--repeat-each=5`; docs-e2e.
+- [ ] S9. **Current chip revealed after a resize (Astra code review MUST-FIX 2; SC1).** Files: `site/docs.js`, `e2e/docs-ui.spec.ts`.
+  - Write the test first (test 5, both paths): at 1280×800 jump to Credits; resize to 375×812; the Credits chip is fully inside the row's box minus its scroll-padding, and the page's `scrollY` is unchanged by the reveal. Fails before the fix.
+  - Fix: on `resize` (debounced like the fallback's 100 ms), `if (current) reveal(current)`; the fallback's `update` already runs on resize, so it reveals there when `setCurrent` returns early. Keep `setCurrent`'s guard (D17b).
+  - SC1 (adopted): docs-ui's off-origin check also asserts `learnContext().photos` is empty.
+  - **Check:** as S8.
+
 After S7: the Astra code review unit, then `## Verification` V0–V12 + Summary in one unit (`~/.claude/CLAUDE.md` "In a mission session" 6–7; not a step here, so it runs once, on the final commit), then the release.
 
 ### Risks
@@ -808,6 +818,20 @@ Run from the worktree root on the final commit, in order, heavy jobs one at a ti
 
 ## Code review (Astra)
 
+Run 2026-11-25 `astra-review --code origin/main` (base `524bb38`, head `13ec170`), exit 0.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. [site/docs.js:135](/srv/critter-ai/worktrees/critwire-web-modernize/site/docs.js:135) — In the fallback navigation, opening the Photos credit list at the bottom can push Cite below the viewport without firing `scroll` or `resize`. Cite stays highlighted and announced. Recompute on disclosure toggles and cover this case in E2E.
+2. [site/docs.js:86](/srv/critter-ai/worktrees/critwire-web-modernize/site/docs.js:86) — Narrowing the window while Credits remains current can leave its chip offscreen. The unchanged-link return skips `reveal()` after the row starts overflowing. Recheck chip visibility on resize and test a wide-to-narrow transition.
+
+SHOULD-CONSIDER:
+
+- [e2e/docs-ui.spec.ts:14](/srv/critter-ai/worktrees/critwire-web-modernize/e2e/docs-ui.spec.ts:14) — Assert that `learnContext().photos` is empty too. The helper records recognized Wikimedia photo requests separately, so the docs page could make an external request and still pass.
+- Refresh `origin/main` before opening the PR. This review compared local `524bb38` with `agent/critwire-web-modernize` at `13ec170`. The sandbox blocked the fetch, so remote freshness is unverified.
+
 
 ## Release
 
@@ -821,6 +845,7 @@ Run from the worktree root on the final commit, in order, heavy jobs one at a ti
 - D16 (S5): `report` writes the status directly, not the guide's clear + `requestAnimationFrame` re-set with `void button.offsetWidth`. That pair restarts a CSS animation; nothing here animates, and the no-break space on a repeat already makes every message differ, so the live region changes each time. The status sits left of the button (`flex-direction: row-reverse`) so the button keeps the strip's corner; DOM order stays button, then status.
 - D17 (S6): section index. (a) Native syncs run one frame late (`requestAnimationFrame` → `setTimeout`): Chromium 145 sets `:target-current` while rendering a frame, after rAF callbacks; probe: at module run and `load` it matched nothing (top and `/#files`), and at an instant `location.hash` jump's `scrollend` it still named About. Synced directly, test 5 failed at the top (all 3 sizes) and on the Credits jump (375). (b) `setCurrent` returns when the link is already current, so the native path's every-`scrollend` sync doesn't pull back a chip row the reader scrolled by hand; the fallback's `update` relies on that one guard. (c) `reveal` reads physical `scroll-padding-left/right` and moves `scrollLeft` by a box delta, so it holds in either direction. (d) legacy-scan gave 0 findings, not the expected `scrollspy/js` (that rule matched the mock's IntersectionObserver); the fallback stays the gated D9 one, so there is nothing to keep under Decisions beyond D9.
 - D18 (S7): `<meta name="text-scale" content="scale">` (`respect-os-text-scale`) not added. It's one line and inert outside Chrome/Edge 146+, but opting in invites OS text at 200% on phones, and there the masthead doesn't hold: the wordmark's floor (`2.75rem`) alone is ≈ 310 px against a 295 px column at 375 px, so it runs past its column over the tag's (probe screen `$S/after/s7-text-375-200.png`: no clipping or sideways scroll, but the lead wraps a word per line). Holding it needs a masthead redesign (stack or drop the tag art by an `em` container query, a lower wordmark floor), more than an audit's fix and against "a design touch has to earn its complexity". Browser text size and zoom still scale the page (rem throughout); `main`'s `overflow-wrap: break-word` (S7) keeps the content free of sideways scroll at 200%. Candidate for a later masthead change.
+- D19 (code review): both Astra MUST-FIX items accepted, as S8 (disclosure toggle resync, both paths, not only the fallback) and S9 (reveal current chip on resize). SC1 (`photos` empty in the off-origin check) folded into S9: one assertion, closes a real gap in the brief's "no outside request" proof. SC2 (freshness): `git fetch` here succeeded; `origin/main` = `524bb38` = merge-base, so the review's base was current.
 
 ## Log
 
@@ -837,5 +862,6 @@ Run from the worktree root on the final commit, in order, heavy jobs one at a ti
 - 2026-11-25 07:56 UTC · S5: `docs.js` copy buttons (clipboard check, `div.example` wrapper, `span.copy` > button + `role="status"`, `copy`/`report` per guide, one delegated click; D2, D3, D10), `docs.css` copy strip (top strip on `.example > pre`, lichen-bordered ≥ 24 px button, status styled only `:not(:empty)`, no animation; D8); docs-ui tests 2, 3, 4, 7. Checks: `node --check` ok; typecheck ok; plain build ok, LEARN-UNCHANGED, dist-diff = 3 expected lines; prose all ok; docs-e2e 35/35 (`$S/e2e-s5`; duckdb + range-listings prove `<code>` texts unchanged); legacy-scan docs.js/docs.css/index.html copy 0. D16.
 - 2026-11-25 08:08 UTC · S6: `docs.js` section index (`setCurrent` → `aria-current` + instant row-only `reveal`; native path on `CSS.supports("scroll-target-group: auto")`, syncs one frame late, D17; fallback `at()` landing line, 100 ms debounce, D9); docs-ui test 5 (native + fallback × 1280×800, 375×812, 1280×1400; 8 links down and back up, Cite at page end; 375 deep loads `/#files`, `/#range-listings`, `/#licenses`; Credits chip reveal, page unmoved). Checks: `node --check` ok; typecheck ok; plain build ok, LEARN-UNCHANGED, dist-diff 3 lines; prose all ok; docs-ui `--repeat-each=5` 85/85 (log `e2e-s6/repeat-each-5.log`); docs-e2e 41/41 (`e2e-s6/`); legacy-scan 0 + 0.
 - 2026-11-25 08:16 UTC · S7: legacy-scan 0 findings ×4 files (dist copy, site/index.html, docs.css, docs.js; `$S/after/legacy-scan-*.json`); compliance pass found and fixed 3 small gaps in `docs.css`: 4 physical flow rules → logical (`css`), copy button's `font` shorthand dropping `font-size-adjust` (`visually-stable-font-fallbacks`), 565 px page at 375×200% text from an unbreakable DOI URL → `main { overflow-wrap: break-word }` (`respect-os-text-scale`, new guide); `text-scale` meta not added (D18). Checks: typecheck ok; V1 scope 14 files ok; plain build ok, LEARN-UNCHANGED, dist-diff 3 lines; prose all ok; docs-e2e 41/41 (`$S/e2e-s7/`); reflow probes all `scrollWidth` = viewport.
+- 2026-11-25 08:21 UTC · Code review (Astra): APPROVE_WITH_CHANGES, 2 MUST-FIX (fallback index misses disclosure toggles at page end; current chip not revealed after wide→narrow resize), 2 SC; both MUST-FIX real → S8, S9; SC1 adopted in S9 (D19). Plan-only change.
 
 ## Summary
