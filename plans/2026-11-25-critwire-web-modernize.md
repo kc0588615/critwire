@@ -123,7 +123,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -478,6 +478,19 @@ Guides consulted (saved copies in the state folder's `guides/`):
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. §4’s fallback can announce the wrong section. The recorded 1280×1400 case selects **Files** after the reader follows **About**. Select the section at the anchor landing position, accounting for the sticky navigation, and test that case with native scroll tracking disabled. Percentage observer margins do not reliably define a viewport-height midpoint. [Intersection Observer specification](https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-rootmargin)
+2. §3’s mobile navigation fade can obscure **About** in browsers without scroll-driven animations. Make the unmasked row the default. Enable the mask and animation together only when the required timeline and range are supported, or omit the fade. [CSS animation fill behavior](https://drafts.csswg.org/css-animations-1/#animation-duration)
+
+SHOULD-CONSIDER:
+
+1. Regenerate the font subset from a pinned upstream revision and record the command and hashes. Keep font generation outside the offline site build.
+2. Test direct mobile loads of `/#files` and `/#range-listings`. Learn links to both, and each heading should land below the sticky row.
+3. In §7’s fallback test, disable native CSS tracking as well as the JavaScript feature check. Otherwise Chromium can still supply the visual highlight the test is meant to verify.
+
 ## Revision notes
 
 ## Steps
@@ -496,5 +509,6 @@ Guides consulted (saved copies in the state folder's `guides/`):
 - 2026-11-25 06:25 UTC · Baseline: typecheck ok, test 823/823, plain build ×2 (Learn hashes stable, 151 files), e2e 168/168, before screens + metrics recorded.
 - 2026-11-25 06:43 UTC · Architecture: frontend-design → Visual direction + mock (`mock/`, screens light/dark 1280/375, no overflow, font loads); modern-web-guidance legacy-scan (page 0 findings, mock 1 `scrollspy/js`), 12 searches, 19 guides saved to `guides/`; architect wrote Findings (axe `scrollable-region-focusable` on current `<pre>`s) + Target design + D1–D8. Plan-only change.
 - 2026-11-25 06:57 UTC · Fable review: APPROVE WITH CHANGES, 2 MUST-FIX (chip fade needs `@supports` gate; font subset provenance reproducible), 1 missed (section-id deep-link contract), 5 SHOULD-CONSIDER. Plan-only change.
+- 2026-11-25 07:12 UTC · Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (fallback scroll-spy wrong section at 1280×1400, test with native tracking off; chip fade gate, same as Fable's), 3 SHOULD-CONSIDER. Plan-only change.
 
 ## Summary
