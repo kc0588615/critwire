@@ -145,6 +145,55 @@ Branch `agent/critwire-web-modernize` at `def743d` = `origin/main` `524bb38` + t
 
 ## Architecture
 
+### Visual direction (mission session, `frontend-design` skill)
+
+Subject: an open natural-history dataset, so the page borrows the museum **specimen tag** (card, punched hole, tied string): the one bold motif. Everything else stays quiet.
+
+- **Mock:** `/srv/critter-ai/agent-state/missions/critwire-web-modernize/mock/` (`index.html` built from `dist/index.html` by `build-mock.py`; `docs.css`, `docs.js`, font + `OFL.txt`). Screens `mock/mock-{1280,375}-{light,dark}-{top,files}.png`, `mock-1280-light-full.png`. A direction, not the final code: the architect owns the wiring.
+- **Color** (`light-dark()` tokens; Learn's greens kept, link green unchanged):
+  | token | light | dark | role |
+  |---|---|---|---|
+  | paper | `#f6f8f3` | `#111813` | page |
+  | ink | `#1b2620` | `#e3eae5` | text |
+  | lichen | `#55625a` | `#a3b0a8` | muted text, notes |
+  | moss | `#1f6b45` | `#7fd1a3` | links, focus ring, art |
+  | fern | `#e1ede4` | `#1b2821` | header band, code, tags, chips |
+  | rule | `#cbd8ce` | `#2e3d34` | borders |
+  | pollen | `#f2d36b` | `#d9b84a` | current section only, ink `#1b2620` on it |
+  Contrast (moss on paper ≈ 6:1, on fern ≈ 5.4:1) to be proved by axe in both schemes.
+- **Type:** Atkinson Hyperlegible Next (OFL 1.1, Braille Institute; built to tell `l`/`I`/`1` and `0`/`O` apart, which the page's ids and codes like `NA`, `Q35694` need), one variable woff2 (wght 200–800), Latin subset with fonttools: **32,432 B**. Fallback `system-ui` stack, `font-display: swap`. Code stays `ui-monospace`. Scale: h1 `clamp(2.75rem, 9vw, 5rem)` weight 800, tracking −0.035em; h2 `clamp(1.6rem, 3.5vw, 2rem)`; body 1.0625rem/1.65; reading column ≤ 44rem (< 80 ch). Built page has no character outside Latin-1 today; `unicode-range` falls back to system fonts for any later one. Source: `https://raw.githubusercontent.com/google/fonts/main/ofl/atkinsonhyperlegiblenext/AtkinsonHyperlegibleNext[wght].ttf` + `OFL.txt`.
+- **Layout** (left-aligned throughout):
+  ```
+  ≥ 60rem                                   375 px
+  +-------------------------------------+   +------------------+
+  | critwire (h1, big)        [tag SVG] |   | critwire   [tag] |
+  | lead                                |   | lead             |
+  +---------+---------------------------+   +------------------+
+  | On this | About ...                 |   |(About)(Files)(Fi→| sticky chip row
+  | page    | reading column 44rem      |   +------------------+
+  | (sticky)|                           |   | About ...        |
+  +---------+---------------------------+   +------------------+
+  ```
+  Header: fern band, wordmark + lead + hanging tag (inline SVG, `aria-hidden`, drawn fresh: tag, string, ruled lines, rosette spots after the page's jaguar example). Nav: the existing 8-link list, moved out of `<header>` into a `nav.toc`; sticky left index on wide screens, sticky horizontally scrolling chip row at 375. Current section: pollen fill + bold (not color alone). `#files dt`: each file name on a tag (notched left end, punched hole). Code: fern card, 10 px radius. `details`: fern drawer. Notes: lichen with a left rule. `dt.group`: dashed rule above.
+- **Principles:** one motif (tags), no per-section icons, no numbering (sections aren't a sequence), no entrance animation; only motion is smooth anchor scrolling under `prefers-reduced-motion: no-preference` and the copy label change. A font line ("Set in Atkinson Hyperlegible Next, under the SIL Open Font License", linked to the served `OFL.txt`) sits after `#cite`, outside `#credits`.
+- **JS helpers** (mock `docs.js`, module, page complete without it): Copy button per `pre` (outside `<code>`, label "Copy" → "Copied"); section index that follows the reader. **Dropped:** format switcher (would hide or reorder file links `e2e/docs.spec.ts:43,59` needs visible; every format is already one click; doesn't earn its complexity).
+- **Self-review against defaults:** green-tinted paper, not cream; no serif/terracotta; no acid-on-black; no all-caps eyebrows, middle-dot meta or `→` links; rounded shapes vary by role (tag notch, 10 px cards, pill chips), no uniform card kit, no shadows.
+
+### Modern-web-guidance log (mission session)
+
+Guides saved in `/srv/critter-ai/agent-state/missions/critwire-web-modernize/guides/<id>.md` (retrieved 2026-11-25, `--skill-version 2026_11_16-268fb9ea` for search).
+
+- `legacy-scan` on `dist/index.html`, `site/index.html`, `site/style.css`: **0 findings** (52 rules, 38 guides). On the mock: 1, `scrollspy/js` (IntersectionObserver toggling `aria-current`).
+- Searches: scroll spy, copy to clipboard, dark mode, self-host font, text wrap, focus, smooth scroll/reduced motion, sticky TOC, details disclosure, code block scroll, LCP, decorative SVG. Retrieved: `scrollspy`, `copy-button`, `dark-mode`, `color`, `visually-stable-font-fallbacks`, `improve-text-layout-and-legibility`, `typography`, `motion`, `state-aware-sticky-headers`, `scrollability-affordance-hints`, `accessibility`, `performance`, `optimize-preload-priority`, `shaped-cutouts`, `icons`, `html`, `css`, `search-hidden-content`, `single-line-overflow`.
+- Quotes this direction relies on:
+  - `scrollspy`: "Apply the `scroll-target-group: auto` property to the container of your navigation links"; "the visual state must be mirrored with `aria-current`"; fallback "For browsers that do not support `scroll-target-group`, you should use a fallback based on the `IntersectionObserver` API"; "Use :is() to combine the native pseudo-class with a fallback class". Support: Chrome/Edge 140 only.
+  - `copy-button`: "Declare the target with Invoker Commands (`command` + `commandfor`) … and write with the Async Clipboard API"; "DO NOT disable the button while showing feedback"; a `role="status"` element announces the result. Invoker commands Baseline newly 2025-12-12; `writeText` widely.
+  - `dark-mode`: "place a `<meta>` tag in your `<head>`" (`<meta name="color-scheme" content="light dark">`); "Apply the `color-scheme` property to the `html` element or the `:root`". `light-dark()` Baseline newly 2024-05-13.
+  - `visually-stable-font-fallbacks`: "`font-size-adjust: from-font`" so the fallback matches the web font's x-height (Baseline newly 2024-07-25).
+  - `improve-text-layout-and-legibility`: "For short text blocks like headings, use `text-wrap: balance`"; "DO NOT apply `text-wrap: balance` globally"; `pretty` for body text.
+  - `motion`: "Use `@media (prefers-reduced-motion: no-preference)` when the reduced-motion strategy is to **not have the animation at all**".
+- Not yet read in full (architect: read before designing the parts they cover): `accessibility`, `performance`, `optimize-preload-priority`, `html`, `css`, `icons`, `shaped-cutouts`, `scrollability-affordance-hints`, `state-aware-sticky-headers`, `search-hidden-content`, `single-line-overflow`, `color`, `typography`.
+
 ## Architecture review (Fable)
 
 ## Architecture review (Astra)
