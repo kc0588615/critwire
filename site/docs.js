@@ -101,6 +101,7 @@ if (CSS.supports("scroll-target-group: auto")) {
   sync();
   document.addEventListener("scrollend", sync);
   addEventListener("load", sync);
+  document.addEventListener("toggle", sync, true); // a <details> moves the sections without a scroll (captured: no bubbling)
 } else {
   // Fallback (D9): the section at the anchor landing line, not the guide's -50% observer band, which picks the wrong
   // section in tall windows. scroll-padding-top is where the browser lands an anchor, below the sticky chip row; it is
@@ -134,4 +135,6 @@ if (CSS.supports("scroll-target-group: auto")) {
   update();
   addEventListener("scroll", later, { passive: true });
   addEventListener("resize", later, { passive: true });
+  // A <details> opening or closing moves the sections without a scroll. toggle doesn't bubble: capture it on document.
+  document.addEventListener("toggle", later, true);
 }

@@ -222,6 +222,26 @@ for (const path of ["native", "fallback"] as const) {
       }
       await close();
 
+      // A disclosure that changes the page without a scroll: at the end, Cite current; opening the Photos list pushes
+      // Cite below the landing line, so Credits (the section at the line) becomes current.
+      const t = await open();
+      await t.page.locator('nav.toc a[href="#cite"]').click();
+      await expect.poll(() => indexState(t.page), "Cite, before the toggle").toEqual(expectedIndex(fallback, "#cite"));
+      const scrolled = await t.page.evaluate(() => scrollY);
+      await t.page.evaluate(() => {
+        const details = [...document.querySelectorAll("section#credits details")].find((d) => d.querySelector("summary")!.textContent!.includes("photos"))!;
+        (details as HTMLDetailsElement).open = true;
+      });
+      await expect.poll(() => indexState(t.page), "after opening Photos").toEqual(expectedIndex(fallback, "#credits"));
+      const pushed = await t.page.evaluate(() => ({
+        scrollY,
+        citeTop: document.querySelector("section#cite")!.getBoundingClientRect().top,
+        line: parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0,
+      }));
+      expect(pushed.scrollY, "the toggle didn't scroll the page").toBe(scrolled);
+      expect(pushed.citeTop, "Cite left the landing line").toBeGreaterThan(pushed.line + 2);
+      await t.close();
+
       if (viewport.width >= 960) return;
       // Learn's deep links (the section ids are its contract): that link is current, the h2 below the sticky row.
       for (const id of ["files", "range-listings", "licenses"]) {
