@@ -10,6 +10,17 @@ export const licenseLink = (license: string, url: string | null) => (url === nul
 // site/style.css, inlined into each page through its {{style}} slot.
 export const styleSheet = new URL("../../site/style.css", import.meta.url);
 
+// text, unchanged, for a <style> or <script> slot (fillSlots inserts it verbatim). Throws, naming the file (name), for
+// text that would end the element early: its own end tag in any case, and in a script `<!--` too, whose escape states
+// can hide the real </script>.
+export function rawText(element: "style" | "script", text: string, name: string): string {
+  const refused = element === "script" ? ["</script", "<!--"] : ["</style"];
+  const lower = text.toLowerCase();
+  const hit = refused.find((s) => lower.includes(s));
+  if (hit !== undefined) throw new Error(`${name}: contains ${hit}`);
+  return text;
+}
+
 // template with each {{slot}} replaced by slots[slot] (already HTML). Throws, naming the template (name), for a slot
 // the template has that slots lacks, for one in slots the template doesn't use, and for any other {{ in the template
 // (F10: it would reach the page as text).

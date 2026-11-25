@@ -1,5 +1,5 @@
 // pnpm build [--draft] (plan §3, D9.1): checks data/ and site/learn/ offline, rebuilds DATABASE_URL from it, then writes the static
-// site to dist/: /v1, the docs page, then /learn/data/, whose lab tables it rebuilds from those bytes and checks, its
+// site to dist/: /v1, the docs page and its font (/fonts/), then /learn/data/, whose lab tables it rebuilds from those bytes and checks, its
 // loader, the Power BI star (d6's star.sql in DuckDB, each result checked against PostGIS's), manifest and index page;
 // each block reading /v1/range-listings.parquet is checked against its snapshot (listing-blocks.ts);
 // both 120 MB caps are enforced; a lab learn:check didn't prove as it is now (site/learn/labs/checked/checked.json)
@@ -15,8 +15,7 @@ import { formatJson } from "./json.ts";
 import { speciesFile } from "./species.ts";
 import { buildAttribution } from "./build/attribution.ts";
 import { writeCountries } from "./build/countries.ts";
-import { docsTemplate, renderDocs } from "./build/docs.ts";
-import { styleSheet } from "./build/html.ts";
+import { DOCS_FILES, docsScript, docsStyle, docsTemplate, renderDocs, site } from "./build/docs.ts";
 import { readBuildInputs } from "./build/inputs.ts";
 import { assertLabChecks } from "./build/learn/checks.ts";
 import { fileSizes, LEARN_CAP, totalBytes } from "./build/learn/cap.ts";
@@ -44,7 +43,10 @@ const { curriculum, pages, erds, star, listings } = learnInputs;
 console.log(`learn curriculum: ${curriculum.tracks.length} tracks, ${curriculum.modules.length} modules (${curriculum.modules.filter((m) => m.state === "built").length} built)`);
 console.log(`learn pages: ${pages.length} (${pages.reduce((n, p) => n + p.blocks.length, 0)} blocks)`);
 const attribution = buildAttribution(species, registration, countries, rangeListings);
-const docs = renderDocs(await readFile(docsTemplate, "utf8"), await readFile(styleSheet, "utf8"), attribution, species);
+const docsCode = { style: await readFile(docsStyle, "utf8"), script: await readFile(docsScript, "utf8") };
+const docs = renderDocs(await readFile(docsTemplate, "utf8"), docsCode, attribution, species);
+// The docs page's font and its license, read before dist/ is touched so a missing one fails first.
+const docsFiles = await Promise.all(DOCS_FILES.map(async (f) => ({ f, bytes: await readFile(childFile(site, f)) })));
 await loadDatabase(url, species);
 console.log(`loaded ${species.length} species`);
 
@@ -62,6 +64,11 @@ await writeCountries(countries.rows, v1);
 await writeRangeListings(rangeListings.rows, v1);
 await writeFile(new URL("attribution.json", v1), formatJson(attribution));
 await writeFile(new URL("index.html", out), docs);
+for (const { f, bytes } of docsFiles) {
+  const to = childFile(out, f);
+  await mkdir(new URL(".", to), { recursive: true });
+  await writeFile(to, bytes);
+}
 await writeLearnData(new URL("learn/data/", out), { learn, files: labFiles });
 // The lab tables from the published bytes, as a learner builds them; a violation fails before deploy publishes.
 const projection = await projectLearn(out);
